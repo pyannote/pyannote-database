@@ -1,0 +1,2 @@
+include versioneer.py
+include pyannote/database/_version.py
