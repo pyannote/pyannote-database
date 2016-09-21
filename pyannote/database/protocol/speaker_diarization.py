@@ -53,6 +53,8 @@ class SpeakerDiarizationProtocol(Protocol):
   parts of the resource that were manually annotated
 * annotation: pyannote.core.Annotation
   actual annotations
+* medium: str
+  path to medium file
 
 Usage
 -----
@@ -61,7 +63,11 @@ Usage
 ...     annotated = item['annotated']
 ...     annotation = item['annotation']
         """
-        return self.trn_iter()
+        for item in self.trn_iter():
+            if self.medium_template:
+                medium = self.medium_template.format(**item)
+                item['medium'] = medium
+            yield item
 
     def development(self):
         """Iterate over the development set
@@ -72,6 +78,8 @@ Usage
   parts of the resource that were manually annotated
 * annotation: pyannote.core.Annotation
   actual annotations
+* medium: str
+  path to medium file
 
 Usage
 -----
@@ -80,7 +88,11 @@ Usage
 ...     annotated = item['annotated']
 ...     annotation = item['annotation']
         """
-        return self.dev_iter()
+        for item in self.dev_iter():
+            if self.medium_template:
+                medium = self.medium_template.format(**item)
+                item['medium'] = medium
+            yield item
 
     def test(self):
         """Iterate over the test set
@@ -91,6 +103,8 @@ Usage
   parts of the resource that were manually annotated
 * annotation: pyannote.core.Annotation
   actual annotations
+* medium: str
+  path to medium file
 
 Usage
 -----
@@ -99,4 +113,8 @@ Usage
 ...     annotated = item['annotated']
 ...     annotation = item['annotation']
         """
-        return self.tst_iter()
+        for item in self.tst_iter():
+            if self.medium_template:
+                medium = self.medium_template.format(**item)
+                item['medium'] = medium
+            yield item
