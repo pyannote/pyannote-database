@@ -28,5 +28,10 @@
 
 
 class Protocol(object):
+
+    def __init__(self, medium_template=None, **kwargs):
+        super(Protocol, self).__init__()
+        self.medium_template = medium_template
+
     def __str__(self):
         return self.__doc__

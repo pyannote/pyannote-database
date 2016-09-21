@@ -32,8 +32,9 @@ from .util import PyannoteDatabaseException
 
 class Database(object):
 
-    def __init__(self):
+    def __init__(self, medium_template=None):
         super(Database, self).__init__()
+        self.medium_template = medium_template
 
     def register_protocol(self, task_name, protocol_name, protocol):
         if not hasattr(self, 'protocols_'):
@@ -59,7 +60,8 @@ class Database(object):
         return sorted(self.protocols_[task].keys())
 
     def get_protocol(self, task, protocol, **kwargs):
-        return self.protocols_[task][protocol](**kwargs)
+        return self.protocols_[task][protocol](
+            medium_template=self.medium_template, **kwargs)
 
     def __str__(self):
         return self.__doc__
