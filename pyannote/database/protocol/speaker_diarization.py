@@ -53,8 +53,8 @@ class SpeakerDiarizationProtocol(Protocol):
   parts of the resource that were manually annotated
 * annotation: pyannote.core.Annotation
   actual annotations
-* medium: str
-  path to medium file
+* medium: dict
+  dictionary of path to medium file (e.g. {'wav': '/path/to/file.wav'})
 
 Usage
 -----
@@ -64,9 +64,10 @@ Usage
 ...     annotation = item['annotation']
         """
         for item in self.trn_iter():
-            if self.medium_template:
-                medium = self.medium_template.format(**item)
-                item['medium'] = medium
+            if 'medium' not in item:
+                item['medium'] = {}
+            for medium, template in self.medium_template.items():
+                item['medium'][medium] = template.format(**item)
             yield item
 
     def development(self):
@@ -78,8 +79,8 @@ Usage
   parts of the resource that were manually annotated
 * annotation: pyannote.core.Annotation
   actual annotations
-* medium: str
-  path to medium file
+* medium: dict
+  dictionary of path to medium file (e.g. {'wav': '/path/to/file.wav'})
 
 Usage
 -----
@@ -89,9 +90,10 @@ Usage
 ...     annotation = item['annotation']
         """
         for item in self.dev_iter():
-            if self.medium_template:
-                medium = self.medium_template.format(**item)
-                item['medium'] = medium
+            if 'medium' not in item:
+                item['medium'] = {}
+            for medium, template in self.medium_template.items():
+                item['medium'][medium] = template.format(**item)
             yield item
 
     def test(self):
@@ -103,8 +105,8 @@ Usage
   parts of the resource that were manually annotated
 * annotation: pyannote.core.Annotation
   actual annotations
-* medium: str
-  path to medium file
+* medium: dict
+  dictionary of path to medium file (e.g. {'wav': '/path/to/file.wav'})
 
 Usage
 -----
@@ -114,7 +116,8 @@ Usage
 ...     annotation = item['annotation']
         """
         for item in self.tst_iter():
-            if self.medium_template:
-                medium = self.medium_template.format(**item)
-                item['medium'] = medium
+            if 'medium' not in item:
+                item['medium'] = {}
+            for medium, template in self.medium_template.items():
+                item['medium'][medium] = template.format(**item)
             yield item

@@ -29,7 +29,7 @@
 
 class Protocol(object):
 
-    def __init__(self, medium_template=None, **kwargs):
+    def __init__(self, medium_template={}, **kwargs):
         super(Protocol, self).__init__()
         self.medium_template = medium_template
 
