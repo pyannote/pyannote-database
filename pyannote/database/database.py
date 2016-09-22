@@ -32,7 +32,7 @@ from .util import PyannoteDatabaseException
 
 class Database(object):
 
-    def __init__(self, medium_template=None):
+    def __init__(self, medium_template={}):
         super(Database, self).__init__()
         self.medium_template = medium_template
 
