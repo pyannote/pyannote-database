@@ -47,6 +47,8 @@ class SpeakerDiarizationProtocol(Protocol):
     def train(self):
         """Iterate over the training set
 
+This will yield dictionaries with the followings keys:
+
 * uri: str
   uniform (or unique) resource identifier
 * annotated: pyannote.core.Timeline
@@ -73,6 +75,8 @@ Usage
     def development(self):
         """Iterate over the development set
 
+This will yield dictionaries with the followings keys:
+
 * uri: str
   uniform (or unique) resource identifier
 * annotated: pyannote.core.Timeline
@@ -98,6 +102,8 @@ Usage
 
     def test(self):
         """Iterate over the test set
+
+This will yield dictionaries with the followings keys:
 
 * uri: str
   uniform (or unique) resource identifier
