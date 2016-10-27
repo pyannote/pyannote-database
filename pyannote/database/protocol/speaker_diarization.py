@@ -127,3 +127,43 @@ Usage
             for medium, template in self.medium_template.items():
                 item['medium'][medium] = template.format(**item)
             yield item
+
+    def stats(self, subset):
+        """Obtain global statistics on a given subset
+
+Parameters
+----------
+subset : {'train', 'development', 'test'}
+
+Returns
+-------
+stats : dict
+    Dictionary with the followings keys:
+    * annotated: float
+      total duration (in seconds) of the parts that were manually annotated
+    * annotation: float
+      total duration (in seconds) of actual (speech) annotations
+    * n_files: int
+      number of files in the subset
+    * speakers: dict
+      maps speakers with their total speech duration (in seconds)
+        """
+
+        annotated = 0.
+        annotation = 0.
+        n_files = 0
+        speakers = {}
+
+        for item in getattr(self, subset)():
+            annotated += item['annotated'].duration()
+            annotation += item['annotation'].get_timeline().duration()
+            for speaker, duration in item['annotation'].chart():
+                if speaker not in speakers:
+                    speakers[speaker] = 0.
+                speakers[speaker] += duration
+            n_files += 1
+
+        return {'annotated': annotated,
+                'annotation': annotation,
+                'n_files': n_files,
+                'speakers': speakers}
