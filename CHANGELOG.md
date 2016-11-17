@@ -1,3 +1,7 @@
+### Version 0.4.1 (2016-11-17)
+
+  - fix: rename 'speakers' to 'labels' in statistics dictionary
+
 ### Version 0.4 (2016-10-27)
 
   - feat: add a method providing global statistics about a subset
