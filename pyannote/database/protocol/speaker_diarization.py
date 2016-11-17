@@ -145,7 +145,7 @@ stats : dict
       total duration (in seconds) of actual (speech) annotations
     * n_files: int
       number of files in the subset
-    * speakers: dict
+    * labels: dict
       maps speakers with their total speech duration (in seconds)
         """
 
@@ -166,4 +166,4 @@ stats : dict
         return {'annotated': annotated,
                 'annotation': annotation,
                 'n_files': n_files,
-                'speakers': speakers}
+                'labels': speakers}
