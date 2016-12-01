@@ -157,13 +157,13 @@ stats : dict
         for item in getattr(self, subset)():
             annotated += item['annotated'].duration()
             annotation += item['annotation'].get_timeline().duration()
-            for speaker, duration in item['annotation'].chart():
-                if speaker not in speakers:
-                    speakers[speaker] = 0.
-                speakers[speaker] += duration
+            for label, duration in item['annotation'].chart():
+                if label not in labels:
+                    labels[label] = 0.
+                labels[label] += duration
             n_files += 1
 
         return {'annotated': annotated,
                 'annotation': annotation,
                 'n_files': n_files,
-                'labels': speakers}
+                'labels': labels}
