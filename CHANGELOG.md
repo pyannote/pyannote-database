@@ -1,3 +1,7 @@
+### Version 0.5 (2016-12-01)
+
+  - BREAKING: replace 'medium_template' by (more generic) 'preprocessors'
+
 ### Version 0.4.1 (2016-11-17)
 
   - fix: rename 'speakers' to 'labels' in statistics dictionary
