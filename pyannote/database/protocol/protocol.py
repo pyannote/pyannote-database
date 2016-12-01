@@ -27,11 +27,49 @@
 # Hervé BREDIN - http://herve.niderb.fr
 
 
-class Protocol(object):
+import warnings
 
-    def __init__(self, medium_template={}, **kwargs):
+
+class Protocol(object):
+    """Base protocol
+
+    This class should be inherited from, not used directly.
+
+    Parameters
+    ----------
+    preprocessors : dict or (key, preprocessor) iterable
+        When provided, each protocol item (dictionary) are preprocessed, such
+        that item[key] = preprocessor(**item). In case 'preprocessor' is not
+        callable, it should be a string containing placeholder for item keys
+        (e.g. {'wav': '/path/to/{uri}.wav'})
+    """
+
+    def __init__(self, preprocessors={}, **kwargs):
         super(Protocol, self).__init__()
-        self.medium_template = medium_template
+        self.preprocessors = preprocessors
+
+    def preprocess(self, item):
+
+        if isinstance(self.preprocessors, dict):
+            preprocessors = self.preprocessors.items()
+        else:
+            preprocessors = self.preprocessors
+
+        for key, preprocessor in preprocessors:
+
+            # warn the user that preprocessors modify an existing key
+            if key in item:
+                msg = 'Key "{key}" may have been modified by preprocessors.'
+                warnings.warn(msg.format(key=key))
+
+            # when `preprocessor` is not callable, it should be a string
+            # containing placeholder for item key (e.g. '/path/to/{uri}.wav')
+            if not callable(preprocessor):
+                preprocessor = preprocessor.format
+
+            item[key] = preprocessor(**item)
+
+        return item
 
     def __str__(self):
         return self.__doc__

@@ -74,20 +74,25 @@ def get_databases(task=None):
     return sorted(TASKS.get(task, []))
 
 
-def get_database(database_name, **kwargs):
+def get_database(database_name, preprocessors={}, **kwargs):
     """Get database by name
 
     Parameters
     ----------
     name : str
         Database name.
+    preprocessors : dict or (key, preprocessor) iterable
+        When provided, each protocol item (dictionary) are preprocessed, such
+        that item[key] = preprocessor(**item). In case 'preprocessor' is not
+        callable, it should be a string containing placeholder for item keys
+        (e.g. {'wav': '/path/to/{uri}.wav'})
 
     Returns
     -------
-    Database : Class
-        Database class.
+    database : Database
+        Database instance
     """
-    return DATABASES[database_name](**kwargs)
+    return DATABASES[database_name](preprocessors=preprocessors, **kwargs)
 
 
 def get_tasks():

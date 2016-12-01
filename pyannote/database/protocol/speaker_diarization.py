@@ -31,7 +31,16 @@ from .protocol import Protocol
 
 
 class SpeakerDiarizationProtocol(Protocol):
+    """Speaker diarization protocol
 
+    Parameters
+    ----------
+    preprocessors : dict or (key, preprocessor) iterable
+        When provided, each protocol item (dictionary) are preprocessed, such
+        that item[key] = preprocessor(**item). In case 'preprocessor' is not
+        callable, it should be a string containing placeholder for item keys
+        (e.g. {'wav': '/path/to/{uri}.wav'})
+    """
     def trn_iter(self):
         raise NotImplementedError(
             'Custom speaker diarization protocol should implement "trn_iter".')
@@ -55,8 +64,8 @@ This will yield dictionaries with the followings keys:
   parts of the resource that were manually annotated
 * annotation: pyannote.core.Annotation
   actual annotations
-* medium: dict
-  dictionary of path to medium file (e.g. {'wav': '/path/to/file.wav'})
+
+as well as keys coming from the provided preprocessors.
 
 Usage
 -----
@@ -66,11 +75,7 @@ Usage
 ...     annotation = item['annotation']
         """
         for item in self.trn_iter():
-            if 'medium' not in item:
-                item['medium'] = {}
-            for medium, template in self.medium_template.items():
-                item['medium'][medium] = template.format(**item)
-            yield item
+            yield self.preprocess(item)
 
     def development(self):
         """Iterate over the development set
@@ -83,8 +88,8 @@ This will yield dictionaries with the followings keys:
   parts of the resource that were manually annotated
 * annotation: pyannote.core.Annotation
   actual annotations
-* medium: dict
-  dictionary of path to medium file (e.g. {'wav': '/path/to/file.wav'})
+
+as well as keys coming from the provided preprocessors.
 
 Usage
 -----
@@ -94,11 +99,7 @@ Usage
 ...     annotation = item['annotation']
         """
         for item in self.dev_iter():
-            if 'medium' not in item:
-                item['medium'] = {}
-            for medium, template in self.medium_template.items():
-                item['medium'][medium] = template.format(**item)
-            yield item
+            yield self.preprocess(item)
 
     def test(self):
         """Iterate over the test set
@@ -111,8 +112,8 @@ This will yield dictionaries with the followings keys:
   parts of the resource that were manually annotated
 * annotation: pyannote.core.Annotation
   actual annotations
-* medium: dict
-  dictionary of path to medium file (e.g. {'wav': '/path/to/file.wav'})
+
+as well as keys coming from the provided preprocessors.
 
 Usage
 -----
@@ -122,11 +123,7 @@ Usage
 ...     annotation = item['annotation']
         """
         for item in self.tst_iter():
-            if 'medium' not in item:
-                item['medium'] = {}
-            for medium, template in self.medium_template.items():
-                item['medium'][medium] = template.format(**item)
-            yield item
+            yield self.preprocess(item)
 
     def stats(self, subset):
         """Obtain global statistics on a given subset
@@ -157,13 +154,13 @@ stats : dict
         for item in getattr(self, subset)():
             annotated += item['annotated'].duration()
             annotation += item['annotation'].get_timeline().duration()
-            for speaker, duration in item['annotation'].chart():
-                if speaker not in speakers:
-                    speakers[speaker] = 0.
-                speakers[speaker] += duration
+            for label, duration in item['annotation'].chart():
+                if label not in labels:
+                    labels[label] = 0.
+                labels[label] += duration
             n_files += 1
 
         return {'annotated': annotated,
                 'annotation': annotation,
                 'n_files': n_files,
-                'labels': speakers}
+                'labels': labels}

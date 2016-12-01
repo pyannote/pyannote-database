@@ -31,10 +31,22 @@ from .util import PyannoteDatabaseException
 
 
 class Database(object):
+    """Base database
 
-    def __init__(self, medium_template={}):
+    This class should be inherited from, not used directly.
+
+    Parameters
+    ----------
+    preprocessors : dict or (key, preprocessor) iterable
+        When provided, each protocol item (dictionary) are preprocessed, such
+        that item[key] = preprocessor(**item). In case 'preprocessor' is not
+        callable, it should be a string containing placeholder for item keys
+        (e.g. {'wav': '/path/to/{uri}.wav'})
+    """
+
+    def __init__(self, preprocessors={}):
         super(Database, self).__init__()
-        self.medium_template = medium_template
+        self.preprocessors = preprocessors
 
     def register_protocol(self, task_name, protocol_name, protocol):
         if not hasattr(self, 'protocols_'):
@@ -61,7 +73,7 @@ class Database(object):
 
     def get_protocol(self, task, protocol, **kwargs):
         return self.protocols_[task][protocol](
-            medium_template=self.medium_template, **kwargs)
+            preprocessors=self.preprocessors, **kwargs)
 
     def __str__(self):
         return self.__doc__
