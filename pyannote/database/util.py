@@ -27,6 +27,7 @@
 # Hervé BREDIN - http://herve.niderb.fr
 
 import yaml
+import os.path
 from glob import glob
 
 

@@ -1,4 +1,4 @@
-### Version 0.6 (2016-12-02)
+### Version 0.6.1 (2016-12-02)
 
   - feat: add FileFinder utility class
   - fix: fix SpeakerDiarizationProtocol.stats()
