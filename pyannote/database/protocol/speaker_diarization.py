@@ -58,6 +58,8 @@ class SpeakerDiarizationProtocol(Protocol):
 
 This will yield dictionaries with the followings keys:
 
+* database: str
+  unique database identifier
 * uri: str
   uniform (or unique) resource identifier
 * annotated: pyannote.core.Timeline
@@ -82,6 +84,8 @@ Usage
 
 This will yield dictionaries with the followings keys:
 
+* database: str
+  unique database identifier
 * uri: str
   uniform (or unique) resource identifier
 * annotated: pyannote.core.Timeline
@@ -106,6 +110,8 @@ Usage
 
 This will yield dictionaries with the followings keys:
 
+* database: str
+  unique database identifier
 * uri: str
   uniform (or unique) resource identifier
 * annotated: pyannote.core.Timeline
@@ -149,7 +155,7 @@ stats : dict
         annotated = 0.
         annotation = 0.
         n_files = 0
-        speakers = {}
+        labels = {}
 
         for item in getattr(self, subset)():
             annotated += item['annotated'].duration()

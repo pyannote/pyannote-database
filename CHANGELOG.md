@@ -1,3 +1,8 @@
+### Version 0.6 (2016-12-02)
+
+  - feat: add FileFinder utility class
+  - fix: fix SpeakerDiarizationProtocol.stats()
+
 ### Version 0.5 (2016-12-01)
 
   - BREAKING: replace 'medium_template' by (more generic) 'preprocessors'
