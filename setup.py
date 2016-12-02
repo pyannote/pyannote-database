@@ -44,7 +44,10 @@ setup(
     description=('pyannote database'),
     author='Hervé Bredin',
     author_email='bredin@limsi.fr',
-    url='http://herve.niderb.fr/',
+    url='http://pyannote.github.io/',
+    install_requires=[
+        'pyYAML >= 3.12',
+    ],
     classifiers=[
         "Development Status :: 4 - Beta",
         "Intended Audience :: Science/Research",
