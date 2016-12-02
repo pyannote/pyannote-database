@@ -39,9 +39,10 @@ class FileFinder(object):
 
     Parameters
     ----------
-    config_yml : str
+    config_yml : str, optional
         Path to database configuration file in YAML format.
         See "Configuration file" sections for examples.
+        Defaults to '~/.pyannote/db.yml'.
 
     Configuration file
     ------------------
@@ -70,8 +71,13 @@ class FileFinder(object):
     glob
     """
 
-    def __init__(self, config_yml):
+    def __init__(self, config_yml=None):
         super(FileFinder, self).__init__()
+
+        if config_yml is None:
+            config_yml = '~/.pyannote/db.yml'
+        config_yml = os.path.expanduser(config_yml)
+
         with open(config_yml, 'r') as fp:
             self.config = yaml.load(fp)
 
