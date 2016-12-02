@@ -28,3 +28,4 @@
 
 
 from .speaker_diarization import SpeakerDiarizationProtocol
+from .speaker_recognition import SpeakerRecognitionProtocol
