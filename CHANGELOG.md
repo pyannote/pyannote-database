@@ -1,7 +1,11 @@
+### Version 0.7.1 (2016-12-03)
+
+  - fix: add 'yield_name' parameter to speaker recognition generators 
+
 ### Version 0.7 (2016-12-02)
 
   - feat: add speaker recognition protocol
-  
+
 ### Version 0.6.1 (2016-12-02)
 
   - feat: add FileFinder utility class
