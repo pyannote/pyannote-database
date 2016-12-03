@@ -76,7 +76,7 @@ class SpeakerRecognitionProtocol(Protocol):
             'Custom speaker recognition protocol '
             'should implement tst_keys".')
 
-    def train(self):
+    def train(self, yield_name=False):
         """Iterate over the training set
 
 This will yield dictionaries with the followings keys:
@@ -99,10 +99,13 @@ Usage
 ...     channel = item['channel']
 ...     target = item['target']
         """
-        for unique_name, item in self.trn_iter():
-            yield unique_name, self.preprocess(item)
+        for name, item in self.trn_iter():
+            if yield_name:
+                yield name, self.preprocess(item)
+            else:
+                yield self.preprocess(item)
 
-    def development_enroll(self):
+    def development_enroll(self, yield_name=True):
         """Iterate over the development set enrollments
 
 This will yield dictionaries with the followings keys:
@@ -122,10 +125,13 @@ Usage
 ...     uri = item['uri']
 ...     channel = item['channel']
         """
-        for unique_name, item in self.dev_enroll_iter():
-            yield unique_name, self.preprocess(item)
+        for name, item in self.dev_enroll_iter():
+            if yield_name:
+                yield name, self.preprocess(item)
+            else:
+                yield self.preprocess(item)
 
-    def development_test(self):
+    def development_test(self, yield_name=True):
         """Iterate over the development set tests
 
 This will yield dictionaries with the followings keys:
@@ -145,13 +151,16 @@ Usage
 ...     uri = item['uri']
 ...     channel = item['channel']
         """
-        for unique_name, item in self.dev_test_iter():
-            yield unique_name, self.preprocess(item)
+        for name, item in self.dev_test_iter():
+            if yield_name:
+                yield name, self.preprocess(item)
+            else:
+                yield self.preprocess(item)
 
     def development_keys(self):
         return self.dev_keys()
 
-    def test_enroll(self):
+    def test_enroll(self, yield_name=True):
         """Iterate over the test set targets
 
 This will yield dictionaries with the followings keys:
@@ -174,10 +183,13 @@ Usage
 ...     channel = item['channel']
 ...     target = item['target']
         """
-        for unique_name, item in self.tst_enroll_iter():
-            yield unique_name, self.preprocess(item)
+        for name, item in self.tst_enroll_iter():
+            if yield_name:
+                yield name, self.preprocess(item)
+            else:
+                yield self.preprocess(item)
 
-    def test_test(self):
+    def test_test(self, yield_name=True):
         """Iterate over the test set tests
 
 This will yield dictionaries with the followings keys:
@@ -197,8 +209,11 @@ Usage
 ...     uri = item['uri']
 ...     channel = item['channel']
         """
-        for unique_name, item in self.tst_test_iter():
-            yield unique_name, self.preprocess(item)
+        for name, item in self.tst_test_iter():
+            if yield_name:
+                yield name, self.preprocess(item)
+            else:
+                yield self.preprocess(item)
 
     def test_keys(self):
         return self.tst_keys()
