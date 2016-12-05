@@ -76,7 +76,14 @@ Usage
 ...     annotated = item['annotated']
 ...     annotation = item['annotation']
         """
-        for item in self.trn_iter():
+
+        generator = self.trn_iter()
+        if self.progress:
+            generator = tqdm(
+                generator, desc='Training set',
+                total=getattr(self.trn_iter, 'n_items', None))
+
+        for item in generator:
             yield self.preprocess(item)
 
     def development(self):
@@ -102,7 +109,14 @@ Usage
 ...     annotated = item['annotated']
 ...     annotation = item['annotation']
         """
-        for item in self.dev_iter():
+
+        generator = self.dev_iter()
+        if self.progress:
+            generator = tqdm(
+                generator, desc='Development set',
+                total=getattr(self.dev_iter, 'n_items', None))
+
+        for item in generator:
             yield self.preprocess(item)
 
     def test(self):
@@ -128,7 +142,14 @@ Usage
 ...     annotated = item['annotated']
 ...     annotation = item['annotation']
         """
-        for item in self.tst_iter():
+
+        generator = self.tst_iter()
+        if self.progress:
+            generator = tqdm(
+                generator, desc='Test set',
+                total=getattr(self.tst_iter, 'n_items', None))
+
+        for item in generator:
             yield self.preprocess(item)
 
     def stats(self, subset):
