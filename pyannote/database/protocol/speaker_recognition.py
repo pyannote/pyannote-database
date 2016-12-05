@@ -104,6 +104,7 @@ Usage
         generator = self.trn_iter()
         if self.progress:
             generator = tqdm(generator,
+                             desc='Training set',
                              total=getattr(self.trn_iter, 'n_items', None))
 
         for name, item in generator:
@@ -132,7 +133,14 @@ Usage
 ...     uri = item['uri']
 ...     channel = item['channel']
         """
-        for name, item in self.dev_enroll_iter():
+
+        generator = self.dev_enroll_iter()
+        if self.progress:
+            generator = tqdm(
+                generator, desc='Development set (enrollment)',
+                total=getattr(self.dev_enroll_iter, 'n_items', None))
+
+        for name, item in generator:
             if yield_name:
                 yield name, self.preprocess(item)
             else:
@@ -158,7 +166,14 @@ Usage
 ...     uri = item['uri']
 ...     channel = item['channel']
         """
-        for name, item in self.dev_test_iter():
+
+        generator = self.dev_test_iter()
+        if self.progress:
+            generator = tqdm(
+                generator, desc='Development set (test)',
+                total=getattr(self.dev_test_iter, 'n_items', None))
+
+        for name, item in generator:
             if yield_name:
                 yield name, self.preprocess(item)
             else:
@@ -190,7 +205,14 @@ Usage
 ...     channel = item['channel']
 ...     target = item['target']
         """
-        for name, item in self.tst_enroll_iter():
+
+        generator = self.tst_enroll_iter()
+        if self.progress:
+            generator = tqdm(
+                generator, desc='Development set (enrollment)',
+                total=getattr(self.tst_enroll_iter, 'n_items', None))
+
+        for name, item in generator:
             if yield_name:
                 yield name, self.preprocess(item)
             else:
@@ -216,7 +238,14 @@ Usage
 ...     uri = item['uri']
 ...     channel = item['channel']
         """
-        for name, item in self.tst_test_iter():
+
+        generator = self.tst_test_iter()
+        if self.progress:
+            generator = tqdm(
+                generator, desc='Test set (test)',
+                total=getattr(self.tst_test_iter, 'n_items', None))
+
+        for name, item in generator:
             if yield_name:
                 yield name, self.preprocess(item)
             else:
