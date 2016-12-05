@@ -44,9 +44,10 @@ class Protocol(object):
         (e.g. {'wav': '/path/to/{uri}.wav'})
     """
 
-    def __init__(self, preprocessors={}, **kwargs):
+    def __init__(self, preprocessors={}, progress=False, **kwargs):
         super(Protocol, self).__init__()
         self.preprocessors = preprocessors
+        self.progress = progress
 
     def preprocess(self, item):
 

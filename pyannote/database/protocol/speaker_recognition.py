@@ -28,6 +28,7 @@
 
 
 from .protocol import Protocol
+from tqdm import tqdm
 
 
 class SpeakerRecognitionProtocol(Protocol):
@@ -99,7 +100,13 @@ Usage
 ...     channel = item['channel']
 ...     target = item['target']
         """
-        for name, item in self.trn_iter():
+
+        generator = self.trn_iter()
+        if self.progress:
+            generator = tqdm(generator,
+                             total=getattr(self.trn_iter, 'n_items', None))
+
+        for name, item in generator:
             if yield_name:
                 yield name, self.preprocess(item)
             else:
