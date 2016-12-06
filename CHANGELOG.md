@@ -1,6 +1,10 @@
+### Version 0.8 (2016-12-06)
+
+  - feat: add progress bar support
+
 ### Version 0.7.1 (2016-12-03)
 
-  - fix: add 'yield_name' parameter to speaker recognition generators 
+  - fix: add 'yield_name' parameter to speaker recognition generators
 
 ### Version 0.7 (2016-12-02)
 
