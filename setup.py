@@ -36,6 +36,7 @@ setup(
     packages=find_packages(),
     install_requires=[
         'pyYAML >= 3.12',
+        'tqdm >= 4.10.0',
     ],
     # versioneer
     version=versioneer.get_version(),
