@@ -209,7 +209,7 @@ Usage
         generator = self.tst_enroll_iter()
         if self.progress:
             generator = tqdm(
-                generator, desc='Development set (enrollment)',
+                generator, desc='Test set (enrollment)',
                 total=getattr(self.tst_enroll_iter, 'n_items', None))
 
         for name, item in generator:
