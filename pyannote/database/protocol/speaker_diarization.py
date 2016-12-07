@@ -28,6 +28,7 @@
 
 
 from .protocol import Protocol
+from tqdm import tqdm
 
 
 class SpeakerDiarizationProtocol(Protocol):
