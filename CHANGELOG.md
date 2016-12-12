@@ -1,3 +1,7 @@
+### Version 0.8.1 (2016-12-12)
+
+  - fix: fix progress bar support
+
 ### Version 0.8 (2016-12-06)
 
   - feat: add progress bar support
