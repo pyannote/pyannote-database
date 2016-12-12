@@ -88,8 +88,8 @@ This will yield dictionaries with the followings keys:
   unique recording identifier
 * channel: int
   index of resource channel to use
-* target: str
-  unique target identifier
+* speaker: str
+  unique speaker identifier
 
 as well as keys coming from the provided preprocessors.
 
@@ -98,7 +98,7 @@ Usage
 >>> for item in protocol.train():
 ...     uri = item['uri']
 ...     channel = item['channel']
-...     target = item['target']
+...     speaker = item['speaker']
         """
 
         generator = self.trn_iter()
@@ -193,8 +193,8 @@ This will yield dictionaries with the followings keys:
   uniform (or unique) resource identifier
 * channel: int
   index of resource channel to use
-* target: str
-  unique target identifier
+* speaker: str
+  unique speaker identifier
 
 as well as keys coming from the provided preprocessors.
 
@@ -203,13 +203,13 @@ Usage
 >>> for item in protocol.test_enroll():
 ...     uri = item['uri']
 ...     channel = item['channel']
-...     target = item['target']
+...     speaker = item['speaker']
         """
 
         generator = self.tst_enroll_iter()
         if self.progress:
             generator = tqdm(
-                generator, desc='Development set (enrollment)',
+                generator, desc='Test set (enrollment)',
                 total=getattr(self.tst_enroll_iter, 'n_items', None))
 
         for name, item in generator:
