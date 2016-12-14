@@ -137,3 +137,33 @@ class FileFinder(object):
         else:
             msg = 'Found {n} matches for file "{uri}"'
             raise ValueError(msg.format(uri=uri, n=len(found)))
+
+
+def get_unique_identifier(item):
+    """Return unique item identifier
+
+    The complete format is {database}/{uri}_{channel}:
+    * prefixed by "{database}/" only when `item` has a 'database' key.
+    * suffixed by "_{channel}" only when `item` has a 'channel' key.
+
+    Parameters
+    ----------
+    item : dict
+        Item as yielded by pyannote.database protocols
+
+    Returns
+    -------
+    identifier : str
+        Unique item identifier
+    """
+
+    IDENTIFIER = ""
+
+    # {database}/{uri}_{channel}
+    if "database" in item:
+        IDENTIFIER += "{database}/"
+    IDENTIFIER += "{uri}"
+    if "channel" in item:
+        IDENTIFIER += "_{channel:d}"
+
+    return IDENTIFIER.format(**item)
