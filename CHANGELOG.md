@@ -1,3 +1,7 @@
+### Version 0.9 (2016-12-14)
+
+  - feat: add "get_unique_identifier" utility function
+
 ### Version 0.8.1 (2016-12-12)
 
   - fix: fix progress bar support
