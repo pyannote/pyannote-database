@@ -38,7 +38,7 @@ class SpeakerDiarizationProtocol(Protocol):
     ----------
     preprocessors : dict or (key, preprocessor) iterable
         When provided, each protocol item (dictionary) are preprocessed, such
-        that item[key] = preprocessor(**item). In case 'preprocessor' is not
+        that item[key] = preprocessor(item). In case 'preprocessor' is not
         callable, it should be a string containing placeholder for item keys
         (e.g. {'wav': '/path/to/{uri}.wav'})
     """
