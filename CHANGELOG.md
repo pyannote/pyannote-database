@@ -1,4 +1,4 @@
-### Version 0.10 (2016-12-17)
+### Version 0.10.1 (2016-12-17)
 
   - improve: change signature of preprocessor.__call__
 
