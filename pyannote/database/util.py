@@ -122,10 +122,10 @@ class FileFinder(object):
 
         return found
 
-    def __call__(self, uri=None, database=None, **kwargs):
+    def __call__(self, item):
 
         # look for medium based on its uri and the database it belongs to
-        found = self._find(self.config, uri=uri, database=database, **kwargs)
+        found = self._find(self.config, **item)
 
         if len(found) == 1:
             return found[0]

@@ -1,3 +1,7 @@
+### Version 0.10 (2016-12-17)
+
+  - improve: change signature of preprocessor.__call__
+
 ### Version 0.9 (2016-12-14)
 
   - feat: add "get_unique_identifier" utility function
