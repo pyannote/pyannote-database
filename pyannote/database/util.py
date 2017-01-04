@@ -131,10 +131,12 @@ class FileFinder(object):
             return found[0]
 
         elif len(found) == 0:
+            uri = item['uri']
             msg = 'Could not find file "{uri}".'
             raise ValueError(msg.format(uri=uri))
 
         else:
+            uri = item['uri']
             msg = 'Found {n} matches for file "{uri}"'
             raise ValueError(msg.format(uri=uri, n=len(found)))
 

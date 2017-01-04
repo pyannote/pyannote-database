@@ -1,3 +1,7 @@
+### Version 0.10.2 (2017-01-04)
+
+  - fix: fix bug in FileFinder
+
 ### Version 0.10.1 (2016-12-17)
 
   - improve: change signature of preprocessor.__call__
