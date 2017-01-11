@@ -179,16 +179,39 @@ stats : dict
         n_files = 0
         labels = {}
 
+        lower_bound = False
+
         for item in getattr(self, subset)():
-            annotated += item['annotated'].duration()
+
+            # increment 'annotation' total duration
             annotation += item['annotation'].get_timeline().duration()
+
+            # if 'annotated' is provided, use its duration
+            if 'annotated' in item:
+                duration = item['annotated'].duration()
+
+            # otherwise, only a lower bound can be computed,
+            # based on 'annotation' extent
+            else:
+                duration = item['annotation'].get_timeline().extent().duration
+                lower_bound = True
+
+            # increment 'annotated' total duration
+            annotated += duration
+
             for label, duration in item['annotation'].chart():
                 if label not in labels:
                     labels[label] = 0.
                 labels[label] += duration
             n_files += 1
 
-        return {'annotated': annotated,
-                'annotation': annotation,
-                'n_files': n_files,
-                'labels': labels}
+        stats = {'annotation': annotation,
+                 'n_files': n_files,
+                 'labels': labels}
+
+        if lower_bound:
+            stats['annotated_approximate'] = annotated
+        else:
+            stats['annotated'] = annotated
+
+        return stats
