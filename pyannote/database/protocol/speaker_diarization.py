@@ -3,7 +3,7 @@
 
 # The MIT License (MIT)
 
-# Copyright (c) 2016 CNRS
+# Copyright (c) 2016-2017 CNRS
 
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -29,6 +29,7 @@
 
 from .protocol import Protocol
 from tqdm import tqdm
+from ..util import get_annotated
 
 
 class SpeakerDiarizationProtocol(Protocol):
@@ -174,21 +175,31 @@ stats : dict
       maps speakers with their total speech duration (in seconds)
         """
 
-        annotated = 0.
-        annotation = 0.
+        annotated_duration = 0.
+        annotation_duration = 0.
         n_files = 0
         labels = {}
 
+        lower_bound = False
+
         for item in getattr(self, subset)():
-            annotated += item['annotated'].duration()
-            annotation += item['annotation'].get_timeline().duration()
-            for label, duration in item['annotation'].chart():
+
+            annotated = get_annotated(item)
+            annotated_duration += annotated.duration()
+
+            # increment 'annotation' total duration
+            annotation = item['annotation']
+            annotation_duration += annotation.get_timeline().duration()
+
+            for label, duration in annotation.chart():
                 if label not in labels:
                     labels[label] = 0.
                 labels[label] += duration
             n_files += 1
 
-        return {'annotated': annotated,
-                'annotation': annotation,
-                'n_files': n_files,
-                'labels': labels}
+        stats = {'annotated': annotated_duration,
+                 'annotation': annotation_duration,
+                 'n_files': n_files,
+                 'labels': labels}
+
+        return stats

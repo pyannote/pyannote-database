@@ -1,3 +1,8 @@
+### Version 0.11 (2017-01-11)
+
+  - feat: add support for validation on training set to speaker recognition protocols
+  - feat: add 'get_annotated' helper function
+
 ### Version 0.10.2 (2017-01-04)
 
   - fix: fix bug in FileFinder

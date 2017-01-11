@@ -47,6 +47,21 @@ class SpeakerRecognitionProtocol(Protocol):
             'Custom speaker recognition protocol '
             'should implement "trn_iter".')
 
+    def trn_enroll_iter(self):
+        raise NotImplementedError(
+            'Custom speaker recognition protocol '
+            'should implement "trn_enroll_iter".')
+
+    def trn_test_iter(self):
+        raise NotImplementedError(
+            'Custom speaker recognition protocol '
+            'should implement "trn_test_iter".')
+
+    def trn_keys(self):
+        raise NotImplementedError(
+            'Custom speaker recognition protocol '
+            'should implement "trn_keys".')
+
     def dev_enroll_iter(self):
         raise NotImplementedError(
             'Custom speaker recognition protocol '
@@ -112,6 +127,75 @@ Usage
                 yield name, self.preprocess(item)
             else:
                 yield self.preprocess(item)
+
+    def train_enroll(self, yield_name=True):
+        """Iterate over the training set enrollments
+
+This will yield dictionaries with the followings keys:
+
+* database: str
+  unique database identifier
+* uri: str
+  uniform (or unique) resource identifier
+* channel: int
+  index of resource channel to use
+
+as well as keys coming from the provided preprocessors.
+
+Usage
+-----
+>>> for item in protocol.train_enroll():
+...     uri = item['uri']
+...     channel = item['channel']
+        """
+
+        generator = self.trn_enroll_iter()
+        if self.progress:
+            generator = tqdm(
+                generator, desc='Training set (enrollment)',
+                total=getattr(self.trn_enroll_iter, 'n_items', None))
+
+        for name, item in generator:
+            if yield_name:
+                yield name, self.preprocess(item)
+            else:
+                yield self.preprocess(item)
+
+    def train_test(self, yield_name=True):
+        """Iterate over the training set tests
+
+This will yield dictionaries with the followings keys:
+
+* database: str
+  unique database identifier
+* uri: str
+  uniform (or unique) resource identifier
+* channel: int
+  index of resource channel to use
+
+as well as keys coming from the provided preprocessors.
+
+Usage
+-----
+>>> for item in protocol.train_test():
+...     uri = item['uri']
+...     channel = item['channel']
+        """
+
+        generator = self.trn_test_iter()
+        if self.progress:
+            generator = tqdm(
+                generator, desc='Training set (test)',
+                total=getattr(self.trn_test_iter, 'n_items', None))
+
+        for name, item in generator:
+            if yield_name:
+                yield name, self.preprocess(item)
+            else:
+                yield self.preprocess(item)
+
+    def train_keys(self):
+        return self.trn_keys()
 
     def development_enroll(self, yield_name=True):
         """Iterate over the development set enrollments
