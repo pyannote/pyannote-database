@@ -30,6 +30,7 @@ import yaml
 import os.path
 import warnings
 from glob import glob
+from pyannote.core import Segment, Timeline
 
 
 class PyannoteDatabaseException(Exception):
@@ -176,7 +177,8 @@ def get_annotated(current_file):
 
     # if protocol provides 'annotated' key, use it
     if 'annotated' in current_file:
-        return current_file['annotated']
+        annotated = current_file['annotated']
+        return annotated
 
     # if it does not, but does provide 'wav' key
     # try and use wav duration
@@ -184,12 +186,15 @@ def get_annotated(current_file):
         wav = current_file['wav']
         try:
             from pyannote.audio.features.utils import get_wav_duration
-            source = get_wav_duration(wav)
+            duration = get_wav_duration(wav)
         except ImportError as e:
             pass
         else:
             warnings.warn('"annotated" was approximated by "wav" duration.')
-            return source
+            annotated = Timeline([Segment(0, duration)])
+            return annotated
 
     warnings.warn('"annotated" was approximated by "annotation" extent.')
-    return current_file['annotation'].get_timeline().extent()
+    extent = current_file['annotation'].get_timeline().extent()
+    annotated = Timeline([extent])
+    return annotated
