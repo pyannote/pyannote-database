@@ -3,7 +3,7 @@
 
 # The MIT License (MIT)
 
-# Copyright (c) 2016 CNRS
+# Copyright (c) 2016-2017 CNRS
 
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -28,6 +28,7 @@
 
 import yaml
 import os.path
+import warnings
 from glob import glob
 
 
@@ -169,3 +170,26 @@ def get_unique_identifier(item):
         IDENTIFIER += "_{channel:d}"
 
     return IDENTIFIER.format(**item)
+
+
+def get_annotated(current_file):
+
+    # if protocol provides 'annotated' key, use it
+    if 'annotated' in current_file:
+        return current_file['annotated']
+
+    # if it does not, but does provide 'wav' key
+    # try and use wav duration
+    if 'wav' in current_file:
+        wav = current_file['wav']
+        try:
+            from pyannote.audio.features.utils import get_wav_duration
+            source = get_wav_duration(wav)
+        except ImportError as e:
+            pass
+        else:
+            warnings.warn('"annotated" was approximated by "wav" duration.')
+            return source
+
+    warnings.warn('"annotated" was approximated by "annotation" extent.')
+    return current_file['annotation'].get_timeline().extent()
