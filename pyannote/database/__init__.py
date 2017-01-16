@@ -95,6 +95,34 @@ def get_database(database_name, preprocessors={}, **kwargs):
     return DATABASES[database_name](preprocessors=preprocessors, **kwargs)
 
 
+def get_protocol(name, preprocessors={}, progress=False, **kwargs):
+    """Get protocol by full name
+
+    name : str
+        Protocol full name (e.g. "Etape.SpeakerDiarization.TV")
+    preprocessors : dict or (key, preprocessor) iterable
+        When provided, each protocol item (dictionary) are preprocessed, such
+        that item[key] = preprocessor(item). In case 'preprocessor' is not
+        callable, it should be a string containing placeholder for item keys
+        (e.g. {'wav': '/path/to/{uri}.wav'})
+    progress : bool, optional
+        Defaults to False.
+
+    Returns
+    -------
+    protocol : Protocol
+        Protocol instance
+    """
+
+    database_name, task_name, protocol_name = name.split('.')
+    database = get_database(database_name,
+                            preprocessors=preprocessors,
+                            **kwargs)
+    protocol = database.get_protocol(task_name, protocol_name,
+                                     progress=progress)
+    return protocol
+
+
 def get_tasks():
     """List of tasks"""
     return sorted(TASKS)
