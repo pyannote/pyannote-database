@@ -1,3 +1,7 @@
+### Version 0.11.1 (2017-01_16)
+
+  - feat: add 'get_protocol' helper function
+
 ### Version 0.11 (2017-01-11)
 
   - feat: add support for validation on training set to speaker recognition protocols
