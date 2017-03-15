@@ -66,7 +66,7 @@ class Protocol(object):
             # when `preprocessor` is not callable, it should be a string
             # containing placeholder for item key (e.g. '/path/to/{uri}.wav')
             if not callable(preprocessor):
-                preprocessor = preprocessor.format
+                preprocessor = lambda item: preprocessor.format(**item)
 
             item[key] = preprocessor(item)
 
