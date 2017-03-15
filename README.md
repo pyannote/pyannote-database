@@ -46,7 +46,7 @@ Any installed database plugin can then be imported using one of the following:
 
 Databases usually provide high level description when printed.
 
-```python
+```
 >>> print(database)
 ETAPE corpus
 
@@ -132,26 +132,70 @@ You can also use `help` to get the list of available methods.
 >>> help(protocol)
 ```
 
-Among other things, a protocol usually implements `train`, `dev` and `test`.
+A shortcut `get_protocol` function is available if you already know which database, task, and protocol you want to use:
 
 ```python
->>> help(protocol.train)
-Help on method train in module pyannote.database.protocol.speaker_diarization:
+>>> from pyannote.database import get_protocol
+>>> protocol = get_protocol('Etape.SpeakerDiarization.TV')
+```
 
-train(self) method of Etape.TV instance
-    Iterate over the training set
+#### Speaker diarization protocols
 
-    * uri: str
-      uniform (or unique) resource identifier
-    * annotated: pyannote.core.Timeline
-      parts of the resource that were manually annotated
-    * annotation: pyannote.core.Annotation
-      actual annotations
+Speaker diarization protocols implement three methods: `train`, `development` and `test` that provide an iterator over the corresponding subset.
 
-    Usage
-    -----
-    >>> for item in protocol.train():
-    ...     uri = item['uri']
-    ...     annotated = item['annotated']
-    ...     annotation = item['annotation']
+Those methods yield dictionaries (one per file/item) that can be used in the following way:
+
+```python
+>>> from pyannote.database.util import get_annotated
+>>> from pyannote.database.util import get_unique_identifier
+>>> for item in protocol.train():
+...
+...     # get a unique identifier for the current item
+...     uri = get_unique_identifier(item)
+...
+...     # get the reference annotation (who speaks when)
+...     # as a pyannote.core.Annotation instance
+...     reference = item['annotation']
+...
+...     # sometimes, only partial annotations are available
+...     # get the annotated region as a pyannote.core.Timeline instance
+...     uem = get_annotated(item)
+```
+
+#### Preprocessors
+
+You may have noticed that the path to the audio file is not provided.
+This is because those files are not provided by the `pyannote.database` packages. You have to acquire them, copy them on your hard drive, and tell `pyannote.database` where to find them.
+
+To do that, create a file `db.yml` that describes how your system is setup:
+
+```bash
+$ cat db.yml
+Etape: /path/where/your/stored/Etape/database/{uri}.wav
+```
+
+`{uri}` is a placeholder telling `pyannote.database` to replace it by `item[uri]` before looking for the current file.
+
+
+```python
+>>> from pyannote.database.util import FileFinder
+>>> preprocessors = {'wav': FileFinder(config_yml='db.yml')}
+>>> protocol = get_protocol('Etape.SpeakerDiarization.TV', preprocessors=preprocessors)
+>>> for item in protocol.train():
+...     # now, `item` contains a `wav` key providing the path to the wav file
+...     wav = item['wav']
+```
+
+`config_yml` parameters defaults to `~/.pyannote/db.yml`, so you can conveniently use this file to provide information about all the available databases, once and for all:
+
+```bash
+$ cat ~/.pyannote/db.yml
+Etape: /path/where/you/stored/Etape/database/{uri}.wav
+REPERE:
+  - /path/where/you/store/REPERE/database/phase1/{uri}.wav
+  - /path/where/you/store/REPERE/database/phase2/{uri}.wav
+```
+
+```python
+>>> preprocessors = {'wav': FileFinder()}
 ```

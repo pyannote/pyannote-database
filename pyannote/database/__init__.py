@@ -27,6 +27,10 @@
 # Hervé BREDIN - http://herve.niderb.fr
 
 
+"""
+
+"""
+
 import sys
 from pkg_resources import iter_entry_points
 
@@ -53,13 +57,13 @@ for o in iter_entry_points(group='pyannote.database.databases', name=None):
 
 
 def get_databases(task=None):
-    """List of databases
+    """Get list of databases
 
     Parameters
     ----------
     task : str, optional
         Only returns databases providing protocols for this task.
-        Defaults to return every database.
+        Defaults to returning every database.
 
     Returns
     -------
