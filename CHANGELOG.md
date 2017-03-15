@@ -1,3 +1,8 @@
+### Version 0.11.2 (2017-03-15)
+
+  - fix: fix a bug with string template preprocessors
+  - doc: improve documentation
+
 ### Version 0.11.1 (2017-01_16)
 
   - feat: add 'get_protocol' helper function
