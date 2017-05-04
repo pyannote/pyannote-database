@@ -199,3 +199,16 @@ REPERE:
 ```python
 >>> preprocessors = {'wav': FileFinder()}
 ```
+
+More generally, preprocessors can be used to augment/modify the yielded dictionaries on the fly:
+
+```python
+>>> # function that takes a protocol item as input and returns whatever you want/need
+>>> def my_preprocessor_func(item):
+...     return len(item['uri'])
+>>> preprocessors = {'uri_length': my_preprocessor_func}
+>>> protocol = get_protocol('Etape.SpeakerDiarization.TV', preprocessors=preprocessors)
+>>> for item in protocol.train():
+...     # a new key 'uri_length' has been added to the current dictionary
+...     assert item['uri_length'] == len(item['uri'])
+```
