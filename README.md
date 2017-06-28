@@ -3,6 +3,14 @@
 This package provides a common interface to multimedia databases and associated
 experimental protocol.
 
+## Table of contents
+- [Installation](#installation)
+- [Usage](#usage)
+  - [Databases](#databases)
+  - [Tasks](#tasks)
+  - [Protocols](#protocols)
+  - [Preprocessors](#preprocessors)
+- [Defining your own database](#defining-your-own-database)
 
 ## Installation
 
@@ -18,7 +26,13 @@ For instance, the ETAPE database plugin can be installed like that:
 $ pip install pyannote.db.etape
 ```
 
+A bunch of `pyannote.database` plugins are already available (search for `pyannote.db` on [pypi](https://pypi.python.org/pypi?%3Aaction=search&term=pyannote.db&submit=search))
+However, you might want to add (and contribute) one for your favorite databases.
+See [Defining your own database](#defining-your-own-database) for details.
+
+
 ## Usage
+([↑up to table of contents](#table-of-contents))
 
 ### Databases
 
@@ -78,6 +92,7 @@ You can also use `help` to get the list of available methods.
 ```
 
 ### Tasks
+([↑up to table of contents](#table-of-contents))
 
 Some databases (especially multimodal ones) may be used for several tasks.
 One can get a list of tasks using `get_tasks` method:
@@ -102,6 +117,7 @@ This might come handy in case you want to automatically benchmark a particular
 approach on every database for a given task.
 
 ### Protocols
+([↑up to table of contents](#table-of-contents))
 
 Once you have settled with a task, a database may implement several
 experimental protocols for this task. `get_protocols` can be used to get their
@@ -140,14 +156,15 @@ A shortcut `get_protocol` function is available if you already know which databa
 ```
 
 #### Speaker diarization protocols
+([↑up to table of contents](#table-of-contents))
 
 Speaker diarization protocols implement three methods: `train`, `development` and `test` that provide an iterator over the corresponding subset.
 
 Those methods yield dictionaries (one per file/item) that can be used in the following way:
 
 ```python
->>> from pyannote.database.util import get_annotated
->>> from pyannote.database.util import get_unique_identifier
+>>> from pyannote.database import get_annotated
+>>> from pyannote.database import get_unique_identifier
 >>> for item in protocol.train():
 ...
 ...     # get a unique identifier for the current item
@@ -159,10 +176,12 @@ Those methods yield dictionaries (one per file/item) that can be used in the fol
 ...
 ...     # sometimes, only partial annotations are available
 ...     # get the annotated region as a pyannote.core.Timeline instance
-...     uem = get_annotated(item)
+...     annotated = get_annotated(item)
 ```
 
-#### Preprocessors
+
+### Preprocessors
+([↑up to table of contents](#table-of-contents))
 
 You may have noticed that the path to the audio file is not provided.
 This is because those files are not provided by the `pyannote.database` packages. You have to acquire them, copy them on your hard drive, and tell `pyannote.database` where to find them.
@@ -212,3 +231,8 @@ More generally, preprocessors can be used to augment/modify the yielded dictiona
 ...     # a new key 'uri_length' has been added to the current dictionary
 ...     assert item['uri_length'] == len(item['uri'])
 ```
+
+## Defining your own database
+([↑up to table of contents](#table-of-contents))
+
+See [`http://github.com/pyannote/pyannote-db-template`](http://github.com/pyannote/pyannote-db-template).
