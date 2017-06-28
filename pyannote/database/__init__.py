@@ -132,6 +132,11 @@ def get_tasks():
     return sorted(TASKS)
 
 
+from .util import FileFinder
+from .util import get_annotated
+from .util import get_unique_identifier
+
+
 from ._version import get_versions
 __version__ = get_versions()['version']
 del get_versions

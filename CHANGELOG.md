@@ -1,3 +1,9 @@
+### Version 0.12 (2017-06-28)
+
+  - feat: add utility functions at package root
+  - doc: improve documentation
+  - doc: add link to pyannote-db-template repository
+
 ### Version 0.11.2 (2017-03-15)
 
   - fix: fix a bug with string template preprocessors
