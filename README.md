@@ -11,6 +11,7 @@ experimental protocol.
   - [Protocols](#protocols)
   - [Preprocessors](#preprocessors)
 - [Defining your own database](#defining-your-own-database)
+- [Meta-protocols](#meta-protocols)
 
 ## Installation
 
@@ -236,3 +237,52 @@ More generally, preprocessors can be used to augment/modify the yielded dictiona
 ([↑up to table of contents](#table-of-contents))
 
 See [`http://github.com/pyannote/pyannote-db-template`](http://github.com/pyannote/pyannote-db-template).
+
+## Meta-protocols
+([↑up to table of contents](#table-of-contents))
+
+`pyannote.database` provides a way to combine several protocols (possibly
+from different databases) into one.
+
+This is achieved by defining those "meta-protocols" into `~/.pyannote/meta.yml`.
+
+```yaml
+# ~/.pyannote/meta.yml
+MyMetaProtocol:
+  task: SpeakerDiarization
+  subset:
+    train:
+      Etape.SpeakerDiarization.TV:
+        subset: [train]
+      REPERE.SpeakerDiarization.Phase1:
+        subset: [train, development]
+      REPERE.SpeakerDiarization.Phase2:
+        subset: [train, development]
+    development:
+      Etape.SpeakerDiarization.TV:
+        subset: [development]
+    test:
+      Etape.SpeakerDiarization.TV:
+        subset: [test]
+```
+
+This defines a new speaker diarization protocol called `MyMetaProtocol` that is
+very similar to the existing `Etape.SpeakerDiarization.TV` protocol except its
+training set is augmented with (training and development) data from the
+`REPERE` corpus. Obviously, both `ETAPE` and `REPERE` packages need to be
+installed first:
+
+```bash
+$ pip install pyannote.db.etape
+$ pip install pyannote.db.repere
+```
+
+Then, this new "meta-protocol" can be used like any other protocol of the
+(fake) `X` database:
+
+```python
+>>> from pyannote.database import get_protocol
+>>> protocol = get_protocol('X.SpeakerDiarization.MyMetaProtocol')
+>>> for current_file in protocol.train():
+...     pass
+```
