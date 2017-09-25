@@ -44,7 +44,7 @@ setup(
     cmdclass=versioneer.get_cmdclass(),
     # PyPI
     name='pyannote.database',
-    description=('pyannote database'),
+    description=('Interface to multimedia databases and experimental protocols'),
     author='Hervé Bredin',
     author_email='bredin@limsi.fr',
     url='http://pyannote.github.io/',
@@ -58,6 +58,7 @@ setup(
         "Programming Language :: Python :: 3",
         "Programming Language :: Python :: 3.4",
         "Programming Language :: Python :: 3.5",
+        "Programming Language :: Python :: 3.6",
         "Topic :: Scientific/Engineering"
     ],
 )
