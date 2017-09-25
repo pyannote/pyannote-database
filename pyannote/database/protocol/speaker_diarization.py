@@ -41,8 +41,9 @@ class SpeakerDiarizationProtocol(Protocol):
         When provided, each protocol item (dictionary) are preprocessed, such
         that item[key] = preprocessor(item). In case 'preprocessor' is not
         callable, it should be a string containing placeholder for item keys
-        (e.g. {'wav': '/path/to/{uri}.wav'})
+        (e.g. {'audio': '/path/to/{uri}.wav'})
     """
+
     def trn_iter(self):
         raise NotImplementedError(
             'Custom speaker diarization protocol should implement "trn_iter".')
@@ -64,7 +65,7 @@ This will yield dictionaries with the followings keys:
   unique database identifier
 * uri: str
   uniform (or unique) resource identifier
-* annotated: pyannote.core.Timeline
+* annotated: pyannote.core.Timeline, optional
   parts of the resource that were manually annotated
 * annotation: pyannote.core.Annotation
   actual annotations
@@ -80,6 +81,7 @@ Usage
         """
 
         generator = self.trn_iter()
+
         if self.progress:
             generator = tqdm(
                 generator, desc='Training set',
@@ -97,7 +99,7 @@ This will yield dictionaries with the followings keys:
   unique database identifier
 * uri: str
   uniform (or unique) resource identifier
-* annotated: pyannote.core.Timeline
+* annotated: pyannote.core.Timeline, optional
   parts of the resource that were manually annotated
 * annotation: pyannote.core.Annotation
   actual annotations
@@ -130,7 +132,7 @@ This will yield dictionaries with the followings keys:
   unique database identifier
 * uri: str
   uniform (or unique) resource identifier
-* annotated: pyannote.core.Timeline
+* annotated: pyannote.core.Timeline, optional
   parts of the resource that were manually annotated
 * annotation: pyannote.core.Annotation
   actual annotations

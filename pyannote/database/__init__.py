@@ -90,7 +90,7 @@ def get_database(database_name, preprocessors={}, **kwargs):
         When provided, each protocol item (dictionary) are preprocessed, such
         that item[key] = preprocessor(item). In case 'preprocessor' is not
         callable, it should be a string containing placeholder for item keys
-        (e.g. {'wav': '/path/to/{uri}.wav'})
+        (e.g. {'audio': '/path/to/{uri}.wav'})
 
     Returns
     -------
@@ -121,7 +121,7 @@ def get_protocol(name, preprocessors={}, progress=False, **kwargs):
         When provided, each protocol item (dictionary) are preprocessed, such
         that item[key] = preprocessor(item). In case 'preprocessor' is not
         callable, it should be a string containing placeholder for item keys
-        (e.g. {'wav': '/path/to/{uri}.wav'})
+        (e.g. {'audio': '/path/to/{uri}.wav'})
     progress : bool, optional
         Defaults to False.
 

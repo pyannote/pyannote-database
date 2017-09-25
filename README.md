@@ -199,11 +199,11 @@ Etape: /path/where/your/stored/Etape/database/{uri}.wav
 
 ```python
 >>> from pyannote.database.util import FileFinder
->>> preprocessors = {'wav': FileFinder(config_yml='db.yml')}
+>>> preprocessors = {'audio': FileFinder(config_yml='db.yml')}
 >>> protocol = get_protocol('Etape.SpeakerDiarization.TV', preprocessors=preprocessors)
 >>> for item in protocol.train():
 ...     # now, `item` contains a `wav` key providing the path to the wav file
-...     wav = item['wav']
+...     wav = item['audio']
 ```
 
 `config_yml` parameters defaults to `~/.pyannote/db.yml`, so you can conveniently use this file to provide information about all the available databases, once and for all:
@@ -217,7 +217,7 @@ REPERE:
 ```
 
 ```python
->>> preprocessors = {'wav': FileFinder()}
+>>> preprocessors = {'audio': FileFinder()}
 ```
 
 More generally, preprocessors can be used to augment/modify the yielded dictionaries on the fly:
