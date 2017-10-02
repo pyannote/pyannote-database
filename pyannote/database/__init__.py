@@ -35,6 +35,7 @@ import sys
 from pkg_resources import iter_entry_points
 
 from .database import Database
+from .database import PyannoteDatabaseException
 
 DATABASES = dict()
 TASKS = dict()
@@ -89,15 +90,27 @@ def get_database(database_name, preprocessors={}, **kwargs):
         When provided, each protocol item (dictionary) are preprocessed, such
         that item[key] = preprocessor(item). In case 'preprocessor' is not
         callable, it should be a string containing placeholder for item keys
-        (e.g. {'wav': '/path/to/{uri}.wav'})
+        (e.g. {'audio': '/path/to/{uri}.wav'})
 
     Returns
     -------
     database : Database
         Database instance
     """
-    return DATABASES[database_name](preprocessors=preprocessors, **kwargs)
+    try:
+        database = DATABASES[database_name]
+    except KeyError as e:
 
+        if database_name == 'X':
+            msg = ('Could not find any "meta-protocol". '
+                   'Edit file "~/.pyannote/meta.yml" to define them.')
+        else:
+            msg = ('Could not find any "{name}" database. '
+                   'Did you install the corresponding pyannote.database plugin?')
+            msg = msg.format(name=database_name)
+        raise ValueError(msg)
+
+    return database(preprocessors=preprocessors, **kwargs)
 
 def get_protocol(name, preprocessors={}, progress=False, **kwargs):
     """Get protocol by full name
@@ -108,7 +121,7 @@ def get_protocol(name, preprocessors={}, progress=False, **kwargs):
         When provided, each protocol item (dictionary) are preprocessed, such
         that item[key] = preprocessor(item). In case 'preprocessor' is not
         callable, it should be a string containing placeholder for item keys
-        (e.g. {'wav': '/path/to/{uri}.wav'})
+        (e.g. {'audio': '/path/to/{uri}.wav'})
     progress : bool, optional
         Defaults to False.
 
@@ -136,6 +149,19 @@ from .util import FileFinder
 from .util import get_annotated
 from .util import get_unique_identifier
 
+# import meta-protocol database X
+from . import meta
+database = meta.X()
+try:
+    tasks = database.get_tasks()
+    for task in tasks:
+        if task not in TASKS:
+            TASKS[task] = set()
+        TASKS[task].add('X')
+    DATABASES['X'] = meta.X
+    setattr(sys.modules[__name__], 'X', meta.X)
+except PyannoteDatabaseException as e:
+    pass
 
 from ._version import get_versions
 __version__ = get_versions()['version']

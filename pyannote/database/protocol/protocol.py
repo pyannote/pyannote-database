@@ -51,7 +51,7 @@ class Protocol(object):
         When provided, each protocol item (dictionary) are preprocessed, such
         that item[key] = preprocessor(item). In case 'preprocessor' is not
         callable, it should be a string containing placeholder for item keys
-        (e.g. {'wav': '/path/to/{uri}.wav'})
+        (e.g. {'audio': '/path/to/{uri}.wav'})
     """
 
     def __init__(self, preprocessors={}, progress=False, **kwargs):

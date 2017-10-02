@@ -180,17 +180,17 @@ def get_annotated(current_file):
         annotated = current_file['annotated']
         return annotated
 
-    # if it does not, but does provide 'wav' key
+    # if it does not, but does provide 'audio' key
     # try and use wav duration
-    if 'wav' in current_file:
-        wav = current_file['wav']
+
+    if 'audio' in current_file:
         try:
-            from pyannote.audio.features.utils import get_wav_duration
-            duration = get_wav_duration(wav)
+            from pyannote.audio.features.utils import get_audio_duration
+            duration = get_audio_duration(current_file)
         except ImportError as e:
             pass
         else:
-            warnings.warn('"annotated" was approximated by "wav" duration.')
+            warnings.warn('"annotated" was approximated by "audio" duration.')
             annotated = Timeline([Segment(0, duration)])
             return annotated
 
