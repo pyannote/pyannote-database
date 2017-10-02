@@ -1,3 +1,9 @@
+### Version 1.0 (2017-10-02)
+
+  - feat: add support for "meta" protocols
+  - feat: add speaker spotting protocol
+  - setup: switch to pyannote.core 1.1
+
 ### Version 0.12 (2017-06-28)
 
   - feat: add utility functions at package root
