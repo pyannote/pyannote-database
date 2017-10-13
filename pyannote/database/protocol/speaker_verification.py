@@ -3,7 +3,7 @@
 
 # The MIT License (MIT)
 
-# Copyright (c) 2016-2017 CNRS
+# Copyright (c) 2017 CNRS
 
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -26,8 +26,18 @@
 # AUTHORS
 # Hervé BREDIN - http://herve.niderb.fr
 
-from .speaker_diarization import SpeakerDiarizationProtocol
+
 from .speaker_spotting import SpeakerSpottingProtocol
-from .speaker_verification import SpeakerVerificationProtocol
-from .speaker_identification import SpeakerIdentificationProtocol
-from .speaker_recognition import SpeakerRecognitionProtocol
+
+class SpeakerVerificationProtocol(SpeakerSpottingProtocol):
+    """Speaker verification protocol
+
+    Parameters
+    ----------
+    preprocessors : dict or (key, preprocessor) iterable
+        When provided, each protocol item (dictionary) are preprocessed, such
+        that item[key] = preprocessor(item). In case 'preprocessor' is not
+        callable, it should be a string containing placeholder for item keys
+        (e.g. {'audio': '/path/to/{uri}.wav'})
+    """
+    pass
