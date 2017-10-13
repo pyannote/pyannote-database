@@ -1,3 +1,9 @@
+### Version 1.1 (2017-10-13)
+
+  - feat: add speaker identification protocol
+  - feat: add speaker verification protocols
+  - feat: add support for list of uris in FileFinder
+
 ### Version 1.0 (2017-10-02)
 
   - feat: add support for "meta" protocols
