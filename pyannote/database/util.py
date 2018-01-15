@@ -245,3 +245,25 @@ def get_annotated(current_file):
     extent = current_file['annotation'].get_timeline().extent()
     annotated = Timeline([extent])
     return annotated
+
+
+def get_label_identifier(label, current_file):
+    """Return unique label identifier
+
+    Parameters
+    ----------
+    label : str
+        Database-internal label
+    current_file
+        Yielded by pyannote.database protocols
+
+    Returns
+    -------
+    unique_label : str
+        Global label
+    """
+
+    # TODO. when the "true" name of a person is used,
+    # do not preprend database name.
+    database = current_file['database']
+    return database + '|' + label

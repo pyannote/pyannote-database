@@ -148,6 +148,7 @@ def get_tasks():
 from .util import FileFinder
 from .util import get_annotated
 from .util import get_unique_identifier
+from .util import get_label_identifier
 
 # import meta-protocol database X
 from . import meta
