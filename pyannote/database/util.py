@@ -294,10 +294,12 @@ def get_unique_identifier(item):
     IDENTIFIER = ""
 
     # {database}/{uri}_{channel}
-    if "database" in item:
+    database = item.get('database', None)
+    if database is not None:
         IDENTIFIER += "{database}/"
     IDENTIFIER += "{uri}"
-    if "channel" in item:
+    channel = item.get('channel', None)
+    if channel is not None:
         IDENTIFIER += "_{channel:d}"
 
     return IDENTIFIER.format(**item)
