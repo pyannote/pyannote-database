@@ -1,5 +1,6 @@
 ### Version 1.2 (2018-02-03)
 
+  - setup: drop support for Python 2
   - feat: add `protocol_file_iter` and `current_file_iter` to FileFinder
   - feat: add `get_label_identifier` utility function
 
