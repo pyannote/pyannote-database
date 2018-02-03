@@ -125,8 +125,114 @@ class FileFinder(object):
 
         return found
 
+    @classmethod
+    def protocol_file_iter(cls, protocol):
+        """Iterate over all files in `protocol`"""
+
+        # remember `progress` attribute
+        progress = protocol.progress
+
+        methods = []
+        for subset in ['development', 'test', 'train']:
+            for suffix in ['', '_enrolment', '_trial']:
+                methods.append(f'{subset}{suffix}')
+
+        yielded_uris = set()
+
+        for method in methods:
+
+            try:
+                protocol.progress = False
+                file_generator = getattr(protocol, method)()
+                first_item = next(file_generator)
+            except AttributeError as e:
+                continue
+            except NotImplementedError as e:
+                continue
+
+            protocol.progress = True
+            file_generator = getattr(protocol, method)()
+
+            for current_file in file_generator:
+
+                for current_file_ in cls.current_file_iter(current_file):
+
+                    # corner case when the same file is yielded several times
+                    uri = get_unique_identifier(current_file_)
+                    if uri in yielded_uris:
+                        continue
+
+                    yield current_file_
+
+                    yielded_uris.add(uri)
+
+        # revert `progress` attribute
+        protocol.progess = progress
+
+    @classmethod
+    def current_file_iter(cls, current_file, return_status=False):
+        """Iterate over all files in `current_file`
+
+        When `current_file` refers to only one file, yield it and return.
+        When `current_file` refers to a list of file (i.e. 'uri', 'channel', or
+        'database' is a list, yield each file separately.
+
+        Parameters
+        ----------
+        return_status : bool, optional
+            Set to True to yield a boolean indicating if the original
+            `current_file` was a multi-file. Defaults to False.
+
+        Examples
+        --------
+        >>> current_file = {
+        ...     'uri': 'my_uri',
+        ...     'database': 'my_database'}
+        >>> for file in FileFinder.current_file_iter(current_file):
+        ...     print(file['uri'], file['database'])
+        my_uri my_database
+
+        >>> current_file = {
+        ...     'uri': ['my_uri1', 'my_uri2', 'my_uri3'],
+        ...     'database': 'my_database'}
+        >>> for file in FileFinder.current_file_iter(current_file):
+        ...     print(file['uri'], file['database'])
+        my_uri1 my_database
+        my_uri2 my_database
+        my_uri3 my_database
+
+        """
+
+        uris = current_file.get('uri', None)
+        channels = current_file.get('channel', None)
+        databases = current_file.get('database', None)
+
+        # True if at least one of uri/channel/database is a list
+        status = any(isinstance(item, list)
+                     for item in [uris, channels, databases])
+
+        if not status:
+            yield (current_file, status) if return_status else current_file
+            return
+
+        if not isinstance(uris, list):
+            uris = itertools.repeat(uris)
+
+        if not isinstance(channels, list):
+            channels = itertools.repeat(channels)
+
+        if not isinstance(databases, list):
+            databases = itertools.repeat(databases)
+
+        i = dict(current_file)
+        for uri, database, channel in zip(uris, databases, channels):
+            i['uri'] = uri
+            i['database'] = database
+            i['channel'] = channel
+            yield (i, status) if return_status else i
+
     def __call__(self, current_file):
-        """Find file
+        """Find files
 
         Parameters
         ----------
@@ -136,59 +242,36 @@ class FileFinder(object):
         Returns
         -------
         path : str (or list of str)
-            File path or list of paths (if current_file['uri'] is a list).
+            When `current_file` refers to only one file, returns it.
+            When `current_file` refers to a list of file (i.e. 'uri',
+            'channel', or 'database' is a list), returns a list of files.
 
         """
 
-        # in case 'uri' contains a list of uris,
-        # look for each file separately
-        if isinstance(current_file.get('uri', None), list):
+        found = []
+        for current_file_, status in self.current_file_iter(
+            current_file, return_status=True):
 
-            uris = current_file['uri']
+            found_files = self._find(self.config, **current_file_)
+            n_found_files = len(found_files)
 
-            # repeat 'database' if needed
-            database = current_file['database']
-            if isinstance(database, list):
-                databases = database
+            if n_found_files == 1:
+                found.append(found_files[0])
+
+            elif n_found_files == 0:
+                uri = current_file_['uri']
+                msg = 'Could not find file "{uri}".'
+                raise ValueError(msg.format(uri=uri))
+
             else:
-                databases = itertools.repeat(database)
+                uri = current_file_['uri']
+                msg = 'Found {n} matches for file "{uri}"'
+                raise ValueError(msg.format(uri=uri, n=n_found_files))
 
-            # repeat 'channel' if needed
-            channel = current_file.get('channel', None)
-            if isinstance(channel, list):
-                channels = channel
-            else:
-                channels = itertools.repeat(channel)
-
-            found = []
-            i = dict(current_file)
-
-            # look for each file separately
-            for uri, database, channel in zip(uris, databases, channels):
-                i['uri'] = uri
-                i['database'] = database
-                i['channel'] = channel
-
-                found.append(self.__call__(i))
-
+        if status:
             return found
-
-        # look for medium based on its uri and the database it belongs to
-        found = self._find(self.config, **current_file)
-
-        if len(found) == 1:
-            return found[0]
-
-        elif len(found) == 0:
-            uri = current_file['uri']
-            msg = 'Could not find file "{uri}".'
-            raise ValueError(msg.format(uri=uri))
-
         else:
-            uri = current_file['uri']
-            msg = 'Found {n} matches for file "{uri}"'
-            raise ValueError(msg.format(uri=uri, n=len(found)))
-
+            return found[0]
 
 def get_unique_identifier(item):
     """Return unique item identifier
@@ -245,3 +328,25 @@ def get_annotated(current_file):
     extent = current_file['annotation'].get_timeline().extent()
     annotated = Timeline([extent])
     return annotated
+
+
+def get_label_identifier(label, current_file):
+    """Return unique label identifier
+
+    Parameters
+    ----------
+    label : str
+        Database-internal label
+    current_file
+        Yielded by pyannote.database protocols
+
+    Returns
+    -------
+    unique_label : str
+        Global label
+    """
+
+    # TODO. when the "true" name of a person is used,
+    # do not preprend database name.
+    database = current_file['database']
+    return database + '|' + label
