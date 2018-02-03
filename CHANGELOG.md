@@ -1,3 +1,8 @@
+### Version 1.2 (2018-02-03)
+
+  - feat: add `protocol_file_iter` and `current_file_iter` to FileFinder
+  - feat: add `get_label_identifier` utility function
+
 ### Version 1.1 (2017-10-13)
 
   - feat: add speaker identification protocol
