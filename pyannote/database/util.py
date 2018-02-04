@@ -126,8 +126,16 @@ class FileFinder(object):
         return found
 
     @classmethod
-    def protocol_file_iter(cls, protocol):
-        """Iterate over all files in `protocol`"""
+    def protocol_file_iter(cls, protocol, extra_keys=None):
+        """Iterate over all files in `protocol`
+
+        Parameters
+        ----------
+        protocol : Protocol
+        extra_keys : list, optional
+            Extra keys to consider (e.g. 'audio'). By default, only 'uri',
+            'channel', and 'database' keys are considered.
+        """
 
         # remember `progress` attribute
         progress = protocol.progress
@@ -155,7 +163,8 @@ class FileFinder(object):
 
             for current_file in file_generator:
 
-                for current_file_ in cls.current_file_iter(current_file):
+                for current_file_ in cls.current_file_iter(
+                    current_file, extra_keys=extra_keys):
 
                     # corner case when the same file is yielded several times
                     uri = get_unique_identifier(current_file_)
@@ -170,7 +179,8 @@ class FileFinder(object):
         protocol.progess = progress
 
     @classmethod
-    def current_file_iter(cls, current_file, return_status=False):
+    def current_file_iter(cls, current_file, extra_keys=None,
+                          return_status=False):
         """Iterate over all files in `current_file`
 
         When `current_file` refers to only one file, yield it and return.
@@ -179,6 +189,9 @@ class FileFinder(object):
 
         Parameters
         ----------
+        extra_keys : list, optional
+            Extra keys to consider (e.g. 'audio'). By default, only 'uri',
+            'channel', and 'database' keys are considered.
         return_status : bool, optional
             Set to True to yield a boolean indicating if the original
             `current_file` was a multi-file. Defaults to False.
@@ -202,33 +215,50 @@ class FileFinder(object):
         my_uri3 my_database
 
         """
+        keys = ['uri', 'channel', 'database']
+        if extra_keys is not None:
+            keys += extra_keys
 
-        uris = current_file.get('uri', None)
-        channels = current_file.get('channel', None)
-        databases = current_file.get('database', None)
+        # value of each key, in order
+        values = [current_file.get(k, None) for k in keys]
 
-        # True if at least one of uri/channel/database is a list
-        status = any(isinstance(item, list)
-                     for item in [uris, channels, databases])
+        # True if at least one value is a list
+        status = False
 
+        # make sure 'list' values (if any) all share the same length
+        for v, value in enumerate(values):
+            if isinstance(value, list):
+                # set (hopefully) common length when first encountering a list
+                if not status:
+                    first = v
+                    n = len(value)
+                # otherwise, check if subsequent lists have the same length
+                else:
+                    try:
+                        assert len(value) == n
+                    except AssertionError as e:
+                        msg = 'length mismatch ({0}: {1:d} vs. {2}: {3:d})'
+
+                        raise ValueError(msg.format(first, n, v, len(value)))
+
+                # at least one value is a list
+                status = True
+
+        # if no value is a list, return current_file, unmodified
         if not status:
             yield (current_file, status) if return_status else current_file
             return
 
-        if not isinstance(uris, list):
-            uris = itertools.repeat(uris)
-
-        if not isinstance(channels, list):
-            channels = itertools.repeat(channels)
-
-        if not isinstance(databases, list):
-            databases = itertools.repeat(databases)
+        # otherwise, make sure one can iterate on all values
+        # by replacing those that are not lists by their infinite repetition
+        for k, value in enumerate(list(values)):
+            if not isinstance(value, list):
+                values[k] = itertools.repeat(value)
 
         i = dict(current_file)
-        for uri, database, channel in zip(uris, databases, channels):
-            i['uri'] = uri
-            i['database'] = database
-            i['channel'] = channel
+        for value in zip(*values):
+            for k, v in enumerate(value):
+                i[keys[k]] = v
             yield (i, status) if return_status else i
 
     def __call__(self, current_file):
