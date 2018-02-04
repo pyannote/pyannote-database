@@ -1,3 +1,7 @@
+### Version 1.3 (2018-02-04)
+
+  - feat: add `extra_keys` parameter to `{protocol | current}_file_iter`
+
 ### Version 1.2.1 (2018-02-03)
 
   - setup: drop support for Python 2
