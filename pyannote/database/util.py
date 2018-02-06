@@ -141,8 +141,8 @@ class FileFinder(object):
         progress = protocol.progress
 
         methods = []
-        for subset in ['development', 'test', 'train']:
-            for suffix in ['', '_enrolment', '_trial']:
+        for suffix in ['', '_enrolment', '_trial']:
+            for subset in ['development', 'test', 'train']:
                 methods.append(f'{subset}{suffix}')
 
         yielded_uris = set()
