@@ -149,12 +149,12 @@ class FileFinder(object):
 
         for method in methods:
 
+            if not hasattr(protocol, method):
+                continue
+
             try:
                 protocol.progress = False
                 file_generator = getattr(protocol, method)()
-                first_item = next(file_generator)
-            except AttributeError as e:
-                continue
             except NotImplementedError as e:
                 continue
 
