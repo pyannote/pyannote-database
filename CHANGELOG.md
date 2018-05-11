@@ -1,3 +1,7 @@
+### Version 1.3.1 (2018-05-11)
+
+  - fix: fix bug in `FileFinder.protocol_file_iter` with empty iterators
+
 ### Version 1.3 (2018-02-04)
 
   - feat: add `extra_keys` parameter to `{protocol | current}_file_iter`

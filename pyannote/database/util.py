@@ -141,20 +141,20 @@ class FileFinder(object):
         progress = protocol.progress
 
         methods = []
-        for subset in ['development', 'test', 'train']:
-            for suffix in ['', '_enrolment', '_trial']:
+        for suffix in ['', '_enrolment', '_trial']:
+            for subset in ['development', 'test', 'train']:
                 methods.append(f'{subset}{suffix}')
 
         yielded_uris = set()
 
         for method in methods:
 
+            if not hasattr(protocol, method):
+                continue
+
             try:
                 protocol.progress = False
                 file_generator = getattr(protocol, method)()
-                first_item = next(file_generator)
-            except AttributeError as e:
-                continue
             except NotImplementedError as e:
                 continue
 
