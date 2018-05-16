@@ -1,3 +1,7 @@
+### Version 1.3.2 (2018-05-16)
+
+  - fix: fix regression introduced in 1.3.1
+
 ### Version 1.3.1 (2018-05-11)
 
   - fix: fix bug in `FileFinder.protocol_file_iter` with empty iterators

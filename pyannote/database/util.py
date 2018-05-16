@@ -155,7 +155,10 @@ class FileFinder(object):
             try:
                 protocol.progress = False
                 file_generator = getattr(protocol, method)()
+                first_file = next(file_generator)
             except NotImplementedError as e:
+                continue
+            except StopIteration as e:
                 continue
 
             protocol.progress = True
