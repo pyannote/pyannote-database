@@ -3,7 +3,7 @@
 
 # The MIT License (MIT)
 
-# Copyright (c) 2016-2017 CNRS
+# Copyright (c) 2016-2018 CNRS
 
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -26,6 +26,8 @@
 # AUTHORS
 # Hervé BREDIN - http://herve.niderb.fr
 
+
+from .collection import CollectionProtocol
 from .speaker_diarization import SpeakerDiarizationProtocol
 from .speaker_spotting import SpeakerSpottingProtocol
 from .speaker_verification import SpeakerVerificationProtocol
