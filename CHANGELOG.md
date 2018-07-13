@@ -1,3 +1,7 @@
+### Version 1.4 (2018-07-13)
+
+  - feat: add raw collection protocol
+
 ### Version 1.3.2 (2018-05-16)
 
   - fix: fix regression introduced in 1.3.1
