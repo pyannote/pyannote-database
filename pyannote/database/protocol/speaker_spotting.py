@@ -79,40 +79,6 @@ class SpeakerSpottingProtocol(SpeakerDiarizationProtocol):
         raise NotImplementedError(
             'Custom speaker spotting protocol should implement "tst_try_iter".')
 
-    def train(self):
-        """Iterate over the training set
-
-This will yield dictionaries with the followings keys:
-
-* database: str
-  unique database identifier
-* uri: str
-  uniform (or unique) resource identifier
-* annotated: pyannote.core.Timeline
-  parts of the resource that were manually annotated
-* annotation: pyannote.core.Annotation
-  actual annotations
-
-as well as keys coming from the provided preprocessors.
-
-Usage
------
->>> for item in protocol.train():
-...     uri = item['uri']
-...     annotated = item['annotated']
-...     annotation = item['annotation']
-        """
-
-        generator = self.trn_iter()
-
-        if self.progress:
-            generator = tqdm(
-                generator, desc='Training set',
-                total=getattr(self.trn_iter, 'n_items', None))
-
-        for item in generator:
-            yield self.preprocess(item)
-
     def train_enrolment(self):
         """Iterate over the enrolments of the train set
 
@@ -199,40 +165,6 @@ Usage
 
         for current_trial in generator:
             yield self.preprocess(current_trial)
-
-    def development(self):
-        """Iterate over the development set
-
-This will yield dictionaries with the followings keys:
-
-* database: str
-  unique database identifier
-* uri: str
-  uniform (or unique) resource identifier
-* annotated: pyannote.core.Timeline
-  parts of the resource that were manually annotated
-* annotation: pyannote.core.Annotation
-  actual annotations
-
-as well as keys coming from the provided preprocessors.
-
-Usage
------
->>> for item in protocol.development():
-...     uri = item['uri']
-...     annotated = item['annotated']
-...     annotation = item['annotation']
-        """
-
-        generator = self.dev_iter()
-
-        if self.progress:
-            generator = tqdm(
-                generator, desc='Development set',
-                total=getattr(self.dev_iter, 'n_items', None))
-
-        for item in generator:
-            yield self.preprocess(item)
 
     def development_enrolment(self):
         """Iterate over the enrolments of the development set
