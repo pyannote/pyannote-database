@@ -1,3 +1,7 @@
+### Version 1.5 (2018-09-25)
+
+  - BREAKING: simplify SpeakerVerificationProtocol with {subset}_trial methods
+
 ### Version 1.4 (2018-07-13)
 
   - feat: add raw collection protocol
