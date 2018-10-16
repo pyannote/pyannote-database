@@ -1,3 +1,7 @@
+### Version 1.5.1 (2018-10-16)
+
+  - fix: fix support for string preprocessors
+
 ### Version 1.5 (2018-09-25)
 
   - BREAKING: simplify SpeakerVerificationProtocol with {subset}_trial methods
