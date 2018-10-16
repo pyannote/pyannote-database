@@ -47,7 +47,7 @@ class Protocol(object):
 
     Parameters
     ----------
-    preprocessors : dict or (key, preprocessor) iterable
+    preprocessors : dict
         When provided, each protocol item (dictionary) are preprocessed, such
         that item[key] = preprocessor(item). In case 'preprocessor' is not
         callable, it should be a string containing placeholder for item keys
@@ -56,31 +56,39 @@ class Protocol(object):
 
     def __init__(self, preprocessors={}, progress=False, **kwargs):
         super(Protocol, self).__init__()
-        self.preprocessors = preprocessors
-        self.progress = progress
 
-    def preprocess(self, item):
+        self.preprocessors = dict()
+        for key, preprocessor in preprocessors.items():
 
-        if isinstance(self.preprocessors, dict):
-            preprocessors = self.preprocessors.items()
-        else:
-            preprocessors = self.preprocessors
-
-        for key, preprocessor in preprocessors:
-
-            # warn the user that preprocessors modify an existing key
-            if key in item:
-                msg = 'Key "{key}" may have been modified by preprocessors.'
-                warnings.warn(msg.format(key=key))
+            if callable(preprocessor):
+                self.preprocessors[key] = preprocessor
 
             # when `preprocessor` is not callable, it should be a string
             # containing placeholder for item key (e.g. '/path/to/{uri}.wav')
-            if not callable(preprocessor):
-                preprocessor = lambda item: preprocessor.format(**item)
+            elif isinstance(preprocessor, str):
+                preprocessor_copy = str(preprocessor)
+                def func(current_file):
+                    return preprocessor_copy.format(**current_file)
+                self.preprocessors[key] = func
 
-            item[key] = preprocessor(item)
+            else:
+                msg = f'"{key}" preprocessor is neither a callable nor a string.'
+                raise ValueError(msg)
 
-        return item
+        self.progress = progress
+
+    def preprocess(self, current_file):
+
+        for key, preprocessor in self.preprocessors.items():
+
+            # warn the user that preprocessors modify an existing key
+            if key in current_file:
+                msg = 'Key "{key}" may have been modified by preprocessors.'
+                warnings.warn(msg.format(key=key))
+
+            current_file[key] = preprocessor(current_file)
+
+        return current_file
 
     def __str__(self):
         return self.__doc__
