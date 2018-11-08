@@ -1,3 +1,7 @@
+### Version 1.5.2 (2018-11-08)
+
+  - fix: fix broken SpeakerVerificationProtocol
+
 ### Version 1.5.1 (2018-10-16)
 
   - fix: fix support for string preprocessors
