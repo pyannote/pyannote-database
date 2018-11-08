@@ -27,7 +27,7 @@
 # Hervé BREDIN - http://herve.niderb.fr
 
 
-import tqdm
+from tqdm import tqdm
 from .speaker_diarization import SpeakerDiarizationProtocol
 
 

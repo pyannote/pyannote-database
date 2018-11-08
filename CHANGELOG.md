@@ -1,4 +1,4 @@
-### Version 1.5.2 (2018-11-08)
+### Version 1.5.3 (2018-11-08)
 
   - fix: fix broken SpeakerVerificationProtocol
 
