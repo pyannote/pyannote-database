@@ -1,3 +1,7 @@
+### Version 1.5.4 (2018-11-14)
+
+  - fix: skip files with no "uri" entry in FileFinder.protocol_file_iter
+
 ### Version 1.5.3 (2018-11-08)
 
   - fix: fix broken SpeakerVerificationProtocol
