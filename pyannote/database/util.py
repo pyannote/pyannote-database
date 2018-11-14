@@ -166,6 +166,13 @@ class FileFinder(object):
 
             for current_file in file_generator:
 
+                # skip "files" that do not contain a "uri" entry.
+                # this happens for speaker verification trials that contain
+                # two nested files "file1" and "file2"
+                # see https://github.com/pyannote/pyannote-db-voxceleb/issues/4
+                if 'uri' not in current_file:
+                    continue
+
                 for current_file_ in cls.current_file_iter(
                     current_file, extra_keys=extra_keys):
 
