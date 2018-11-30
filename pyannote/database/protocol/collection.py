@@ -72,7 +72,7 @@ class CollectionProtocol(Protocol):
         if self.progress:
             generator = tqdm(
                 generator, desc='Files',
-                total=getattr(self.trn_iter, 'n_items', None))
+                total=getattr(self.files_iter, 'n_items', None))
 
         for item in generator:
             yield self.preprocess(item)

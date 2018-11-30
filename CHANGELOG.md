@@ -1,3 +1,7 @@
+### Version 1.5.5 (2018-11-30)
+
+  - fix: fix Collection.files when progress=True
+
 ### Version 1.5.4 (2018-11-14)
 
   - fix: skip files with no "uri" entry in FileFinder.protocol_file_iter
