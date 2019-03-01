@@ -35,14 +35,14 @@ import yaml
 import pandas as pd
 
 
-def subset_iter(database_name, path_mdtm=None, path_uem=None):
+def subset_iter(database_name, path_annotations=None, path_uem=None):
     """This function will become a xxx_iter method of a protocol.
 
     Parameters
     ----------
     database_name : `str`
         Database name.
-    path_mdtm : `Path`, optional
+    path_annotations : `Path`, optional
         Path to MDTM file.
     path_uem : `Path`, optional
         Path to UEM file.
@@ -56,7 +56,7 @@ def subset_iter(database_name, path_mdtm=None, path_uem=None):
     """
 
     names = ['uri', 'NA1', 'start', 'duration', 'NA2', 'NA3', 'NA4', 'label']
-    annotations = pd.read_table(path_mdtm, names=names, delim_whitespace=True)
+    annotations = pd.read_table(path_annotations, names=names, delim_whitespace=True)
 
     names = ['uri', 'NA1', 'start', 'end']
     annotated = pd.read_table(path_uem, names=names, delim_whitespace=True).groupby('uri')
@@ -79,19 +79,25 @@ def subset_iter(database_name, path_mdtm=None, path_uem=None):
                'annotated': uem}
 
 
-def add_filelist_databases(databases={}, tasks={}, config_path=None):
+def add_databases_from_config(databases={}, tasks={}, config_path=None):
     """
 
-    :param databases: This dictionary cotains one database class per entry.
-    Thus method will updated it by parsing entries in ~/.pyannote/protocols.yml or a provided config
-    :param tasks: The dictionary of tasks and associated databases
-    :param config_path: path to YAML file with description of the database and its protocols
-    :return: updated databases dictionary
+    Parameters
+    ----------
+    databases : This dictionary contains one database class per entry.
+    Thus method will updated it by parsing entries in ~/.pyannote/custom.yml or a provided config
+    tasks : The dictionary of tasks and associated databases
+    config_path : path to YAML file with description of the database and its protocols
+
+    Returns
+    -------
+        Updated dictionaries of databases and tasks
+
     """
 
     if config_path is None or not Path(config_path).exists():
-        # load databases from config file in ~/.pyannote/protocols.yml
-        config_path = '~/.pyannote/protocols.yml'
+        # load databases from config file in ~/.pyannote/custom.yml
+        config_path = '~/.pyannote/custom.yml'
     ymlpath = Path(config_path).expanduser()
     with open(ymlpath, 'r') as fp:
         protocols_description = yaml.load(fp)
@@ -139,7 +145,7 @@ def add_filelist_databases(databases={}, tasks={}, config_path=None):
                     protocol_methods[f'{sub}_iter'] = functools.partial(
                         subset_iter,
                         database_name,
-                        path_mdtm=subsets[subset].get('annotation', None),
+                        path_annotations=subsets[subset].get('annotation', None),
                         path_uem=subsets[subset].get('annotated', None))
 
             # create protocol class on-the-fly
