@@ -19,9 +19,11 @@ experimental protocol.
 $ pip install pyannote.database
 ```
 
-On its own, `pyannote.database` is not very useful.
-You should install actual database plugins to really take advantage of it.
-For instance, the ETAPE database plugin can be installed like that:
+On its own, `pyannote.database` can be used with generic databases and, currently,
+with `Speaker Diarization` protocols only, for which file and 
+annotation formats are very well defined. For a more special or complicated cases, 
+database plugins should be created.
+You can install database plugins separately, for instance, the ETAPE database plugin can be installed like that:
 
 ```bash
 $ pip install pyannote.db.etape
@@ -35,7 +37,38 @@ See [Defining your own database](#defining-your-own-database) for details.
 ## Usage
 ([↑up to table of contents](#table-of-contents))
 
-### Databases
+
+### Well-defined databases
+
+The `pyannote.database` can process speaker diarization database, for which subsets and 
+corresponding annotation files are specified in a `YAML` config file. By default this file is
+`~/.pyannote/custom.yml` with the following format.
+
+```yaml
+# ~/.pyannote/custom.yml
+Databases:
+  Database_name:
+    SpeakerDiarization
+      protocol_name:
+        train:
+            annotation: path/to/annotation/train/file.rttm
+            annotated: path/to/annotated/train/file.uem
+            uris: path/to/list_of_uris/train/file.lst
+        development:
+            annotation: path/to/annotation/dev/file.rttm
+            annotated: path/to/annotated/dev/file.uem
+            uris: path/to/list_of_uris/dev/file.lst
+        test:
+            annotation: path/to/annotation/test/file.rttm
+            annotated: path/to/annotated/test/file.uem
+            uris: path/to/list_of_uris/test/file.lst
+```
+
+The paths to `annotation`, `annotated`, and `uris` files are all optional but some tasks would 
+not be able to run without some of these files. For instance, it would be not possible to 
+train a `speech activity detection` model if no `annotation` file is provided.  
+
+### Database plugins
 
 Installed database plugins can be discovered using `get_databases`:
 

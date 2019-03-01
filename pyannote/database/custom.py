@@ -35,7 +35,7 @@ import yaml
 import pandas as pd
 
 
-def subset_iter(database_name, path_annotations=None, path_uem=None):
+def subset_iter(database_name, path_annotations=None, path_uris=None, path_uem=None):
     """This function will become a xxx_iter method of a protocol.
 
     Parameters
@@ -43,7 +43,9 @@ def subset_iter(database_name, path_annotations=None, path_uem=None):
     database_name : `str`
         Database name.
     path_annotations : `Path`, optional
-        Path to MDTM file.
+        Path to MDTM or RTTM file.
+    path_uris : `Path`, optional
+        Path to file with a list or URIs of the database.
     path_uem : `Path`, optional
         Path to UEM file.
 
@@ -55,28 +57,55 @@ def subset_iter(database_name, path_annotations=None, path_uem=None):
 
     """
 
-    names = ['uri', 'NA1', 'start', 'duration', 'NA2', 'NA3', 'NA4', 'label']
-    annotations = pd.read_table(path_annotations, names=names, delim_whitespace=True)
+    annotations = None
+    annotated = None
+    uris_list = None
+    if path_annotations is not None and Path(path_annotations).exists():
+        if Path(path_annotations).suffix == '.rttm':
+            names = ['NA0', 'uri', 'NA1', 'start', 'duration', 'NA2', 'NA3', 'label', 'NA4', 'NA5']
+        elif Path(path_annotations).suffix == '.mdtm':
+            names = ['uri', 'NA1', 'start', 'duration', 'NA2', 'NA3', 'NA4', 'label']
+        else:
+            raise ValueError('Unsupported annotation format in file {}'.format(path_annotations))
+        annotations = pd.read_table(path_annotations, names=names, delim_whitespace=True)
 
-    names = ['uri', 'NA1', 'start', 'end']
-    annotated = pd.read_table(path_uem, names=names, delim_whitespace=True).groupby('uri')
+    if path_uem is not None and Path(path_uem).exists():
+        names = ['uri', 'NA1', 'start', 'end']
+        annotated = pd.read_table(path_uem, names=names, delim_whitespace=True).groupby('uri')
 
-    for uri, turns in annotations.groupby('uri'):
-        reference = Annotation(uri=uri)
-        for turn_id, row in turns.iterrows():
-            segment = Segment(row.start, row.start + row.duration)
-            label = row.label
-            reference[segment, turn_id] = label
+    if path_uris is not None and Path(path_uris).exists():
+        names = ['uri']
+        uris_list = pd.read_table(path_uris, names=names, delim_whitespace=True)
 
-        uem = Timeline(uri=uri)
-        for _, row in annotated.get_group(uri).iterrows():
-            segment = Segment(row.start, row.end)
-            uem.add(segment)
+    if annotations is None and uris_list is None:
+        raise ValueError('Annotations were not found! Either path to annotations or a list of URIs '
+                         'should be provided in the config file for database {}'.format(database_name))
 
-        yield {'uri': uri,
-               'database': database_name,
-               'annotation': reference,
-               'annotated': uem}
+    if annotations is not None:
+        for uri, turns in annotations.groupby('uri'):
+            reference = Annotation(uri=uri)
+            for turn_id, row in turns.iterrows():
+                segment = Segment(row.start, row.start + row.duration)
+                label = row.label
+                reference[segment, turn_id] = label
+
+            uem = None
+            if annotated is not None:
+                uem = Timeline(uri=uri)
+                for _, row in annotated.get_group(uri).iterrows():
+                    segment = Segment(row.start, row.end)
+                    uem.add(segment)
+
+            yield {'uri': uri,
+                   'database': database_name,
+                   'annotation': reference,
+                   'annotated': uem}
+
+    if uris_list is not None:
+        for uri in uris_list:
+            yield {'uri': uri,
+                   'database': database_name
+                   }
 
 
 def add_databases_from_config(databases={}, tasks={}, config_path=None):
@@ -103,7 +132,7 @@ def add_databases_from_config(databases={}, tasks={}, config_path=None):
         protocols_description = yaml.load(fp)
 
     # for each database
-    for database_name, dbtasks in protocols_description.items():
+    for database_name, dbtasks in protocols_description['Databases'].items():
 
         # this list is meant to contain one class per protocol
         register = []
@@ -146,6 +175,7 @@ def add_databases_from_config(databases={}, tasks={}, config_path=None):
                         subset_iter,
                         database_name,
                         path_annotations=subsets[subset].get('annotation', None),
+                        path_uris=subsets[subset].get('uris', None),
                         path_uem=subsets[subset].get('annotated', None))
 
             # create protocol class on-the-fly
