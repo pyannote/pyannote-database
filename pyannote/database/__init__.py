@@ -40,6 +40,7 @@ from .database import PyannoteDatabaseException
 DATABASES = dict()
 TASKS = dict()
 
+# load databases from entry points
 for o in iter_entry_points(group='pyannote.database.databases', name=None):
 
     database_name = o.name
@@ -55,6 +56,9 @@ for o in iter_entry_points(group='pyannote.database.databases', name=None):
         TASKS[task].add(database_name)
 
     setattr(sys.modules[__name__], database_name, DatabaseClass)
+
+from .custom import add_custom_protocols
+DATABASES, TASKS = add_custom_protocols()
 
 
 def get_databases(task=None):

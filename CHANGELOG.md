@@ -1,3 +1,8 @@
+### Version 1.6 (2019-03-12)
+
+  - feat: add support for [file-based speaker diarization protocols](https://github.com/pyannote/pyannote-database/tree/develop#generic-speaker-diarization-protocols)
+  - setup: switch to pyannote.core 2.1
+  
 ### Version 1.5.5 (2018-11-30)
 
   - fix: fix Collection.files when progress=True
