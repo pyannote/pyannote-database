@@ -4,6 +4,7 @@
 # The MIT License (MIT)
 
 # Copyright (c) 2016-2018 CNRS
+# Copyright (c) 2016-2019 CNRS
 
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -38,6 +39,7 @@ setup(
         'pyannote.core >= 1.4.1',
         'pyYAML >= 3.12',
         'tqdm >= 4.10.0',
+        'pandas >= 0.19',
     ],
     # versioneer
     version=versioneer.get_version(),

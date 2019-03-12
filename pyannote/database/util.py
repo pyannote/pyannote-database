@@ -30,8 +30,10 @@ import yaml
 import os.path
 import warnings
 import itertools
+import pandas as pd
 from glob import glob
-from pyannote.core import Segment, Timeline
+from pyannote.core import Segment, Timeline, Annotation
+
 
 
 class PyannoteDatabaseException(Exception):
@@ -406,3 +408,113 @@ def get_label_identifier(label, current_file):
     # do not preprend database name.
     database = current_file['database']
     return database + '|' + label
+
+
+def load_rttm(file_rttm):
+    """Load RTTM file
+
+    Parameter
+    ---------
+    file_rttm : `str`
+        Path to RTTM file.
+
+    Returns
+    -------
+    annotations : `dict`
+        Speaker diarization as a {uri: pyannote.core.Annotation} dictionary.
+    """
+
+    names = ['NA1', 'uri', 'NA2', 'start', 'duration',
+             'NA3', 'NA4', 'speaker', 'NA5', 'NA6']
+    dtype = {'uri': str, 'start': float, 'duration': float, 'speaker': str}
+    data = pd.read_table(file_rttm, names=names, dtype=dtype,
+                         delim_whitespace=True)
+
+    annotations = dict()
+    for uri, turns in data.groupby('uri'):
+        annotation = Annotation(uri=uri)
+        for i, turn in turns.iterrows():
+            segment = Segment(turn.start, turn.start + turn.duration)
+            annotation[segment, i] = turn.speaker
+        annotations[uri] = annotation
+
+    return annotations
+
+
+def load_mdtm(file_mdtm):
+    """Load MDTM file
+
+    Parameter
+    ---------
+    file_mdtm : `str`
+        Path to MDTM file.
+
+    Returns
+    -------
+    annotations : `dict`
+        Speaker diarization as a {uri: pyannote.core.Annotation} dictionary.
+    """
+
+    names = ['uri', 'NA1', 'start', 'duration', 'NA2', 'NA3', 'NA4', 'speaker']
+    dtype = {'uri': str, 'start': float, 'duration': float, 'speaker': str}
+    data = pd.read_table(file_mdtm, names=names, dtype=dtype,
+                         delim_whitespace=True)
+
+    annotations = dict()
+    for uri, turns in data.groupby('uri'):
+        annotation = Annotation(uri=uri)
+        for i, turn in turns.iterrows():
+            segment = Segment(turn.start, turn.start + turn.duration)
+            annotation[segment, i] = turn.speaker
+        annotations[uri] = annotation
+
+    return annotations
+
+
+def load_uem(file_uem):
+    """Load UEM file
+
+    Parameter
+    ---------
+    file_uem : `str`
+        Path to UEM file.
+
+    Returns
+    -------
+    timelines : `dict`
+        Evaluation map as a {uri: pyannote.core.Timeline} dictionary.
+    """
+
+    names = ['uri', 'NA1', 'start', 'end']
+    dtype = {'uri': str, 'start': float, 'end': float}
+    data = pd.read_table(file_uem, names=names, dtype=dtype,
+                         delim_whitespace=True)
+
+    timelines = dict()
+    for uri, parts in data.groupby('uri'):
+        segments = [Segment(part.start, part.end)
+                    for i, part in parts.iterrows()]
+        timelines[uri] = Timeline(segments=segments, uri=uri)
+
+    return timelines
+
+
+def load_lst(file_lst):
+    """Load LST file
+
+    LST files provide a list of URIs (one line per URI)
+
+    Parameter
+    ---------
+    file_lst : `str`
+        Path to LST file.
+
+    Returns
+    -------
+    uris : `list`
+        List or uris
+    """
+
+    with open(file_lst, mode='r') as fp:
+        lines = fp.readlines()
+    return [l.strip() for l in lines]
