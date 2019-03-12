@@ -36,7 +36,6 @@ from pkg_resources import iter_entry_points
 
 from .database import Database
 from .database import PyannoteDatabaseException
-from .custom import add_databases_from_config
 
 DATABASES = dict()
 TASKS = dict()
@@ -58,8 +57,8 @@ for o in iter_entry_points(group='pyannote.database.databases', name=None):
 
     setattr(sys.modules[__name__], database_name, DatabaseClass)
 
-# add databases from ~/.pyannote/custom.yml if it exists
-DATABASES, TASKS = add_databases_from_config(databases=DATABASES, tasks=TASKS)
+from .custom import add_custom_protocols
+DATABASES, TASKS = add_custom_protocols()
 
 
 def get_databases(task=None):
