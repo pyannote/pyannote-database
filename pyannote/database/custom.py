@@ -33,8 +33,7 @@ from .util import load_lst, load_uem, load_mdtm, load_rttm
 import functools
 from pathlib import Path
 import yaml
-import pandas as pd
-
+from pyannote.core import Timeline
 
 from . import DATABASES, TASKS
 
@@ -50,7 +49,7 @@ def subset_iter(database_name, file_lst=None, file_rttm=None, file_uem=None):
     file_lst : `Path`, optional
         Path to file with a list of URIs of the database.
     file_rttm : `Path`, optional
-        Path to RTTM (or MDTM) file.
+        Path to RTTM (or MDTM) file or a directory with these files.
     file_uem : `Path`, optional
         Path to UEM file.
 
@@ -66,10 +65,16 @@ def subset_iter(database_name, file_lst=None, file_rttm=None, file_uem=None):
     # load annotations
     if file_rttm is not None:
 
-        if file_rttm.suffix == '.rttm':
+        if file_rttm.is_dir():
+            annotation_files = sorted(file_rttm.glob('*.rttm'))
+            annotations = load_rttm(annotation_files) if annotation_files else dict()
+            if not annotation_files:
+                annotation_files = sorted(file_rttm.glob('*.mdtm'))
+                annotations = load_mdtm(annotation_files) if annotation_files else dict()
+        elif file_rttm.suffix == '.rttm':
             annotations = load_rttm(file_rttm)
         elif file_rttm.suffix == '.mdtm':
-            annotations = load_mdtm(file_mdtm)
+            annotations = load_mdtm(file_rttm)
         else:
             msg = f'Unsupported format in {file_rttm}: please use RTTM.'
             raise ValueError(msg)
@@ -125,6 +130,9 @@ def subset_iter(database_name, file_lst=None, file_rttm=None, file_uem=None):
         # add 'annotated' if/when available
         if uri in annotated:
             current_file['annotated'] = annotated[uri]
+        elif uri in annotations:
+            # determine the duration of the file directly from the annotations
+            current_file['annotated'] = Timeline(uri=uri, segments=[annotations[uri].get_timeline().extent()])
 
         yield current_file
 

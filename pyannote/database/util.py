@@ -416,7 +416,7 @@ def load_rttm(file_rttm):
     Parameter
     ---------
     file_rttm : `str`
-        Path to RTTM file.
+        A list of Paths or a Path to RTTM file.
 
     Returns
     -------
@@ -427,8 +427,11 @@ def load_rttm(file_rttm):
     names = ['NA1', 'uri', 'NA2', 'start', 'duration',
              'NA3', 'NA4', 'speaker', 'NA5', 'NA6']
     dtype = {'uri': str, 'start': float, 'duration': float, 'speaker': str}
-    data = pd.read_table(file_rttm, names=names, dtype=dtype,
-                         delim_whitespace=True)
+    if isinstance(file_rttm, list):
+        data = pd.concat((pd.read_table(f, names=names, dtype=dtype, delim_whitespace=True) for f in file_rttm))
+    else:
+        data = pd.read_table(file_rttm, names=names, dtype=dtype,
+                             delim_whitespace=True)
 
     annotations = dict()
     for uri, turns in data.groupby('uri'):
@@ -447,7 +450,7 @@ def load_mdtm(file_mdtm):
     Parameter
     ---------
     file_mdtm : `str`
-        Path to MDTM file.
+        A list of Paths or a Path to MDTM file.
 
     Returns
     -------
@@ -457,8 +460,11 @@ def load_mdtm(file_mdtm):
 
     names = ['uri', 'NA1', 'start', 'duration', 'NA2', 'NA3', 'NA4', 'speaker']
     dtype = {'uri': str, 'start': float, 'duration': float, 'speaker': str}
-    data = pd.read_table(file_mdtm, names=names, dtype=dtype,
-                         delim_whitespace=True)
+    if isinstance(file_mdtm, list):
+        data = pd.concat((pd.read_table(f, names=names, dtype=dtype, delim_whitespace=True) for f in file_mdtm))
+    else:
+        data = pd.read_table(file_mdtm, names=names, dtype=dtype,
+                             delim_whitespace=True)
 
     annotations = dict()
     for uri, turns in data.groupby('uri'):
