@@ -198,7 +198,7 @@ TODO
 ### Generic speaker diarization protocols
 ([↑up to table of contents](#table-of-contents))
 
-`pyannote.database` supports speaker diarization protocols out-of-the-box through the provision of RTTM (and UEM) annotation files. It relies on the `~/.pyannote/custom.yml` with the following format:
+`pyannote.database` supports speaker diarization protocols out-of-the-box through the provision of RTTM or MDTM (and UEM) annotation files. It relies on the `~/.pyannote/custom.yml` with the following format:
 
 ```yaml
 # ~/.pyannote/custom.yml
@@ -210,7 +210,7 @@ DatabaseName:
           annotated: path/to/annotated/train/file.uem
           uris: path/to/list_of_uris/train/file.lst
       development:
-          annotation: path/to/annotation/dev/file.rttm
+          annotation: path/to/annotation/dev/
       test:
           annotated: path/to/annotated/test/file.uem
           uris: path/to/list_of_uris/test/file.lst
@@ -227,7 +227,7 @@ protocol = get_protocol('DatabaseName.SpeakerDiarization.ProtocolName')
 All of `annotation`, `annotated` and `uris` are optional but at least one of 
 them must be provided
 - `uris` links to a text file containing one line per (train/dev/test) file;
-- `annotation` links to an annotation file in RTTM format;
+- `annotation` links to an annotation file in RTTM (or MDTM) format, or it can be a path to a directory containing several of such annotation files (either RTTMs or MDTMs);
 - `annotated` links to an evaluation map file in UEM format
 
 Though they are optional, some tasks are not possible without some of these files. 
