@@ -26,6 +26,7 @@
 # AUTHORS
 # Hervé BREDIN - http://herve.niderb.fr
 
+import os
 import yaml
 import os.path
 import warnings
@@ -48,7 +49,8 @@ class FileFinder(object):
     config_yml : str, optional
         Path to database configuration file in YAML format.
         See "Configuration file" sections for examples.
-        Defaults to '~/.pyannote/db.yml'.
+        Defaults to the content of PYANNOTE_DATABASE_CONFIG environment
+        variable if defined and to "~/.pyannote/db.yml" otherwise.
 
     Configuration file
     ------------------
@@ -81,7 +83,8 @@ class FileFinder(object):
         super(FileFinder, self).__init__()
 
         if config_yml is None:
-            config_yml = '~/.pyannote/db.yml'
+            config_yml = os.environ.get("PYANNOTE_DATABASE_CONFIG",
+                                        "~/.pyannote/db.yml")
         config_yml = os.path.expanduser(config_yml)
 
         with open(config_yml, 'r') as fp:

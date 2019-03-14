@@ -313,7 +313,7 @@ Etape: /path/where/your/stored/Etape/database/{uri}.wav
 ...     wav = item['audio']
 ```
 
-`config_yml` parameters defaults to `~/.pyannote/db.yml`, so you can conveniently use this file to provide information about all the available databases, once and for all:
+`config_yml` parameters defaults to the content of `PYANNOTE_DATABASE_CONFIG` environment variable when defined and to `~/.pyannote/db.yml` otherwise, so you can conveniently use this file to provide information about all the available databases, once and for all:
 
 ```bash
 $ cat ~/.pyannote/db.yml
