@@ -198,22 +198,23 @@ TODO
 ### Generic speaker diarization protocols
 ([↑up to table of contents](#table-of-contents))
 
-`pyannote.database` supports speaker diarization protocols out-of-the-box through the provision of RTTM (and UEM) annotation files. It relies on the `~/.pyannote/custom.yml` with the following format:
+`pyannote.database` supports speaker diarization protocols out-of-the-box through the provision of RTTM (and UEM) annotation files. It relies on the `~/.pyannote/database.yml` with the following format:
 
 ```yaml
-# ~/.pyannote/custom.yml
-DatabaseName:
-  SpeakerDiarization
-    ProtocolName:
-      train:
-          annotation: path/to/annotation/train/file.rttm
-          annotated: path/to/annotated/train/file.uem
-          uris: path/to/list_of_uris/train/file.lst
-      development:
-          annotation: path/to/annotation/dev/file.rttm
-      test:
-          annotated: path/to/annotated/test/file.uem
-          uris: path/to/list_of_uris/test/file.lst
+# ~/.pyannote/database.yml
+Protocols:
+  DatabaseName:
+    SpeakerDiarization
+      ProtocolName:
+        train:
+            annotation: path/to/annotation/train/file.rttm
+            annotated: path/to/annotated/train/file.uem
+            uris: path/to/list_of_uris/train/file.lst
+        development:
+            annotation: path/to/annotation/dev/file.rttm
+        test:
+            annotated: path/to/annotated/test/file.uem
+            uris: path/to/list_of_uris/test/file.lst
 ```
 
 This configuration file would automagically make 
@@ -245,29 +246,26 @@ See [`http://github.com/pyannote/pyannote-db-template`](http://github.com/pyanno
 `pyannote.database` provides a way to combine several protocols (possibly
 from different databases) into one.
 
-This is achieved by defining those "meta-protocols" into `~/.pyannote/meta.yml`.
+This is achieved by defining those "meta-protocols" into `~/.pyannote/database.yml`.
 
 ```yaml
-# ~/.pyannote/meta.yml
-MyMetaProtocol:
-  task: SpeakerDiarization
-  subset:
-    train:
-      Etape.SpeakerDiarization.TV:
-        subset: [train]
-      REPERE.SpeakerDiarization.Phase1:
-        subset: [train, development]
-      REPERE.SpeakerDiarization.Phase2:
-        subset: [train, development]
-    development:
-      Etape.SpeakerDiarization.TV:
-        subset: [development]
-    test:
-      Etape.SpeakerDiarization.TV:
-        subset: [test]
+# ~/.pyannote/database.yml
+Protocols:
+  X:
+    SpeakerDiarization:
+      ExtendedEtape:
+        train:
+          Etape.SpeakerDiarization.TV: [train]
+          REPERE.SpeakerDiarization.Phase1: [train, development]
+          REPERE.SpeakerDiarization.Phase2: [train, development]
+        development:
+          Etape.SpeakerDiarization.TV: [development]
+        test:
+          Etape.SpeakerDiarization.TV: [test]
+
 ```
 
-This defines a new speaker diarization protocol called `MyMetaProtocol` that is
+This defines a new speaker diarization protocol called `ExtendedEtape` that is
 very similar to the existing `Etape.SpeakerDiarization.TV` protocol except its
 training set is augmented with (training and development) data from the
 `REPERE` corpus. Obviously, both `ETAPE` and `REPERE` packages need to be
@@ -283,7 +281,7 @@ Then, this new "meta-protocol" can be used like any other protocol of the
 
 ```python
 >>> from pyannote.database import get_protocol
->>> protocol = get_protocol('X.SpeakerDiarization.MyMetaProtocol')
+>>> protocol = get_protocol('X.SpeakerDiarization.ExtendedEtape')
 >>> for current_file in protocol.train():
 ...     pass
 ```
@@ -294,11 +292,12 @@ Then, this new "meta-protocol" can be used like any other protocol of the
 You may have noticed that the path to the audio file is not provided.
 This is because those files are not provided by the `pyannote.database` packages. You have to acquire them, copy them on your hard drive, and tell `pyannote.database` where to find them.
 
-To do that, create a file `db.yml` that describes how your system is setup:
+To do that, create a file `database.yml` that describes how your system is setup:
 
 ```bash
-$ cat db.yml
-Etape: /path/where/your/stored/Etape/database/{uri}.wav
+$ cat database.yml
+Databases:
+  Etape: /path/where/your/stored/Etape/database/{uri}.wav
 ```
 
 `{uri}` is a placeholder telling `pyannote.database` to replace it by `item[uri]` before looking for the current file.
@@ -306,21 +305,22 @@ Etape: /path/where/your/stored/Etape/database/{uri}.wav
 
 ```python
 >>> from pyannote.database.util import FileFinder
->>> preprocessors = {'audio': FileFinder(config_yml='db.yml')}
+>>> preprocessors = {'audio': FileFinder(config_yml='database.yml')}
 >>> protocol = get_protocol('Etape.SpeakerDiarization.TV', preprocessors=preprocessors)
 >>> for item in protocol.train():
 ...     # now, `item` contains a `wav` key providing the path to the wav file
 ...     wav = item['audio']
 ```
 
-`config_yml` parameters defaults to the content of `PYANNOTE_DATABASE_CONFIG` environment variable when defined and to `~/.pyannote/db.yml` otherwise, so you can conveniently use this file to provide information about all the available databases, once and for all:
+`config_yml` parameters defaults to the content of `PYANNOTE_DATABASE_CONFIG` environment variable when defined and to `~/.pyannote/database.yml` otherwise, so you can conveniently use this file to provide information about all the available databases, once and for all:
 
 ```bash
-$ cat ~/.pyannote/db.yml
-Etape: /path/where/you/stored/Etape/database/{uri}.wav
-REPERE:
-  - /path/where/you/store/REPERE/database/phase1/{uri}.wav
-  - /path/where/you/store/REPERE/database/phase2/{uri}.wav
+$ cat ~/.pyannote/database.yml
+Databases:
+  Etape: /path/where/you/stored/Etape/database/{uri}.wav
+  REPERE:
+    - /path/where/you/store/REPERE/database/phase1/{uri}.wav
+    - /path/where/you/store/REPERE/database/phase2/{uri}.wav
 ```
 
 ```python
