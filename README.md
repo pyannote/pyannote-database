@@ -225,14 +225,17 @@ from pyannote.database import get_protocol
 protocol = get_protocol('DatabaseName.SpeakerDiarization.ProtocolName')
 ```
 
-All of `annotation`, `annotated` and `uris` are optional but at least one of 
+All of `uris`, `annotated` and `annotation` are optional but at least one of 
 them must be provided
 - `uris` links to a text file containing one line per (train/dev/test) file;
-- `annotation` links to an annotation file in RTTM format;
-- `annotated` links to an evaluation map file in UEM format
+- `annotated` links to an evaluation map file in UEM format;
+- `annotation` links to an annotation file in RTTM format.
 
 Though they are optional, some tasks are not possible without some of these files. 
 For instance, it would not be possible to train a speech activity detection model with [`pyannote-audio`](https://github.com/pyannote/pyannote-audio) if the `annotation` file is not provided.
+
+When two or more are provided and disagree on the list of files, `uris` will 
+be prefered over `annotated`, which will be prefered over `annotation`.
 
 ### pyannote.database plugins
 

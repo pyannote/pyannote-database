@@ -36,6 +36,7 @@ import functools
 from pathlib import Path
 import yaml
 import pandas as pd
+from pyannote.core import Annotation, Timeline
 
 
 from . import DATABASES, TASKS
@@ -138,32 +139,20 @@ def subset_iter(database_name, file_lst=None, file_rttm=None, file_uem=None):
     if file_lst is not None:
         uris = load_lst(file_lst)
 
-    # check URIs list consistency
-
-    # if file_lst is provided, make sure other files don't contain extra URIs
+    # when file_lst is provided, use this list of uris
     if len(uris) > 0:
+        pass
 
-        if not set(annotations).issubset(set(uris)):
-            msg = f'{file_rttm} contains URIs that are not in {file_lst}.'
-            raise ValueError(msg)
-
-        if not set(annotated).issubset(set(uris)):
-            msg = f'{file_rttm} contains URIs that are not in {file_lst}.'
-            raise ValueError(msg)
-
-    # if file_uem is provided, make sure file_rttm doesn't contain extra URIs
+    # when file_uem is provided, use this list of uris
     elif len(annotated) > 0:
         uris = sorted(annotated)
-        if not set(annotations).issubset(set(uris)):
-            msg = f'{file_rttm} contains URIs that are not in {file_uem}.'
-            raise ValueError(msg)
 
     # if file_rttm is the only file provided, use its list of URIs
     elif len(annotations) > 0:
         uris = sorted(annotations)
 
     # complain if we weren't able to get any list of URIs
-    if len(uris) == 0:
+    if not uris:
         msg = f'Empty protocol'
         raise ValueError(msg)
 
@@ -171,16 +160,19 @@ def subset_iter(database_name, file_lst=None, file_rttm=None, file_uem=None):
     for uri in uris:
 
         # initialize current file with the mandatory keys
-        current_file = {'database': database_name,
-                        'uri': uri}
+        current_file = {'database': database_name, 'uri': uri}
 
-        # add 'annotation' if/when available
-        if uri in annotations:
-            current_file['annotation'] = annotations[uri]
+        # add 'annotation' when RTTM file is provided
+        # defaults to empty Annotation because of
+        # github.com/pyannote/pyannote-database/pull/13#discussion_r261564520)
+        if file_rttm is not None:
+            current_file['annotation'] = annotations.get(
+                uri, Annotation(uri=uri))
 
-        # add 'annotated' if/when available
-        if uri in annotated:
-            current_file['annotated'] = annotated[uri]
+        # add 'annotated' when UEM file is provided
+        # defaults to empty Timeline for the same reason as above
+        if file_uem is not None:
+            current_file['annotated'] = annotated.get(uri, Timeline(uri=uri))
 
         yield current_file
 
