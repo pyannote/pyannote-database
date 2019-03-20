@@ -3,7 +3,7 @@
 
 # The MIT License (MIT)
 
-# Copyright (c) 2016-2017 CNRS
+# Copyright (c) 2016-2019 CNRS
 
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -26,8 +26,9 @@
 # AUTHORS
 # Hervé BREDIN - http://herve.niderb.fr
 
+import os
 import yaml
-import os.path
+from pathlib import Path
 import warnings
 import itertools
 import pandas as pd
@@ -48,7 +49,8 @@ class FileFinder(object):
     config_yml : str, optional
         Path to database configuration file in YAML format.
         See "Configuration file" sections for examples.
-        Defaults to '~/.pyannote/db.yml'.
+        Defaults to the content of PYANNOTE_DATABASE_CONFIG environment
+        variable if defined and to "~/.pyannote/database.yml" otherwise.
 
     Configuration file
     ------------------
@@ -81,11 +83,19 @@ class FileFinder(object):
         super(FileFinder, self).__init__()
 
         if config_yml is None:
-            config_yml = '~/.pyannote/db.yml'
-        config_yml = os.path.expanduser(config_yml)
+            config_yml = os.environ.get("PYANNOTE_DATABASE_CONFIG",
+                                        "~/.pyannote/database.yml")
+        config_yml = Path(config_yml).expanduser()
 
-        with open(config_yml, 'r') as fp:
-            self.config = yaml.load(fp)
+        try:
+            with open(config_yml, 'r') as fp:
+                config = yaml.load(fp)
+
+        except FileNotFoundError:
+            config = dict()
+
+        self.config = config.get('Databases', dict())
+
 
     def _find(self, config, uri=None, database=None, **kwargs):
 

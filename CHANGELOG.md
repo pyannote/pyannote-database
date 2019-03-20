@@ -1,3 +1,8 @@
+### Version 2.0 (2019-03-20)
+
+  - BREAKING: change location and format of pyannote.database configuration file 
+  - feat: add support for PYANNOTE_DATABASE_CONFIG environment variable
+
 ### Version 1.6 (2019-03-12)
 
   - feat: add support for [file-based speaker diarization protocols](https://github.com/pyannote/pyannote-database/tree/develop#generic-speaker-diarization-protocols)
