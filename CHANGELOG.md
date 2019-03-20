@@ -1,4 +1,4 @@
-### Version 2.0 (2019-03-xx)
+### Version 2.0 (2019-03-20)
 
   - BREAKING: change location and format of pyannote.database configuration file 
   - feat: add support for PYANNOTE_DATABASE_CONFIG environment variable
