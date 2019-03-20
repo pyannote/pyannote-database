@@ -57,6 +57,7 @@ for o in iter_entry_points(group='pyannote.database.databases', name=None):
 
     setattr(sys.modules[__name__], database_name, DatabaseClass)
 
+# parse pyannote.database configuration file, looking for custom protocols
 from .custom import add_custom_protocols
 DATABASES, TASKS = add_custom_protocols()
 
@@ -101,20 +102,29 @@ def get_database(database_name, preprocessors={}, **kwargs):
     database : Database
         Database instance
     """
+
     try:
         database = DATABASES[database_name]
+
     except KeyError as e:
 
         if database_name == 'X':
-            msg = ('Could not find any "meta-protocol". '
-                   'Edit file "~/.pyannote/meta.yml" to define them.')
+            msg = (
+                'Could not find any meta-protocol. Please refer to '
+                'pyannote.database documentation to learn how to define them: '
+                'https://github.com/pyannote/pyannote-database'
+            )
         else:
-            msg = ('Could not find any "{name}" database. '
-                   'Did you install the corresponding pyannote.database plugin?')
+            msg = (
+                'Could not find any protocol for "{name}" database. Please '
+                'refer to pyannote.database documentation to learn how to '
+                'define them: https://github.com/pyannote/pyannote-database'
+            )
             msg = msg.format(name=database_name)
         raise ValueError(msg)
 
     return database(preprocessors=preprocessors, **kwargs)
+
 
 def get_protocol(name, preprocessors={}, progress=False, **kwargs):
     """Get protocol by full name
@@ -153,20 +163,6 @@ from .util import FileFinder
 from .util import get_annotated
 from .util import get_unique_identifier
 from .util import get_label_identifier
-
-# import meta-protocol database X
-from . import meta
-database = meta.X()
-try:
-    tasks = database.get_tasks()
-    for task in tasks:
-        if task not in TASKS:
-            TASKS[task] = set()
-        TASKS[task].add('X')
-    DATABASES['X'] = meta.X
-    setattr(sys.modules[__name__], 'X', meta.X)
-except PyannoteDatabaseException as e:
-    pass
 
 from ._version import get_versions
 __version__ = get_versions()['version']
