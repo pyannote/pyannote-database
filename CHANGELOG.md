@@ -1,3 +1,7 @@
+### Version 2.1 (2019-04-04)
+
+  - feat: add support for "domain" key in generic protocol
+
 ### Version 2.0 (2019-03-20)
 
   - BREAKING: change location and format of pyannote.database configuration file 
