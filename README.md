@@ -237,6 +237,16 @@ For instance, it would not be possible to train a speech activity detection mode
 When two or more are provided and disagree on the list of files, `uris` will 
 be prefered over `annotated`, which will be prefered over `annotation`.
 
+#### Domain
+
+One can also add a `domain` key linking to a text file mapping each file to its *[domain](https://en.wikipedia.org/wiki/Domain_adaptation)*:
+```
+file1 domain-of-file-1
+file2 domain-of-file-2
+file3 domain-of-file-3
+```
+This will end up in the `domain` key of the `current_file` dictionary.
+
 ### pyannote.database plugins
 
 More more complex protocols (or if you want to allow other researchers to use your protocols easily), you can create (and share) your own `pyannote.database` plugin.

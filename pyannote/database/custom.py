@@ -31,7 +31,7 @@
 import os
 from . import protocol as Protocol
 from .database import Database
-from .util import load_lst, load_uem, load_mdtm, load_rttm
+from .util import load_lst, load_uem, load_mdtm, load_rttm, load_mapping
 import functools
 from pathlib import Path
 import yaml
@@ -97,7 +97,8 @@ def meta_subset_iter(config):
                 yield current_file
 
 
-def subset_iter(database_name, file_lst=None, file_rttm=None, file_uem=None):
+def subset_iter(database_name, file_lst=None, file_rttm=None,
+                file_uem=None, domain_txt=None):
     """This function will become a xxx_iter method of a protocol.
 
     Parameters
@@ -110,6 +111,8 @@ def subset_iter(database_name, file_lst=None, file_rttm=None, file_uem=None):
         Path to RTTM (or MDTM) file.
     file_uem : `Path`, optional
         Path to UEM file.
+    domain_txt : `Path`, optional
+        Path to domain mapping file.
 
     Yields
     ------
@@ -156,6 +159,10 @@ def subset_iter(database_name, file_lst=None, file_rttm=None, file_uem=None):
         msg = f'Empty protocol'
         raise ValueError(msg)
 
+    # load domain mapping
+    if domain_txt is not None:
+        domains = load_mapping(domain_txt)
+
     # loop on all URIs
     for uri in uris:
 
@@ -173,6 +180,10 @@ def subset_iter(database_name, file_lst=None, file_rttm=None, file_uem=None):
         # defaults to empty Timeline for the same reason as above
         if file_uem is not None:
             current_file['annotated'] = annotated.get(uri, Timeline(uri=uri))
+
+        # add 'domain' when domain mapping is provided
+        if domain_txt is not None:
+            current_file['domain'] = domains[uri]
 
         yield current_file
 
@@ -271,18 +282,22 @@ def add_custom_protocols(config_yml=None):
                     else:
 
                         paths = subsets[subset]
-                        file_rttm, file_lst, file_uem = None, None, None
+                        file_rttm, file_lst, file_uem, domain_txt = \
+                            None, None, None, None
                         if 'annotation' in paths:
                             file_rttm = Path(paths['annotation'])
                         if 'uris' in paths:
                             file_lst = Path(paths['uris'])
                         if 'annotated' in paths:
                             file_uem = Path(paths['annotated'])
+                        if 'domain' in paths:
+                            domain_txt = Path(paths['domain'])
 
                         # define xxx_iter method
                         protocol_methods[f'{sub}_iter'] = functools.partial(
                             subset_iter, database_name, file_rttm=file_rttm,
-                            file_lst=file_lst, file_uem=file_uem)
+                            file_lst=file_lst, file_uem=file_uem,
+                            domain_txt=domain_txt)
 
                 # create protocol class on-the-fly
                 protocol = type(protocol_name, (protocol_base_class,),

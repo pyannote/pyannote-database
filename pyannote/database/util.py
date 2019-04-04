@@ -528,3 +528,28 @@ def load_lst(file_lst):
     with open(file_lst, mode='r') as fp:
         lines = fp.readlines()
     return [l.strip() for l in lines]
+
+
+def load_mapping(mapping_txt):
+    """Load mapping file
+
+    Parameter
+    ---------
+    mapping_txt : `str`
+        Path to mapping file
+
+    Returns
+    -------
+    mapping : `dict`
+        {1st field: 2nd field} dictionary
+    """
+
+    with open(mapping_txt, mode='r') as fp:
+        lines = fp.readlines()
+
+    mapping = dict()
+    for line in lines:
+        key, value, *left = line.strip().split()
+        mapping[key] = value
+
+    return mapping
