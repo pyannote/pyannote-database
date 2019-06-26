@@ -1,3 +1,8 @@
+### Version 2.2 (2019-06-26)
+
+  - setup: switch to pyannote.core 3.0
+  - feat: add RTTMLoader preprocessor
+  
 ### Version 2.1 (2019-04-04)
 
   - feat: add support for "domain" key in generic protocol
