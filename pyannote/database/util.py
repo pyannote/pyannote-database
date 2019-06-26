@@ -456,18 +456,24 @@ class RTTMLoader(object):
 
     Parameters
     ----------
-    paths : `dict`
-        {'train': /path/to/train.rttm, 'development': ...}
+    train : `Path`, optional
+        Path to RTTM file for training set
+    development : `Path`, optional
+        Path to RTTM file for development set
+    test : `Path`, optional
+        Path to RTTM file for test set
     """
 
-    def __init__(self, paths):
+    def __init__(self, train=None, development=None, test=None):
         super().__init__()
-        self.paths = paths
         # preload everything in memory
-        self.hypotheses_ = {
-            subset: load_rttm(file_rttm)
-            for subset, file_rttm in paths.items()
-        }
+        self.hypotheses_ = {}
+        if train is not None:
+            self.hypotheses_['train'] = load_rttm(train)
+        if development is not None:
+            self.hypotheses_['development'] = load_rttm(development)
+        if test is not None:
+            self.hypotheses_['test'] = load_rttm(test)
 
     def __call__(self, current_file):
         """Return RTTM content for current file
