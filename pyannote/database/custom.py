@@ -222,7 +222,7 @@ def add_custom_protocols(config_yml=None):
 
     try:
         with open(config_yml, 'r') as fp:
-            config = yaml.load(fp, Loader=yaml.BaseLoader)
+            config = yaml.load(fp)
 
     except FileNotFoundError:
         config = dict()
