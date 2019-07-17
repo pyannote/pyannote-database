@@ -611,3 +611,47 @@ def load_mapping(mapping_txt):
         mapping[key] = value
 
     return mapping
+
+
+class LabelMapper(object):
+    """
+    Parameters
+    ----------
+    mapping : dict
+        dictionnary whose keys are the input labels, and values are the output labels
+    strict  : bool, optional, default to True
+        if strict is True, input labels that don't belong to mapping.keys() are kept unchanged.
+        otherwise, we raise an exception.
+
+    Configuration file
+    ------------------
+    Here's an example of what is expected in the config.yml file :
+
+    preprocessors:
+      annotation:
+      name: pyannote.database.util.LabelMapper
+      params:
+        strict: True
+        mapping:
+          Hadrien: MAL
+          Marvin: MAL
+          Wassim: CHI
+        ....
+    """
+    def __init__(self, mapping, strict=True):
+        self.mapping = mapping
+        self.strict = strict
+
+    def __call__(self, item):
+
+        for segment, track, label in item["annotation"].itertracks(yield_label=True):
+            if label in self.mapping.keys():
+                item["annotation"][segment, track] = self.mapping[label]
+            elif not self.strict:
+                item["annotation"][segment, track] = label
+            else:
+                msg = 'Found no match for label : {input_label}.\n' \
+                      'Please set strict to False if you want to keep this label unchanged.'
+                raise ValueError(msg.format(input_label=label))
+
+        return item["annotation"]
