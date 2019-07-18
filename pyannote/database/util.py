@@ -614,44 +614,40 @@ def load_mapping(mapping_txt):
 
 
 class LabelMapper(object):
-    """
+    """Label mapper for use as pyannote.database preprocessor
+
     Parameters
     ----------
-    mapping : dict
-        dictionnary whose keys are the input labels, and values are the output labels
-    strict  : bool, optional, default to True
-        if strict is True, input labels that don't belong to mapping.keys() are kept unchanged.
-        otherwise, we raise an exception.
+    mapping : `dict`
+        Mapping dictionary as used in `Annotation.rename_labels()`.
+    keep_missing : `bool`, optional
+        In case a label has no mapping, a `ValueError` will be raised.
+        Set "keep_missing" to True to keep those labels unchanged instead
 
-    Configuration file
-    ------------------
-    Here's an example of what is expected in the config.yml file :
+    Usage
+    -----
+    >>> mapping = {'Hadrien': 'MAL', 'Marvin': 'MAL', 
+    ...            'Wassim': 'CHI', 'Herve': 'GOD'}
+    >>> preprocessors = {'annotation': LabelMapper(mapping=mapping)}
+    >>> protocol = get_protocol('AMI.SpeakerDiarization.MixHeadset', 
+                                preprocessors=preprocessors)
 
-    preprocessors:
-      annotation:
-      name: pyannote.database.util.LabelMapper
-      params:
-        strict: True
-        mapping:
-          Hadrien: MAL
-          Marvin: MAL
-          Wassim: CHI
-        ....
     """
-    def __init__(self, mapping, strict=True):
+    def __init__(self, mapping, keep_missing=False):
         self.mapping = mapping
-        self.strict = strict
+        self.keep_missing = keep_missing
 
-    def __call__(self, item):
+    def __call__(self, current_file):
 
-        for segment, track, label in item["annotation"].itertracks(yield_label=True):
-            if label in self.mapping.keys():
-                item["annotation"][segment, track] = self.mapping[label]
-            elif not self.strict:
-                item["annotation"][segment, track] = label
-            else:
-                msg = 'Found no match for label : {input_label}.\n' \
-                      'Please set strict to False if you want to keep this label unchanged.'
-                raise ValueError(msg.format(input_label=label))
-
-        return item["annotation"]
+        if not keep_missing:
+            missing = set(current_file['annotation'].labels()) - set(mapping)
+            if missing and not keep_missing:
+                label = missing.pop()
+                msg = (
+                    f'No mapping found for label "{label}". Set "keep_missing" '
+                    f'to True to keep labels with no mapping.'
+                )
+                raise ValueError(msg)
+        
+        return current_file['annotation'].rename_labels(mapping=mapping)
+        
