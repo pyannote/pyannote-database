@@ -639,9 +639,9 @@ class LabelMapper(object):
 
     def __call__(self, current_file):
 
-        if not keep_missing:
-            missing = set(current_file['annotation'].labels()) - set(mapping)
-            if missing and not keep_missing:
+        if not self.keep_missing:
+            missing = set(current_file['annotation'].labels()) - set(self.mapping)
+            if missing and not self.keep_missing:
                 label = missing.pop()
                 msg = (
                     f'No mapping found for label "{label}". Set "keep_missing" '
@@ -649,5 +649,5 @@ class LabelMapper(object):
                 )
                 raise ValueError(msg)
         
-        return current_file['annotation'].rename_labels(mapping=mapping)
+        return current_file['annotation'].rename_labels(mapping=self.mapping)
         
