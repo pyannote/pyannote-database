@@ -89,7 +89,7 @@ class FileFinder(object):
 
         try:
             with open(config_yml, 'r') as fp:
-                config = yaml.load(fp)
+                config = yaml.load(fp, Loader=yaml.SafeLoader)
 
         except FileNotFoundError:
             config = dict()
