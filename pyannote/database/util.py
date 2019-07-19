@@ -89,7 +89,7 @@ class FileFinder(object):
 
         try:
             with open(config_yml, 'r') as fp:
-                config = yaml.load(fp)
+                config = yaml.load(fp, Loader=yaml.SafeLoader)
 
         except FileNotFoundError:
             config = dict()
@@ -437,8 +437,8 @@ def load_rttm(file_rttm):
     names = ['NA1', 'uri', 'NA2', 'start', 'duration',
              'NA3', 'NA4', 'speaker', 'NA5', 'NA6']
     dtype = {'uri': str, 'start': float, 'duration': float, 'speaker': str}
-    data = pd.read_table(file_rttm, names=names, dtype=dtype,
-                         delim_whitespace=True)
+    data = pd.read_csv(file_rttm, names=names, dtype=dtype,
+                       delim_whitespace=True)
 
     annotations = dict()
     for uri, turns in data.groupby('uri'):
@@ -525,8 +525,8 @@ def load_mdtm(file_mdtm):
 
     names = ['uri', 'NA1', 'start', 'duration', 'NA2', 'NA3', 'NA4', 'speaker']
     dtype = {'uri': str, 'start': float, 'duration': float, 'speaker': str}
-    data = pd.read_table(file_mdtm, names=names, dtype=dtype,
-                         delim_whitespace=True)
+    data = pd.read_csv(file_mdtm, names=names, dtype=dtype,
+                       delim_whitespace=True)
 
     annotations = dict()
     for uri, turns in data.groupby('uri'):
@@ -555,8 +555,8 @@ def load_uem(file_uem):
 
     names = ['uri', 'NA1', 'start', 'end']
     dtype = {'uri': str, 'start': float, 'end': float}
-    data = pd.read_table(file_uem, names=names, dtype=dtype,
-                         delim_whitespace=True)
+    data = pd.read_csv(file_uem, names=names, dtype=dtype,
+                       delim_whitespace=True)
 
     timelines = dict()
     for uri, parts in data.groupby('uri'):
