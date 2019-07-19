@@ -1,3 +1,9 @@
+### Version 2.3 (2019-07-19)
+
+  - feat: add LabelMapper preprocessor ([@MarvinLvn](https://github.com/MarvinLvn))
+  - chore: replace (deprecated) pandas.read_table with pandas.read_csv ([@V-assim](https://github.com/V-assim))
+  - chore: use YAML safe loader ([@V-assim](https://github.com/V-assim))
+
 ### Version 2.2 (2019-06-26)
 
   - setup: switch to pyannote.core 3.0
