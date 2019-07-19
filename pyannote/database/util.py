@@ -611,3 +611,43 @@ def load_mapping(mapping_txt):
         mapping[key] = value
 
     return mapping
+
+
+class LabelMapper(object):
+    """Label mapper for use as pyannote.database preprocessor
+
+    Parameters
+    ----------
+    mapping : `dict`
+        Mapping dictionary as used in `Annotation.rename_labels()`.
+    keep_missing : `bool`, optional
+        In case a label has no mapping, a `ValueError` will be raised.
+        Set "keep_missing" to True to keep those labels unchanged instead
+
+    Usage
+    -----
+    >>> mapping = {'Hadrien': 'MAL', 'Marvin': 'MAL', 
+    ...            'Wassim': 'CHI', 'Herve': 'GOD'}
+    >>> preprocessors = {'annotation': LabelMapper(mapping=mapping)}
+    >>> protocol = get_protocol('AMI.SpeakerDiarization.MixHeadset', 
+                                preprocessors=preprocessors)
+
+    """
+    def __init__(self, mapping, keep_missing=False):
+        self.mapping = mapping
+        self.keep_missing = keep_missing
+
+    def __call__(self, current_file):
+
+        if not self.keep_missing:
+            missing = set(current_file['annotation'].labels()) - set(self.mapping)
+            if missing and not self.keep_missing:
+                label = missing.pop()
+                msg = (
+                    f'No mapping found for label "{label}". Set "keep_missing" '
+                    f'to True to keep labels with no mapping.'
+                )
+                raise ValueError(msg)
+        
+        return current_file['annotation'].rename_labels(mapping=self.mapping)
+        
