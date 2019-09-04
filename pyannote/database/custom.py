@@ -129,7 +129,7 @@ def subset_iter(database_name, file_lst=None, file_rttm=None,
         if file_rttm.suffix == '.rttm':
             annotations = load_rttm(file_rttm)
         elif file_rttm.suffix == '.mdtm':
-            annotations = load_mdtm(file_mdtm)
+            annotations = load_mdtm(file_rttm)
         else:
             msg = f'Unsupported format in {file_rttm}: please use RTTM.'
             raise ValueError(msg)
