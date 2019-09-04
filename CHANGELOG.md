@@ -1,3 +1,7 @@
+### Version 2.3.1 (2019-09-04)
+
+  - fix: fix support for MDTM files in `pyannote.database.custom.subset_iter` ([#23](https://github.com/pyannote/pyannote-database/issues/23))
+
 ### Version 2.3 (2019-07-19)
 
   - feat: add LabelMapper preprocessor ([@MarvinLvn](https://github.com/MarvinLvn))
