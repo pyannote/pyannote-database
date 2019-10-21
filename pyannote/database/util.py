@@ -420,17 +420,14 @@ def get_label_identifier(label, current_file):
     return database + '|' + label
 
 
-def load_rttm(file_rttm,keep_default_na=False):
+def load_rttm(file_rttm):
     """Load RTTM file
 
     Parameter
     ---------
     file_rttm : `str`
         Path to RTTM file.
-    keep_default_na : `bool`
-        Whether or not to include the default NaN values when parsing the data.
-        See https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.read_csv.html
-        Defaults to False.
+
     Returns
     -------
     annotations : `dict`
@@ -441,7 +438,8 @@ def load_rttm(file_rttm,keep_default_na=False):
              'NA3', 'NA4', 'speaker', 'NA5', 'NA6']
     dtype = {'uri': str, 'start': float, 'duration': float, 'speaker': str}
     data = pd.read_csv(file_rttm, names=names, dtype=dtype,
-                       delim_whitespace=True,keep_default_na=keep_default_na)
+                       delim_whitespace=True,
+                       keep_default_na=False)
 
     annotations = dict()
     for uri, turns in data.groupby('uri'):
@@ -512,17 +510,14 @@ class RTTMLoader(object):
             raise ValueError(msg)
 
 
-def load_mdtm(file_mdtm, keep_default_na=False):
+def load_mdtm(file_mdtm):
     """Load MDTM file
 
     Parameter
     ---------
     file_mdtm : `str`
         Path to MDTM file.
-    keep_default_na : `bool`
-        Whether or not to include the default NaN values when parsing the data.
-        See https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.read_csv.html
-        Defaults to False.
+    
     Returns
     -------
     annotations : `dict`
@@ -532,7 +527,8 @@ def load_mdtm(file_mdtm, keep_default_na=False):
     names = ['uri', 'NA1', 'start', 'duration', 'NA2', 'NA3', 'NA4', 'speaker']
     dtype = {'uri': str, 'start': float, 'duration': float, 'speaker': str}
     data = pd.read_csv(file_mdtm, names=names, dtype=dtype,
-                       delim_whitespace=True,keep_default_na=keep_default_na)
+                       delim_whitespace=True,
+                       keep_default_na=False)
 
     annotations = dict()
     for uri, turns in data.groupby('uri'):
