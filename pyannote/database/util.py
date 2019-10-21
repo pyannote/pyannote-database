@@ -438,7 +438,8 @@ def load_rttm(file_rttm):
              'NA3', 'NA4', 'speaker', 'NA5', 'NA6']
     dtype = {'uri': str, 'start': float, 'duration': float, 'speaker': str}
     data = pd.read_csv(file_rttm, names=names, dtype=dtype,
-                       delim_whitespace=True)
+                       delim_whitespace=True,
+                       keep_default_na=False)
 
     annotations = dict()
     for uri, turns in data.groupby('uri'):
@@ -516,7 +517,7 @@ def load_mdtm(file_mdtm):
     ---------
     file_mdtm : `str`
         Path to MDTM file.
-
+    
     Returns
     -------
     annotations : `dict`
@@ -526,7 +527,8 @@ def load_mdtm(file_mdtm):
     names = ['uri', 'NA1', 'start', 'duration', 'NA2', 'NA3', 'NA4', 'speaker']
     dtype = {'uri': str, 'start': float, 'duration': float, 'speaker': str}
     data = pd.read_csv(file_mdtm, names=names, dtype=dtype,
-                       delim_whitespace=True)
+                       delim_whitespace=True,
+                       keep_default_na=False)
 
     annotations = dict()
     for uri, turns in data.groupby('uri'):
