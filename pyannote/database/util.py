@@ -304,7 +304,7 @@ class FileFinder(object):
         for current_file_, status in self.current_file_iter(
             current_file, return_status=True):
 
-            found_files = self._find(self.config, **current_file_)
+            found_files = self._find(self.config, **abs(current_file_))
             n_found_files = len(found_files)
 
             if n_found_files == 1:

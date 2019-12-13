@@ -107,6 +107,9 @@ class ProtocolFile(collections.abc.MutableMapping):
         self._store = dict(precomputed)
         self.lazy = dict(lazy)
 
+    def __abs__(self):
+        return dict(self._store)
+
     def __getitem__(self, key):
 
         if key in self.lazy:
