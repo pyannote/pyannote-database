@@ -114,6 +114,8 @@ class ProtocolFile(collections.abc.MutableMapping):
 
         if key in self.lazy:
 
+            # TODO. add an option to **NOT** update existing keys
+
             # apply preprocessor once and remove it
             value = self.lazy[key](self)
             del self.lazy[key]
