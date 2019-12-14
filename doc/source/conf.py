@@ -181,16 +181,17 @@ texinfo_documents = [
      'Miscellaneous'),
 ]
 
-# Example configuration for intersphinx: refer to the Python standard library.
-intersphinx_mapping = {'https://docs.python.org/': None}
-
+intersphinx_mapping = {
+    'python': ('https://docs.python.org/', None),
+    'pyannote.core': ('https://pyannote.github.com/pyannote-core', None),
+}
 
 plot_pre_code = """import matplotlib.pyplot as plt
-from pyannote.database import notebook
-from pyannote.database import Segment
-from pyannote.database import Timeline
-from pyannote.database import Annotation
-from pyannote.database import SlidingWindow
-from pyannote.database import SlidingWindowFeature"""
+from pyannote.core import notebook
+from pyannote.core import Segment
+from pyannote.core import Timeline
+from pyannote.core import Annotation
+from pyannote.core import SlidingWindow
+from pyannote.core import SlidingWindowFeature"""
 
 ipython_savefig_dir = '../../build/html/_static'
