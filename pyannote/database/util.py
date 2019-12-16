@@ -304,7 +304,7 @@ class FileFinder(object):
         for current_file_, status in self.current_file_iter(
             current_file, return_status=True):
 
-            found_files = self._find(self.config, **current_file_)
+            found_files = self._find(self.config, **abs(current_file_))
             n_found_files = len(found_files)
 
             if n_found_files == 1:
@@ -381,20 +381,26 @@ def get_annotated(current_file):
     # if it does not, but does provide 'audio' key
     # try and use wav duration
 
-    if 'audio' in current_file:
+    if 'duration' in current_file:
         try:
-            from pyannote.audio.features.utils import get_audio_duration
-            duration = get_audio_duration(current_file)
+            duration = current_file['duration']
         except ImportError as e:
             pass
         else:
-            warnings.warn('"annotated" was approximated by "audio" duration.')
             annotated = Timeline([Segment(0, duration)])
+            msg = f'"annotated" was approximated by [0, audio duration].'
+            warnings.warn(msg)
             return annotated
 
-    warnings.warn('"annotated" was approximated by "annotation" extent.')
     extent = current_file['annotation'].get_timeline().extent()
     annotated = Timeline([extent])
+
+    msg = (f'"annotated" was approximated by "annotation" extent. '
+           f'Please provide "annotated" directly, or at the very '
+           f'least, use a "duration" preprocessor.')
+    warnings.warn(msg)
+
+
     return annotated
 
 
@@ -517,7 +523,7 @@ def load_mdtm(file_mdtm):
     ---------
     file_mdtm : `str`
         Path to MDTM file.
-    
+
     Returns
     -------
     annotations : `dict`
@@ -624,14 +630,14 @@ class LabelMapper(object):
         Mapping dictionary as used in `Annotation.rename_labels()`.
     keep_missing : `bool`, optional
         In case a label has no mapping, a `ValueError` will be raised.
-        Set "keep_missing" to True to keep those labels unchanged instead
+        Set "keep_missing" to True to keep those labels unchanged instead.
 
     Usage
     -----
-    >>> mapping = {'Hadrien': 'MAL', 'Marvin': 'MAL', 
+    >>> mapping = {'Hadrien': 'MAL', 'Marvin': 'MAL',
     ...            'Wassim': 'CHI', 'Herve': 'GOD'}
     >>> preprocessors = {'annotation': LabelMapper(mapping=mapping)}
-    >>> protocol = get_protocol('AMI.SpeakerDiarization.MixHeadset', 
+    >>> protocol = get_protocol('AMI.SpeakerDiarization.MixHeadset',
                                 preprocessors=preprocessors)
 
     """
@@ -650,6 +656,5 @@ class LabelMapper(object):
                     f'to True to keep labels with no mapping.'
                 )
                 raise ValueError(msg)
-        
+
         return current_file['annotation'].rename_labels(mapping=self.mapping)
-        

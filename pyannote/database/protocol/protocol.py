@@ -38,6 +38,7 @@ Protocols
 
 
 import warnings
+import collections
 
 
 class Protocol(object):
@@ -78,17 +79,81 @@ class Protocol(object):
         self.progress = progress
 
     def preprocess(self, current_file):
-
-        for key, preprocessor in self.preprocessors.items():
-
-            # warn the user that preprocessors modify an existing key
-            if key in current_file:
-                msg = 'Key "{key}" may have been modified by preprocessors.'
-                warnings.warn(msg.format(key=key))
-
-            current_file[key] = preprocessor(current_file)
-
-        return current_file
+        return ProtocolFile(current_file, self.preprocessors)
 
     def __str__(self):
         return self.__doc__
+
+
+class ProtocolFile(collections.abc.MutableMapping):
+    """Protocol file with lazy preprocessors
+
+    This is a dict-like data structure where some values may depend on other
+    values, and are only computed if/when requested. Once computed, they are
+    cached and never recomputed again.
+
+    Parameters
+    ----------
+    precomputed : dict
+        Regular dictionary with precomputed values
+    lazy : dict
+        Dictionary describing how lazy value needs to be computed.
+        Values are callable expecting a dictionary as input and returning the
+        computed value.
+
+    """
+
+    def __init__(self, precomputed, lazy):
+        self._store = dict(precomputed)
+        self.lazy = dict(lazy)
+
+    def __abs__(self):
+        return dict(self._store)
+
+    def __getitem__(self, key):
+
+        if key in self.lazy:
+
+            # TODO. add an option to **NOT** update existing keys
+
+            # apply preprocessor once and remove it
+            value = self.lazy[key](self)
+            del self.lazy[key]
+
+            # warn the user when a precomputed key is modified
+            if key in self._store:
+                msg = 'Existing key "{key}" may have been modified.'
+                warnings.warn(msg.format(key=key))
+
+            # store the output of the lazy computation
+            # so that it is available for future access
+            self._store[key] = value
+
+        return self._store[key]
+
+    def __setitem__(self, key, value):
+
+        if key in self.lazy:
+            del self.lazy[key]
+
+        self._store[key] = value
+
+    def __delitem__(self, key):
+
+        if key in self.lazy:
+            del self.lazy[key]
+
+        del self._store[key]
+
+    def __iter__(self):
+
+        for key in self._store:
+            yield key
+
+        for key in self.lazy:
+            if key in self._store:
+                continue
+            yield key
+
+    def __len__(self):
+        return len(set(self._store) | set(self.lazy))
