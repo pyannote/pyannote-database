@@ -2,6 +2,14 @@
 Changelog
 #########
 
+Version 2.4 (2019-12-17)
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+  - feat: make preprocessors lazy
+  - fix: pandas would convert a label to NaN ([@PaulLerner](https://github.com/PaulLerner))
+  - feat: setup continuous integration
+  - setup: switch to pyannote.core 3.2
+
 Version 2.3.1 (2019-09-04)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
