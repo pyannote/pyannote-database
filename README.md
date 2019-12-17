@@ -204,7 +204,7 @@ TODO
 # ~/.pyannote/database.yml
 Protocols:
   DatabaseName:
-    SpeakerDiarization
+    SpeakerDiarization:
       ProtocolName:
         train:
             annotation: path/to/annotation/train/file.rttm
