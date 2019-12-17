@@ -35,13 +35,17 @@ import pandas as pd
 from glob import glob
 from pyannote.core import Segment, Timeline, Annotation
 
+from typing import Optional
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from .protocol.protocol import ProtocolFile
 
 
 class PyannoteDatabaseException(Exception):
     pass
 
 
-class FileFinder(object):
+class FileFinder:
     """Database file finder
 
     Parameters
@@ -79,12 +83,12 @@ class FileFinder(object):
     glob
     """
 
-    def __init__(self, config_yml=None):
-        super(FileFinder, self).__init__()
+    def __init__(self, config_yml: Optional[Path] = None):
 
         if config_yml is None:
-            config_yml = os.environ.get("PYANNOTE_DATABASE_CONFIG",
-                                        "~/.pyannote/database.yml")
+            config_yml = Path(
+                os.environ.get("PYANNOTE_DATABASE_CONFIG",
+                               "~/.pyannote/database.yml"))
         config_yml = Path(config_yml).expanduser()
 
         try:
@@ -325,36 +329,36 @@ class FileFinder(object):
         else:
             return found[0]
 
-def get_unique_identifier(item):
-    """Return unique item identifier
+def get_unique_identifier(file: ProtocolFile) -> str:
+    """Return unique file identifier
 
     The complete format is {database}/{uri}_{channel}:
-    * prefixed by "{database}/" only when `item` has a 'database' key.
-    * suffixed by "_{channel}" only when `item` has a 'channel' key.
+    * prefixed by "{database}/" only when `file` has a 'database' key.
+    * suffixed by "_{channel}" only when `file` has a 'channel' key.
 
     Parameters
     ----------
-    item : dict
-        Item as yielded by pyannote.database protocols
+    file : ProtocolFile
+        File yielded by pyannote.database protocols
 
     Returns
     -------
     identifier : str
-        Unique item identifier
+        Unique file identifier
     """
 
     IDENTIFIER = ""
 
     # {database}/{uri}_{channel}
-    database = item.get('database', None)
+    database = file.get('database', None)
     if database is not None:
         IDENTIFIER += "{database}/"
     IDENTIFIER += "{uri}"
-    channel = item.get('channel', None)
+    channel = file.get('channel', None)
     if channel is not None:
         IDENTIFIER += "_{channel:d}"
 
-    return IDENTIFIER.format(**item)
+    return IDENTIFIER.format(**file)
 
 
 def get_annotated(current_file):

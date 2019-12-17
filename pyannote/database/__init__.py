@@ -31,14 +31,17 @@
 
 """
 
+from typing import Text, Dict
+from .types import Task
+
 import sys
 from pkg_resources import iter_entry_points
 
 from .database import Database
 from .database import PyannoteDatabaseException
 
-DATABASES = dict()
-TASKS = dict()
+DATABASES : Dict[Text, type] = dict()
+TASKS : Dict[Task, set] = dict()
 
 # load databases from entry points
 for o in iter_entry_points(group='pyannote.database.databases', name=None):

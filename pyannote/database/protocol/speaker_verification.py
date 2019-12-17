@@ -3,7 +3,7 @@
 
 # The MIT License (MIT)
 
-# Copyright (c) 2017-2018 CNRS
+# Copyright (c) 2017-2019 CNRS
 
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -26,26 +26,47 @@
 # AUTHORS
 # Hervé BREDIN - http://herve.niderb.fr
 
+from typing import Dict, Any
+from typing_extensions import TypedDict
+from ..protocol import ProtocolFile
+
+Trial = TypedDict(
+    'Trial', {'reference': bool,
+              'file1': Dict[str, Any],
+              'file2': Dict[str, Any]})
+
+ProtocolTrial = TypedDict(
+    'ProtocolTrial', {'reference': bool,
+                      'file1': ProtocolFile,
+                      'file2': ProtocolFile})
+
 
 from tqdm import tqdm
-from .speaker_diarization import SpeakerDiarizationProtocol
+from typing import Iterator
+from typing import Progress
+from ..types import Trial
+from ..types import ProtocolTrial
 
+
+from .speaker_diarization import SpeakerDiarizationProtocol
 
 class SpeakerVerificationProtocol(SpeakerDiarizationProtocol):
     """Speaker verification protocol
 
     Parameters
     ----------
-    preprocessors : dict or (key, preprocessor) iterable
-        When provided, each protocol item (dictionary) are preprocessed, such
-        that item[key] = preprocessor(item).
+    preprocessors : dict
+        When provided, each protocol file (dictionary) are preprocessed, such
+        that file[key] = preprocessor(file). In case 'preprocessor' is not
+        callable, it should be a string containing placeholder for file keys
+        (e.g. {'audio': '/path/to/{uri}.wav'})
     """
 
-    def trn_try_iter(self):
+    def trn_try_iter(self) -> Iterator[Trial]:
         for trial in []:
             yield trial
 
-    def train_trial(self):
+    def train_trial(self, progress: Optional[Progress] = None) -> Iterator[ProtocolTrial]:
         """Iterate over the trials of the train set
 
         Each trial is yielded as a dictionary with the following keys:
@@ -67,21 +88,21 @@ class SpeakerVerificationProtocol(SpeakerDiarizationProtocol):
 
         generator = self.trn_try_iter()
 
-        if self.progress:
-            generator = tqdm(
-                generator, desc='Trial (train set)',
-                total=getattr(self.trn_try_iter, 'n_items', None))
+        if progress is not None:
+            if 'total' not in progress:
+                progress['total'] = getattr(self.trn_try_iter, 'n_items', None)
+            generator = tqdm(generator, **progress)
 
         for current_trial in generator:
             current_trial['file1'] = self.preprocess(current_trial['file1'])
             current_trial['file2'] = self.preprocess(current_trial['file2'])
             yield current_trial
 
-    def dev_try_iter(self):
+    def dev_try_iter(self) -> Iterator[Trial]:
         for trial in []:
             yield trial
 
-    def development_trial(self):
+    def development_trial(self, progress: Optional[Progress] = None) -> Iterator[ProtocolTrial]:
         """Iterate over the trials of the development set
 
         Each trial is yielded as a dictionary with the following keys:
@@ -104,21 +125,21 @@ class SpeakerVerificationProtocol(SpeakerDiarizationProtocol):
 
         generator = self.dev_try_iter()
 
-        if self.progress:
-            generator = tqdm(
-                generator, desc='Trial (development set)',
-                total=getattr(self.dev_try_iter, 'n_items', None))
+        if progress is not None:
+            if 'total' not in progress:
+                progress['total'] = getattr(self.dev_try_iter, 'n_items', None)
+            generator = tqdm(generator, **progress)
 
         for current_trial in generator:
             current_trial['file1'] = self.preprocess(current_trial['file1'])
             current_trial['file2'] = self.preprocess(current_trial['file2'])
             yield current_trial
 
-    def tst_try_iter(self):
+    def tst_try_iter(self) -> Iterator[Trial]:
         for trial in []:
             yield trial
 
-    def test_trial(self):
+    def test_trial(self, progress: Optional[Progress] = None) -> Iterator[ProtocolTrial]:
         """Iterate over the trials of the test set
 
         Each trial is yielded as a dictionary with the following keys:
@@ -141,10 +162,10 @@ class SpeakerVerificationProtocol(SpeakerDiarizationProtocol):
 
         generator = self.tst_try_iter()
 
-        if self.progress:
-            generator = tqdm(
-                generator, desc='Trial (test set)',
-                total=getattr(self.tst_try_iter, 'n_items', None))
+        if progress is not None:
+            if 'total' not in progress:
+                progress['total'] = getattr(self.tst_try_iter, 'n_items', None)
+            generator = tqdm(generator, **progress)
 
         for current_trial in generator:
             current_trial['file1'] = self.preprocess(current_trial['file1'])

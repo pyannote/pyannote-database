@@ -3,7 +3,7 @@
 
 # The MIT License (MIT)
 
-# Copyright (c) 2017-2019 CNRS
+# Copyright (c) 2019 CNRS
 
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -26,18 +26,24 @@
 # AUTHORS
 # Hervé BREDIN - http://herve.niderb.fr
 
+from typing_extensions import Literal
+from typing import Callable, Any, Union, Dict, Text, TYPE_CHECKING
 
-from .speaker_verification import SpeakerVerificationProtocol
 
-class SpeakerIdentificationProtocol(SpeakerVerificationProtocol):
-    """Speaker identification protocol
+FileValue = Any
+FileKey = Text
+RegularFile = Dict[FileKey, FileValue]
 
-    Parameters
-    ----------
-    preprocessors : dict
-        When provided, each protocol file (dictionary) are preprocessed, such
-        that file[key] = preprocessor(file). In case 'preprocessor' is not
-        callable, it should be a string containing placeholder for file keys
-        (e.g. {'audio': '/path/to/{uri}.wav'})
-    """
-    pass
+
+if TYPE_CHECKING:
+    from .protocol import ProtocolFile
+
+Preprocessor = Callable[[ProtocolFile], FileValue]
+RawPreprocessor = Union[Text, Preprocessor]
+Preprocessors = Dict[FileKey, Preprocessor]
+
+
+Subset = Literal['train', 'development', 'test']
+Task = Literal['SpeakerDiarization', 'SpeakerVerification', 'SpeakerSpotting']
+
+Progress = Dict[Text, Any]

@@ -26,7 +26,8 @@
 # AUTHORS
 # Hervé BREDIN - http://herve.niderb.fr
 
-
+from .protocol import Protocol
+from .protocol import ProtocolFile
 from .collection import CollectionProtocol
 from .speaker_diarization import SpeakerDiarizationProtocol
 from .speaker_spotting import SpeakerSpottingProtocol

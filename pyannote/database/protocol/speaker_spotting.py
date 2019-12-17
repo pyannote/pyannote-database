@@ -3,7 +3,7 @@
 
 # The MIT License (MIT)
 
-# Copyright (c) 2017 CNRS
+# Copyright (c) 2017-2019 CNRS
 
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -27,8 +27,8 @@
 # Hervé BREDIN - http://herve.niderb.fr
 
 
-from .protocol import Protocol
 from tqdm import tqdm
+from .protocol import Protocol
 from ..util import get_annotated
 from .speaker_diarization import SpeakerDiarizationProtocol
 
@@ -38,10 +38,10 @@ class SpeakerSpottingProtocol(SpeakerDiarizationProtocol):
 
     Parameters
     ----------
-    preprocessors : dict or (key, preprocessor) iterable
-        When provided, each protocol item (dictionary) are preprocessed, such
-        that item[key] = preprocessor(item). In case 'preprocessor' is not
-        callable, it should be a string containing placeholder for item keys
+    preprocessors : dict
+        When provided, each protocol file (dictionary) are preprocessed, such
+        that file[key] = preprocessor(file). In case 'preprocessor' is not
+        callable, it should be a string containing placeholder for file keys
         (e.g. {'audio': '/path/to/{uri}.wav'})
     """
 

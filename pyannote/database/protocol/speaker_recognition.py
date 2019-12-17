@@ -3,7 +3,7 @@
 
 # The MIT License (MIT)
 
-# Copyright (c) 2016 CNRS
+# Copyright (c) 2016-2019 CNRS
 
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -26,9 +26,12 @@
 # AUTHORS
 # Hervé BREDIN - http://herve.niderb.fr
 
-
-from .protocol import Protocol
 from tqdm import tqdm
+
+from typing import Iterator
+from typing import Dict
+from typing import Any
+from .protocol import Protocol
 
 
 class SpeakerRecognitionProtocol(Protocol):
@@ -42,10 +45,10 @@ class SpeakerRecognitionProtocol(Protocol):
         callable, it should be a string containing placeholder for item keys
         (e.g. {'wav': '/path/to/{uri}.wav'})
     """
-    def trn_iter(self):
+
+    def trn_iter(self) -> Iterator[Dict[str, Any]]:
         raise NotImplementedError(
-            'Custom speaker recognition protocol '
-            'should implement "trn_iter".')
+            'Custom speaker recognition protocol should implement "trn_iter".')
 
     def trn_enroll_iter(self):
         raise NotImplementedError(

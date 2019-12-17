@@ -27,17 +27,17 @@
 # Hervé BREDIN - http://herve.niderb.fr
 # Pavel KORSHUNOV - https://www.idiap.ch/~pkorshunov/
 
+from typing import Optional, Iterator, Text
+from pathlib import Path
 
 import os
 from . import protocol as Protocol
 from .database import Database
 from .util import load_lst, load_uem, load_mdtm, load_rttm, load_mapping
 import functools
-from pathlib import Path
 import yaml
 import pandas as pd
 from pyannote.core import Annotation, Timeline
-
 
 from . import DATABASES, TASKS
 
@@ -46,9 +46,8 @@ from . import DATABASES, TASKS
 SUBSET_MAPPING = {'train': 'trn', 'development': 'dev', 'test': 'tst'}
 
 
-def meta_subset_iter(config):
+def meta_subset_iter(config) -> Iterator[ProtocolFile]:
     """This function will become a xxx_iter method of a meta-protocol
-
 
     `config` comes from this part of ~/.pyannote/database.yml
     (marked with arrows below)
@@ -97,8 +96,11 @@ def meta_subset_iter(config):
                 yield current_file
 
 
-def subset_iter(database_name, file_lst=None, file_rttm=None,
-                file_uem=None, domain_txt=None):
+def subset_iter(database_name: Text,
+                file_lst: Optional[Path] = None,
+                file_rttm: Optional[Path] = None,
+                file_uem: Optional[Path] = None,
+                domain_txt: Optional[Path] = None) -> Iterator[dict]:
     """This function will become a xxx_iter method of a protocol.
 
     Parameters

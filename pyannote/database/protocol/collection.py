@@ -3,7 +3,7 @@
 
 # The MIT License (MIT)
 
-# Copyright (c) 2018 CNRS
+# Copyright (c) 2018-2019 CNRS
 
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -27,8 +27,13 @@
 # Hervé BREDIN - http://herve.niderb.fr
 
 
-from .protocol import Protocol
+from typing import Iterator
+from typing import Dict
+from typing import Any
+from typing import Optional
 from tqdm import tqdm
+from .protocol import Protocol
+from .protocol import ProtocolFile
 
 
 class CollectionProtocol(Protocol):
@@ -36,48 +41,41 @@ class CollectionProtocol(Protocol):
 
     Parameters
     ----------
-    preprocessors : dict or (key, preprocessor) iterable
-        When provided, each protocol item (dictionary) are preprocessed, such
-        that item[key] = preprocessor(item). In case 'preprocessor' is not
-        callable, it should be a string containing placeholder for item keys
+    preprocessors : dict
+        When provided, each protocol file (dictionary) are preprocessed, such
+        that file[key] = preprocessor(file). In case 'preprocessor' is not
+        callable, it should be a string containing placeholder for file keys
         (e.g. {'audio': '/path/to/{uri}.wav'})
-    progress : boolean, optional
-        Show iteration progress. Defaults to False.
-
-    Usage
-    -----
-    >>> collection = get_protocol('YOUR_PROTOCOL_GOES_HERE')
-    >>> for current_file in collection.files():
-    ...    # do something with current_file
-    ...    pass
-
     """
 
-    def files_iter(self):
+    def files_iter(self) -> Iterator[Dict[str, Any]]:
         raise NotImplementedError(
             'Custom collection protocol should implement "files_iter".')
 
-    def files(self):
+    def files(self, progress: Optional[Dict[str, Any]] = None) -> Iterator[ProtocolFile]:
         """Iterate over the collection
+
+        Parameters
+        ----------
+        progress : dict, optional
+            When provided, displays a tqdm progress bar with these parameters
 
         Yields
         ------
-        current_file : dict
-            ['database'] (`str`) unique database identifier
-            ['uri'] (`str`) unique resource identifier
+        file : ProtocolFile
         """
-
+        
         generator = self.files_iter()
 
-        if self.progress:
-            generator = tqdm(
-                generator, desc='Files',
-                total=getattr(self.files_iter, 'n_items', None))
+        if progress is not None:
+            if 'total' not in progress:
+                progress['total'] = getattr(self.files_iter, 'n_items', None)
+            generator = tqdm(generator, **progress)
 
-        for item in generator:
-            yield self.preprocess(item)
+        for file in generator:
+            yield self.preprocess(file)
 
-    def stats(self):
+    def stats(self) -> dict:
         """Collection statistics
 
         Returns
