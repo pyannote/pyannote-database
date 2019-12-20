@@ -39,6 +39,7 @@ Protocols
 
 import warnings
 import collections
+import threading
 
 
 class Protocol(object):
@@ -106,54 +107,63 @@ class ProtocolFile(collections.abc.MutableMapping):
     def __init__(self, precomputed, lazy):
         self._store = dict(precomputed)
         self.lazy = dict(lazy)
+        self.lock_ = threading.RLock()
 
     def __abs__(self):
-        return dict(self._store)
+        with self.lock_:
+            return dict(self._store)
 
     def __getitem__(self, key):
+        with self.lock_:
 
-        if key in self.lazy:
+            if key in self.lazy:
 
-            # TODO. add an option to **NOT** update existing keys
+                # TODO. add an option to **NOT** update existing keys
 
-            # apply preprocessor once and remove it
-            value = self.lazy[key](self)
-            del self.lazy[key]
+                # apply preprocessor once and remove it
+                value = self.lazy[key](self)
+                del self.lazy[key]
 
-            # warn the user when a precomputed key is modified
-            if key in self._store:
-                msg = 'Existing key "{key}" may have been modified.'
-                warnings.warn(msg.format(key=key))
+                # warn the user when a precomputed key is modified
+                if key in self._store:
+                    msg = 'Existing key "{key}" may have been modified.'
+                    warnings.warn(msg.format(key=key))
 
-            # store the output of the lazy computation
-            # so that it is available for future access
-            self._store[key] = value
+                # store the output of the lazy computation
+                # so that it is available for future access
+                self._store[key] = value
 
-        return self._store[key]
+            return self._store[key]
+
 
     def __setitem__(self, key, value):
+        with self.lock_:
 
-        if key in self.lazy:
-            del self.lazy[key]
+            if key in self.lazy:
+                del self.lazy[key]
 
-        self._store[key] = value
+            self._store[key] = value
 
     def __delitem__(self, key):
+        with self.lock_:
 
-        if key in self.lazy:
-            del self.lazy[key]
+            if key in self.lazy:
+                del self.lazy[key]
 
-        del self._store[key]
+            del self._store[key]
 
     def __iter__(self):
+        with self.lock_:
 
-        for key in self._store:
-            yield key
+            for key in self._store:
+                yield key
 
-        for key in self.lazy:
-            if key in self._store:
-                continue
-            yield key
+            for key in self.lazy:
+                if key in self._store:
+                    continue
+                yield key
 
     def __len__(self):
-        return len(set(self._store) | set(self.lazy))
+        with self.lock_:
+
+            return len(set(self._store) | set(self.lazy))
