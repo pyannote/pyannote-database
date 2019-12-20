@@ -2,6 +2,11 @@
 Changelog
 #########
 
+Version 2.4.1 (2019-12-20)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  - fix: make ProtocolFile thread-safe
+
 Version 2.4 (2019-12-17)
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
