@@ -238,6 +238,8 @@ def add_custom_protocols(config_yml=None):
     # for each database
     for database_name, tasks in databases.items():
 
+        database_name = str(database_name)
+
         # this list is meant to contain one class per protocol
         register = []
 
