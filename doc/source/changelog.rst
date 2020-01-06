@@ -2,8 +2,13 @@
 Changelog
 #########
 
+Version 2.4.2 (20202-01)
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+  - fix: add support for int-like database name in custom protocol
+
 Version 2.4.1 (2019-12-20)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   - fix: make ProtocolFile thread-safe
 
