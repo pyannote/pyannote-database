@@ -2,8 +2,13 @@
 Changelog
 #########
 
-Version 2.4.2 (20202-01)
-~~~~~~~~~~~~~~~~~~~~~~~~
+Version 2.4.3 (2020-01-24)
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  - fix: fix infinite recursion in "ProtocolFile" lazy evaluation
+
+Version 2.4.2 (2020-01-06)
+~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   - fix: add support for int-like database name in custom protocol
 

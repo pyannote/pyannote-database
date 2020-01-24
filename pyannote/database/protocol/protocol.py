@@ -3,7 +3,7 @@
 
 # The MIT License (MIT)
 
-# Copyright (c) 2016 CNRS
+# Copyright (c) 2016-2020 CNRS
 
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -109,6 +109,12 @@ class ProtocolFile(collections.abc.MutableMapping):
         self.lazy = dict(lazy)
         self.lock_ = threading.RLock()
 
+        # this is needed to avoid infinite recursion
+        # when a key is both in precomputed and lazy.
+        # keys with evaluating_ > 0 are currently being evaluated
+        # and therefore should be taken from precomputed
+        self.evaluating_ = collections.Counter()
+
     def __abs__(self):
         with self.lock_:
             return dict(self._store)
@@ -116,9 +122,10 @@ class ProtocolFile(collections.abc.MutableMapping):
     def __getitem__(self, key):
         with self.lock_:
 
-            if key in self.lazy:
+            if key in self.lazy and self.evaluating_[key] == 0:
 
-                # TODO. add an option to **NOT** update existing keys
+                # mark lazy key as being evaluated
+                self.evaluating_.update([key])
 
                 # apply preprocessor once and remove it
                 value = self.lazy[key](self)
@@ -133,8 +140,10 @@ class ProtocolFile(collections.abc.MutableMapping):
                 # so that it is available for future access
                 self._store[key] = value
 
-            return self._store[key]
+                # lazy evaluation is finished for key
+                self.evaluating_.subtract([key])
 
+            return self._store[key]
 
     def __setitem__(self, key, value):
         with self.lock_:
