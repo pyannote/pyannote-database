@@ -3,7 +3,7 @@
 
 # The MIT License (MIT)
 
-# Copyright (c) 2016-2019 CNRS
+# Copyright (c) 2016-2020 CNRS
 
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -30,11 +30,9 @@ import os
 import yaml
 from pathlib import Path
 import warnings
-import itertools
 import pandas as pd
 from glob import glob
 from pyannote.core import Segment, Timeline, Annotation
-
 
 
 class PyannoteDatabaseException(Exception):
@@ -138,157 +136,32 @@ class FileFinder(object):
         return found
 
     @classmethod
-    def protocol_file_iter(cls, protocol, extra_keys=None):
+    def protocol_file_iter(cls, protocol):
         """Iterate over all files in `protocol`
 
         Parameters
         ----------
         protocol : Protocol
-        extra_keys : list, optional
-            Extra keys to consider (e.g. 'audio'). By default, only 'uri',
-            'channel', and 'database' keys are considered.
         """
 
-        # remember `progress` attribute
-        progress = protocol.progress
-
-        methods = []
-        for suffix in ['', '_enrolment', '_trial']:
-            for subset in ['development', 'test', 'train']:
-                methods.append(f'{subset}{suffix}')
-
-        yielded_uris = set()
-
-        for method in methods:
-
-            if not hasattr(protocol, method):
-                continue
-
-            try:
-                protocol.progress = False
-                file_generator = getattr(protocol, method)()
-                first_file = next(file_generator)
-            except NotImplementedError as e:
-                continue
-            except StopIteration as e:
-                continue
-
-            protocol.progress = True
-            file_generator = getattr(protocol, method)()
-
-            for current_file in file_generator:
-
-                # skip "files" that do not contain a "uri" entry.
-                # this happens for speaker verification trials that contain
-                # two nested files "file1" and "file2"
-                # see https://github.com/pyannote/pyannote-db-voxceleb/issues/4
-                if 'uri' not in current_file:
-                    continue
-
-                for current_file_ in cls.current_file_iter(
-                    current_file, extra_keys=extra_keys):
-
-                    # corner case when the same file is yielded several times
-                    uri = get_unique_identifier(current_file_)
-                    if uri in yielded_uris:
-                        continue
-
-                    yield current_file_
-
-                    yielded_uris.add(uri)
-
-        # revert `progress` attribute
-        protocol.progess = progress
+        msg = (
+            'FileFinder.protocol_file_iter is deprecated. '
+            'Use Protocol.files instead.')
+        raise NotImplementedError(msg)
 
     @classmethod
-    def current_file_iter(cls, current_file, extra_keys=None,
-                          return_status=False):
-        """Iterate over all files in `current_file`
-
-        When `current_file` refers to only one file, yield it and return.
-        When `current_file` refers to a list of file (i.e. 'uri', 'channel', or
-        'database' is a list, yield each file separately.
-
-        Parameters
-        ----------
-        extra_keys : list, optional
-            Extra keys to consider (e.g. 'audio'). By default, only 'uri',
-            'channel', and 'database' keys are considered.
-        return_status : bool, optional
-            Set to True to yield a boolean indicating if the original
-            `current_file` was a multi-file. Defaults to False.
-
-        Examples
-        --------
-        >>> current_file = {
-        ...     'uri': 'my_uri',
-        ...     'database': 'my_database'}
-        >>> for file in FileFinder.current_file_iter(current_file):
-        ...     print(file['uri'], file['database'])
-        my_uri my_database
-
-        >>> current_file = {
-        ...     'uri': ['my_uri1', 'my_uri2', 'my_uri3'],
-        ...     'database': 'my_database'}
-        >>> for file in FileFinder.current_file_iter(current_file):
-        ...     print(file['uri'], file['database'])
-        my_uri1 my_database
-        my_uri2 my_database
-        my_uri3 my_database
-
-        """
-        keys = ['uri', 'channel', 'database']
-        if extra_keys is not None:
-            keys += extra_keys
-
-        # value of each key, in order
-        values = [current_file.get(k, None) for k in keys]
-
-        # True if at least one value is a list
-        status = False
-
-        # make sure 'list' values (if any) all share the same length
-        for v, value in enumerate(values):
-            if isinstance(value, list):
-                # set (hopefully) common length when first encountering a list
-                if not status:
-                    first = v
-                    n = len(value)
-                # otherwise, check if subsequent lists have the same length
-                else:
-                    try:
-                        assert len(value) == n
-                    except AssertionError as e:
-                        msg = 'length mismatch ({0}: {1:d} vs. {2}: {3:d})'
-
-                        raise ValueError(msg.format(first, n, v, len(value)))
-
-                # at least one value is a list
-                status = True
-
-        # if no value is a list, return current_file, unmodified
-        if not status:
-            yield (current_file, status) if return_status else current_file
-            return
-
-        # otherwise, make sure one can iterate on all values
-        # by replacing those that are not lists by their infinite repetition
-        for k, value in enumerate(list(values)):
-            if not isinstance(value, list):
-                values[k] = itertools.repeat(value)
-
-        i = dict(current_file)
-        for value in zip(*values):
-            for k, v in enumerate(value):
-                i[keys[k]] = v
-            yield (i, status) if return_status else i
+    def current_file_iter(cls, current_file: 'ProtocolFile'):
+        msg = (
+            'FileFinder.current_file_iter is deprecated. '
+            'Use ProtocolFile.files instead.')
+        raise NotImplementedError(msg)
 
     def __call__(self, current_file):
         """Find files
 
         Parameters
         ----------
-        current_file : pyannote.database dict
+        current_file : ProtocolFile
             Dictionary as generated by pyannote.database plugins.
 
         Returns
@@ -300,30 +173,22 @@ class FileFinder(object):
 
         """
 
-        found = []
-        for current_file_, status in self.current_file_iter(
-            current_file, return_status=True):
+        found_files = self._find(self.config, **abs(current_file))
+        n_found_files = len(found_files)
 
-            found_files = self._find(self.config, **abs(current_file_))
-            n_found_files = len(found_files)
+        if n_found_files == 1:
+            return found_files[0]
 
-            if n_found_files == 1:
-                found.append(found_files[0])
+        elif n_found_files == 0:
+            uri = current_file['uri']
+            msg = 'Could not find file "{uri}".'
+            raise ValueError(msg.format(uri=uri))
 
-            elif n_found_files == 0:
-                uri = current_file_['uri']
-                msg = 'Could not find file "{uri}".'
-                raise ValueError(msg.format(uri=uri))
-
-            else:
-                uri = current_file_['uri']
-                msg = 'Found {n} matches for file "{uri}"'
-                raise ValueError(msg.format(uri=uri, n=n_found_files))
-
-        if status:
-            return found
         else:
-            return found[0]
+            uri = current_file['uri']
+            msg = 'Found {n} matches for file "{uri}"'
+            raise ValueError(msg.format(uri=uri, n=n_found_files))
+
 
 def get_unique_identifier(item):
     """Return unique item identifier
@@ -399,7 +264,6 @@ def get_annotated(current_file):
            f'Please provide "annotated" directly, or at the very '
            f'least, use a "duration" preprocessor.')
     warnings.warn(msg)
-
 
     return annotated
 
