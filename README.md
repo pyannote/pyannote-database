@@ -127,7 +127,7 @@ Once you have settled with a task, a database may implement several experimental
 ['Full', 'Radio', 'TV']
 ```
 
-In this example, three speaker diarization protocols are available: 
+In this example, three speaker diarization protocols are available:
 - one using the complete set of data;
 - one using only TV data;
 - one using only Radio data.
@@ -156,7 +156,7 @@ A shortcut `get_protocol` function is available if you already know which databa
 >>> protocol = get_protocol('Etape.SpeakerDiarization.TV')
 ```
 
-### Speaker diarization 
+### Speaker diarization
 ([↑up to table of contents](#table-of-contents))
 
 Speaker diarization protocols implement three methods: `train`, `development` and `test` that provide an iterator over the corresponding subset.
@@ -176,7 +176,7 @@ Those methods yield dictionaries (one per file/item) that can be used in the fol
 ...     annotated = get_annotated(current_file)
 ```
 
-### Collections 
+### Collections
 
 Collections protocols simply provide list of files:
 
@@ -186,7 +186,7 @@ Collections protocols simply provide list of files:
 ...     pass
 ```
 
-### Speaker spotting 
+### Speaker spotting
 
 TODO
 
@@ -217,7 +217,7 @@ Protocols:
             uris: path/to/list_of_uris/test/file.lst
 ```
 
-This configuration file would automagically make 
+This configuration file would automagically make
 `DatabaseName.SpeakerDiarization.ProtocolName` protocol available:
 
 ```python
@@ -225,17 +225,19 @@ from pyannote.database import get_protocol
 protocol = get_protocol('DatabaseName.SpeakerDiarization.ProtocolName')
 ```
 
-All of `uris`, `annotated` and `annotation` are optional but at least one of 
+All of `uris`, `annotated` and `annotation` are optional but at least one of
 them must be provided
 - `uris` links to a text file containing one line per (train/dev/test) file;
 - `annotated` links to an evaluation map file in UEM format;
 - `annotation` links to an annotation file in RTTM format.
 
-Though they are optional, some tasks are not possible without some of these files. 
+Though they are optional, some tasks are not possible without some of these files.
 For instance, it would not be possible to train a speech activity detection model with [`pyannote-audio`](https://github.com/pyannote/pyannote-audio) if the `annotation` file is not provided.
 
-When two or more are provided and disagree on the list of files, `uris` will 
+When two or more are provided and disagree on the list of files, `uris` will
 be prefered over `annotated`, which will be prefered over `annotation`.
+
+When computing stats (e.g. protocol total speech duration), only `annotation` parts that are `annotated` are taken into account.
 
 #### Domain
 
