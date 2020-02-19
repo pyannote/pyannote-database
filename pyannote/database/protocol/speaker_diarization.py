@@ -30,7 +30,7 @@
 from .protocol import Protocol
 from tqdm import tqdm
 from ..util import get_annotated
-
+import warnings
 
 class SpeakerDiarizationProtocol(Protocol):
     """Speaker diarization protocol
@@ -190,7 +190,12 @@ stats : dict
             annotated_duration += annotated.duration()
 
             # increment 'annotation' total duration
-            annotation = item['annotation']
+            annotation = item['annotation'].crop(annotated)
+            if annotation != item['annotation']:
+                msg = (
+                    f"{item['uri']} `annotation` is not fully included in `annotated`. "
+                    "cropping `annotation` to `annotated` ")
+                warnings.warn(msg)
             annotation_duration += annotation.get_timeline().duration()
 
             for label, duration in annotation.chart():
