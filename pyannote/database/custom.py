@@ -27,7 +27,7 @@
 # Hervé BREDIN - http://herve.niderb.fr
 # Pavel KORSHUNOV - https://www.idiap.ch/~pkorshunov/
 
-
+import warnings
 import os
 from . import protocol as Protocol
 from .database import Database
@@ -169,17 +169,25 @@ def subset_iter(database_name, file_lst=None, file_rttm=None,
         # initialize current file with the mandatory keys
         current_file = {'database': database_name, 'uri': uri}
 
+        # add 'annotated' when UEM file is provided
+        # defaults to empty Timeline for the same reason as above
+        if file_uem is not None:
+            current_file['annotated'] = annotated.get(uri, Timeline(uri=uri))
+
         # add 'annotation' when RTTM file is provided
         # defaults to empty Annotation because of
         # github.com/pyannote/pyannote-database/pull/13#discussion_r261564520)
         if file_rttm is not None:
             current_file['annotation'] = annotations.get(
                 uri, Annotation(uri=uri))
-
-        # add 'annotated' when UEM file is provided
-        # defaults to empty Timeline for the same reason as above
-        if file_uem is not None:
-            current_file['annotated'] = annotated.get(uri, Timeline(uri=uri))
+            if current_file['annotated']:
+                annotation = current_file['annotation'].crop(current_file['annotated'])
+                if annotation != current_file['annotation']:
+                    msg = (
+                        f"{uri} `annotation` is not fully included in `annotated`. "
+                        "cropping `annotation` to `annotated` ")
+                    warnings.warn(msg)
+                current_file['annotation'] = annotation
 
         # add 'domain' when domain mapping is provided
         if domain_txt is not None:
