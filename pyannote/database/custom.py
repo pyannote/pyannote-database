@@ -170,17 +170,17 @@ def subset_iter(database_name, file_lst=None, file_rttm=None,
         current_file = {'database': database_name, 'uri': uri}
 
         # add 'annotated' when UEM file is provided
-        # defaults to empty Timeline for the same reason as above
+        # defaults to empty Timeline because of
+        # github.com/pyannote/pyannote-database/pull/13#discussion_r261564520)
         if file_uem is not None:
             current_file['annotated'] = annotated.get(uri, Timeline(uri=uri))
 
         # add 'annotation' when RTTM file is provided
-        # defaults to empty Annotation because of
-        # github.com/pyannote/pyannote-database/pull/13#discussion_r261564520)
+        # defaults to empty Annotation for the same reason as above
         if file_rttm is not None:
             current_file['annotation'] = annotations.get(
                 uri, Annotation(uri=uri))
-            if current_file['annotated']:
+            if current_file.get('annotated'):
                 annotation = current_file['annotation'].crop(current_file['annotated'])
                 if annotation != current_file['annotation']:
                     msg = (
