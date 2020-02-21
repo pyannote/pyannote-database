@@ -237,7 +237,7 @@ For instance, it would not be possible to train a speech activity detection mode
 When two or more are provided and disagree on the list of files, `uris` will 
 be prefered over `annotated`, which will be prefered over `annotation`.
 
-If `annotated` is provided, only `annotation` parts that are `annotated` are taken into account.
+When `annotated` is provided, any annotation which is outside of the `annotated` part will not be considered.
 
 #### Domain
 
