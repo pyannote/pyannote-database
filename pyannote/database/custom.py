@@ -182,11 +182,6 @@ def subset_iter(database_name, file_lst=None, file_rttm=None,
                 uri, Annotation(uri=uri))
             if current_file.get('annotated'):
                 annotation = current_file['annotation'].crop(current_file['annotated'])
-                if annotation != current_file['annotation']:
-                    msg = (
-                        f"{uri} `annotation` is not fully included in `annotated`. "
-                        "cropping `annotation` to `annotated` ")
-                    warnings.warn(msg)
                 current_file['annotation'] = annotation
 
         # add 'domain' when domain mapping is provided
