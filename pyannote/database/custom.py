@@ -121,7 +121,7 @@ def subset_iter(database_name, file_lst=None, file_rttm=None,
         This must include (at the very least) 'uri' and 'database' keys.
     """
 
-    annotations, annotated, uris = dict(), dict(), list()
+    annotations, annotateds, uris = dict(), dict(), list()
 
     # load annotations
     if file_rttm is not None:
@@ -136,7 +136,7 @@ def subset_iter(database_name, file_lst=None, file_rttm=None,
 
     # load annotated
     if file_uem is not None:
-        annotated = load_uem(file_uem)
+        annotateds = load_uem(file_uem)
 
     # load list of files
     if file_lst is not None:
@@ -147,8 +147,8 @@ def subset_iter(database_name, file_lst=None, file_rttm=None,
         pass
 
     # when file_uem is provided, use this list of uris
-    elif len(annotated) > 0:
-        uris = sorted(annotated)
+    elif len(annotateds) > 0:
+        uris = sorted(annotateds)
 
     # if file_rttm is the only file provided, use its list of URIs
     elif len(annotations) > 0:
@@ -173,17 +173,17 @@ def subset_iter(database_name, file_lst=None, file_rttm=None,
         # defaults to empty Timeline because of
         # github.com/pyannote/pyannote-database/pull/13#discussion_r261564520)
         if file_uem is not None:
-            current_file['annotated'] = annotated.get(uri, Timeline(uri=uri))
+            current_file['annotated'] = annotateds.get(uri, Timeline(uri=uri))
 
         # add 'annotation' when RTTM file is provided
         # defaults to empty Annotation for the same reason as above
         if file_rttm is not None:
-            current_file['annotation'] = annotations.get(
-                uri, Annotation(uri=uri))
-            if current_file.get('annotated'):
-                annotation = current_file['annotation'].crop(current_file['annotated'])
-                current_file['annotation'] = annotation
-
+            annotation = annotations.get(uri, Annotation(uri=uri))
+            annotated = current_file.get('annotated')
+            if annotated:
+                if not annotated.covers(annotation.get_timeline()):
+                    annotation = annotation.crop(annotated)
+            current_file['annotation'] = annotation
         # add 'domain' when domain mapping is provided
         if domain_txt is not None:
             current_file['domain'] = domains[uri]
