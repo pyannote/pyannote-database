@@ -3,7 +3,7 @@
 
 # The MIT License (MIT)
 
-# Copyright (c) 2019 CNRS
+# Copyright (c) 2019-2020 CNRS
 
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -27,7 +27,6 @@
 # Hervé BREDIN - http://herve.niderb.fr
 # Pavel KORSHUNOV - https://www.idiap.ch/~pkorshunov/
 
-import warnings
 import os
 from . import protocol as Protocol
 from .database import Database
@@ -180,9 +179,8 @@ def subset_iter(database_name, file_lst=None, file_rttm=None,
         if file_rttm is not None:
             annotation = annotations.get(uri, Annotation(uri=uri))
             annotated = current_file.get('annotated')
-            if annotated:
-                if not annotated.covers(annotation.get_timeline()):
-                    annotation = annotation.crop(annotated)
+            if annotated and not annotated.covers(annotation.get_timeline()):
+                annotation = annotation.crop(annotated)
             current_file['annotation'] = annotation
         # add 'domain' when domain mapping is provided
         if domain_txt is not None:
