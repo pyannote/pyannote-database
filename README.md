@@ -237,6 +237,8 @@ For instance, it would not be possible to train a speech activity detection mode
 When two or more are provided and disagree on the list of files, `uris` will 
 be prefered over `annotated`, which will be prefered over `annotation`.
 
+When `annotated` is provided, any annotation which is outside of the `annotated` part will not be considered.
+
 #### Domain
 
 One can also add a `domain` key linking to a text file mapping each file to its *[domain](https://en.wikipedia.org/wiki/Domain_adaptation)*:

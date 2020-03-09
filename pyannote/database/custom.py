@@ -3,7 +3,7 @@
 
 # The MIT License (MIT)
 
-# Copyright (c) 2019 CNRS
+# Copyright (c) 2019-2020 CNRS
 
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -26,7 +26,7 @@
 # AUTHORS
 # Hervé BREDIN - http://herve.niderb.fr
 # Pavel KORSHUNOV - https://www.idiap.ch/~pkorshunov/
-
+# Paul LERNER
 
 import os
 from . import protocol as Protocol
@@ -121,7 +121,7 @@ def subset_iter(database_name, file_lst=None, file_rttm=None,
         This must include (at the very least) 'uri' and 'database' keys.
     """
 
-    annotations, annotated, uris = dict(), dict(), list()
+    annotations, annotateds, uris = dict(), dict(), list()
 
     # load annotations
     if file_rttm is not None:
@@ -136,7 +136,7 @@ def subset_iter(database_name, file_lst=None, file_rttm=None,
 
     # load annotated
     if file_uem is not None:
-        annotated = load_uem(file_uem)
+        annotateds = load_uem(file_uem)
 
     # load list of files
     if file_lst is not None:
@@ -147,8 +147,8 @@ def subset_iter(database_name, file_lst=None, file_rttm=None,
         pass
 
     # when file_uem is provided, use this list of uris
-    elif len(annotated) > 0:
-        uris = sorted(annotated)
+    elif len(annotateds) > 0:
+        uris = sorted(annotateds)
 
     # if file_rttm is the only file provided, use its list of URIs
     elif len(annotations) > 0:
@@ -169,18 +169,21 @@ def subset_iter(database_name, file_lst=None, file_rttm=None,
         # initialize current file with the mandatory keys
         current_file = {'database': database_name, 'uri': uri}
 
-        # add 'annotation' when RTTM file is provided
-        # defaults to empty Annotation because of
-        # github.com/pyannote/pyannote-database/pull/13#discussion_r261564520)
-        if file_rttm is not None:
-            current_file['annotation'] = annotations.get(
-                uri, Annotation(uri=uri))
-
         # add 'annotated' when UEM file is provided
-        # defaults to empty Timeline for the same reason as above
+        # defaults to empty Timeline because of
+        # github.com/pyannote/pyannote-database/pull/13#discussion_r261564520)
         if file_uem is not None:
-            current_file['annotated'] = annotated.get(uri, Timeline(uri=uri))
+            current_file['annotated'] = annotateds.get(uri, Timeline(uri=uri))
 
+        # add 'annotation' when RTTM file is provided
+        # defaults to empty Annotation for the same reason as above
+        if file_rttm is not None:
+            annotation = annotations.get(uri, Annotation(uri=uri))
+            # crop 'annotation' to 'annotated' extent if needed
+            annotated = current_file.get('annotated')
+            if annotated and not annotated.covers(annotation.get_timeline()):
+                annotation = annotation.crop(annotated)
+            current_file['annotation'] = annotation
         # add 'domain' when domain mapping is provided
         if domain_txt is not None:
             current_file['domain'] = domains[uri]
