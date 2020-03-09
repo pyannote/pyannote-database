@@ -26,6 +26,7 @@
 # AUTHORS
 # Hervé BREDIN - http://herve.niderb.fr
 # Pavel KORSHUNOV - https://www.idiap.ch/~pkorshunov/
+# Paul LERNER
 
 import os
 from . import protocol as Protocol
@@ -178,6 +179,7 @@ def subset_iter(database_name, file_lst=None, file_rttm=None,
         # defaults to empty Annotation for the same reason as above
         if file_rttm is not None:
             annotation = annotations.get(uri, Annotation(uri=uri))
+            # crop 'annotation' to 'annotated' extent if needed
             annotated = current_file.get('annotated')
             if annotated and not annotated.covers(annotation.get_timeline()):
                 annotation = annotation.crop(annotated)
