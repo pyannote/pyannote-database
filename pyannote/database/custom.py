@@ -267,6 +267,8 @@ def add_custom_protocols(config_yml=None):
             # for each protocol
             for protocol_name, subsets in protocols.items():
 
+                protocol_name = str(protocol_name)
+
                 # this dictionary is meant to contain "trn_iter", "dev_iter", and "tst_iter" methods
                 protocol_methods = {}
 
