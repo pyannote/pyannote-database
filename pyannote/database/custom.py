@@ -200,6 +200,25 @@ def get_init(register):
 
     return init
 
+def make_absolute(path, config_yml):
+    """
+    Parameters
+    ----------
+    path : `str`
+        Path, either absolute, or relative to `config_yml`
+    config_yml : `Path`
+        Path to pyannote.database configuration file in YAML format.
+
+    Returns
+    -------
+    absolute_path: `Path`
+        same as `path` but absolute.
+    """
+    path = Path(path).expanduser()
+    if path.is_absolute():
+        return path
+    else:
+        return config_yml.parent / path
 
 def add_custom_protocols(config_yml=None):
     """Update pyannote.database.{DATABASES|TASKS} with custom & meta protocols
@@ -290,13 +309,13 @@ def add_custom_protocols(config_yml=None):
                         file_rttm, file_lst, file_uem, domain_txt = \
                             None, None, None, None
                         if 'annotation' in paths:
-                            file_rttm = Path(paths['annotation'])
+                            file_rttm = make_absolute(paths['annotation'], config_yml)
                         if 'uris' in paths:
-                            file_lst = Path(paths['uris'])
+                            file_lst = make_absolute(paths['uris'], config_yml)
                         if 'annotated' in paths:
-                            file_uem = Path(paths['annotated'])
+                            file_uem = make_absolute(paths['annotated'], config_yml)
                         if 'domain' in paths:
-                            domain_txt = Path(paths['domain'])
+                            domain_txt = make_absolute(paths['domain'], config_yml)
 
                         # define xxx_iter method
                         protocol_methods[f'{sub}_iter'] = functools.partial(
