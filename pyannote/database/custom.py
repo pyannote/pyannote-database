@@ -210,7 +210,6 @@ def add_custom_protocols(config_yml=None):
         Path to pyannote.database configuration file in YAML format.
         Defaults to the content of PYANNOTE_DATABASE_CONFIG environment
         variable if defined and to "~/.pyannote/database.yml" otherwise.
-        Path to YAML file with description of the database and its protocols.
 
     Returns
     -------
