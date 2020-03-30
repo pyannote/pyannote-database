@@ -216,6 +216,11 @@ Protocols:
             annotated: path/to/annotated/test/file.uem
             uris: path/to/list_of_uris/test/file.lst
 ```
+Path to the files are either absolute or relative to this configuration file.  
+You can place the configuration file anywhere if you tell pyannote where it is :
+```bash
+export PYANNOTE_DATABASE_CONFIG=/path/to/database.yml
+```
 
 This configuration file would automagically make 
 `DatabaseName.SpeakerDiarization.ProtocolName` protocol available:
