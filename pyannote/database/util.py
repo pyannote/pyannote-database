@@ -26,168 +26,154 @@
 # AUTHORS
 # Hervé BREDIN - http://herve.niderb.fr
 
-import os
 import yaml
 from pathlib import Path
 import warnings
 import pandas as pd
-from glob import glob
 from pyannote.core import Segment, Timeline, Annotation
 
+from typing import Text
+from typing import Union
+from typing import Dict
+from typing import List
+DatabaseName = Text
+PathTemplate = Text
+
+from .config import get_database_yml
 
 class PyannoteDatabaseException(Exception):
     pass
 
 
-class FileFinder(object):
+class FileFinder:
     """Database file finder
 
     Parameters
     ----------
-    config_yml : str, optional
-        Path to database configuration file in YAML format.
-        See "Configuration file" sections for examples.
-        Defaults to the content of PYANNOTE_DATABASE_CONFIG environment
-        variable if defined and to "~/.pyannote/database.yml" otherwise.
+    database_yml : str, optional
+        Path to database configuration file in YAML format (see below).
+        When not provided, pyannote.database will first use file 'database.yml'
+        in current working directory if it exists. If it does not exist, it will
+        use the path provided by the PYANNOTE_DATABASE_CONFIG environment
+        variable. If empty or not set, defaults to '~/.pyannote/database.yml'.
 
     Configuration file
     ------------------
     Here are a few examples of what is expected in the configuration file.
 
-    # all files are in the same directory
-    /path/to/files/{uri}.wav
-
-    # support for {database} placeholder
-    /path/to/{database}/files/{uri}.wav
-
     # support for multiple databases
-    database1: /path/to/files/{uri}.wav
-    database2: /path/to/other/files/{uri}.wav
+    database1: /path/to/database1/{uri}.wav
+    database2: /path/to/database2/{uri}.wav
 
     # files are spread over multiple directory
     database3:
-      - /path/to/files/1/{uri}.wav
-      - /path/to/files/2/{uri}.wav
+      - /path/to/database3/1/{uri}.wav
+      - /path/to/database3/2/{uri}.wav
 
-    # supports * globbing
-    database4: /path/to/files/*/{uri}.wav
+    # supports * (and **) globbing
+    database4: /path/to/database4/*/{uri}.wav
 
     See also
     --------
-    glob
+    pathlib.Path.glob
     """
 
-    def __init__(self, config_yml=None):
-        super(FileFinder, self).__init__()
+    def __init__(self, database_yml: Text = None,
+                       config_yml: Text = None):
 
-        if config_yml is None:
-            config_yml = os.environ.get("PYANNOTE_DATABASE_CONFIG",
-                                        "~/.pyannote/database.yml")
-        config_yml = Path(config_yml).expanduser()
+        super().__init__()
 
-        try:
-            with open(config_yml, 'r') as fp:
-                config = yaml.load(fp, Loader=yaml.SafeLoader)
+        if config_yml is not None:
+            database_yml = config_yml
+            msg = (
+                f'"FileFinder" keyword argument "config_yml" has been '
+                f'deprecated in favor of "database_yml".')
+            warnings.warn(msg, DeprecationWarning)
 
-        except FileNotFoundError:
-            config = dict()
+        self.database_yml = get_database_yml(database_yml=database_yml)
 
-        self.config = config.get('Databases', dict())
+        with open(self.database_yml, 'r') as fp:
+            config = yaml.load(fp, Loader=yaml.SafeLoader)
 
+        self.config_: Dict[DatabaseName, Union[PathTemplate, List[PathTemplate]]] = \
+            config.get('Databases', dict())
 
-    def _find(self, config, uri=None, database=None, **kwargs):
+    def __call__(self, current_file: ProtocolFile) -> Path:
+        """Look for current file
 
-        found = []
-
-        # list of path templates
-        if isinstance(config, list):
-
-            for path_template in config:
-                path = path_template.format(uri=uri, database=database,
-                                            **kwargs)
-                found_ = glob(path)
-                found.extend(found_)
-
-        # database-indexed dictionary
-        elif isinstance(config, dict):
-
-            # if database identifier is not provided
-            # or does not exist in configuration file
-            # look into all databases...
-            if database is None or database not in config:
-                databases = list(config)
-            # if database identifier is provided AND exists
-            # only look into this very database
-            else:
-                databases = [database]
-
-            # iteratively look into selected databases
-            for database in databases:
-                found_ = self._find(config[database], uri=uri,
-                                    database=database, **kwargs)
-                found.extend(found_)
-
-        else:
-            path_template = config
-            path = path_template.format(uri=uri, database=database, **kwargs)
-            found_ = glob(path)
-            found.extend(found_)
-
-        return found
-
-    @classmethod
-    def protocol_file_iter(cls, protocol):
-        """Iterate over all files in `protocol`
-
-        Parameters
-        ----------
-        protocol : Protocol
-        """
-
-        msg = (
-            'FileFinder.protocol_file_iter is deprecated. '
-            'Use Protocol.files instead.')
-        raise NotImplementedError(msg)
-
-    @classmethod
-    def current_file_iter(cls, current_file: 'ProtocolFile'):
-        msg = (
-            'FileFinder.current_file_iter is deprecated. '
-            'Use ProtocolFile.files instead.')
-        raise NotImplementedError(msg)
-
-    def __call__(self, current_file):
-        """Find files
-
-        Parameters
-        ----------
+        Parameter
+        ---------
         current_file : ProtocolFile
-            Dictionary as generated by pyannote.database plugins.
+            Protocol file.
 
         Returns
         -------
-        path : str (or list of str)
-            When `current_file` refers to only one file, returns it.
-            When `current_file` refers to a list of file (i.e. 'uri',
-            'channel', or 'database' is a list), returns a list of files.
+        path : Path
+            Path to file.
 
+        Raises
+        ------
+        FileNotFoundError when the file could not be found or when more than one
+        matching file were found.
         """
 
-        found_files = self._find(self.config, **abs(current_file))
-        n_found_files = len(found_files)
+        uri = current_file["uri"]
+        database = current_file["database"]
 
-        if n_found_files == 1:
-            return found_files[0]
+        # read
+        path_templates = self.config_[database]
+        if isinstance(path_templates, Text):
+            path_templates = [path_templates]
 
-        elif n_found_files == 0:
-            uri = current_file['uri']
-            msg = 'Could not find file "{uri}".'
-            raise ValueError(msg.format(uri=uri))
+        searched = []
+        found = []
 
-        else:
-            uri = current_file['uri']
-            msg = 'Found {n} matches for file "{uri}"'
-            raise ValueError(msg.format(uri=uri, n=n_found_files))
+        for path_template in path_templates:
+
+            path = Path(path_template.format(uri=uri, database=database))
+            if not path.is_absolute():
+                path = self.database_yml.parent / path
+            searched.append(path)
+
+            # paths with "*" or "**" patterns are split into two parts,
+            # - the root part (from the root up to the first occurrence of *)
+            # - the pattern part (from the first occurrence of * to the end)
+            #   which is looked for (inside root) using Path.glob
+            # Example with path = '/path/to/**/*/file.wav'
+            #   root = '/path/to'
+            #   pattern = '**/*/file.wav'
+
+            if '*' in str(path):
+                parts = path.parent.parts
+                for p, part in enumerate(parts):
+                    if '*' in part:
+                        break
+
+                root = path.parents[len(parts) - p]
+                pattern = str(path.relative_to(root))
+                found_ = root.glob(pattern)
+                found.extend(found_)
+
+            # a path without "*" patterns is supposed to be an actual file
+            elif path.is_file():
+                found.append(path)
+
+        if len(found) == 1:
+            return found[0]
+
+        if len(found) == 0:
+            msg = f'Could not find file "{uri}" in the following location(s):'
+            for path in searched:
+                msg += f'\n - {path}'
+            raise FileNotFoundError(msg)
+
+        if len(found) > 1:
+            msg = (
+                f'Looked for file "{uri}" and found more than one '
+                f'({len(found)}) matching locations: ')
+            for path in found:
+                msg += f'\n - {path}'
+            raise FileNotFoundError(msg)
 
 
 def get_unique_identifier(item):
