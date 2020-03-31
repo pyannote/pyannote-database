@@ -2,6 +2,16 @@
 Changelog
 #########
 
+Version 3.0 (2020-03-31)
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+  - BREAKING (feat): if a "database.yml" file exists in current working directory, it will be used even if PYANNOTE_DATABASE_CONFIG is set to another value.
+  - feat: add support in FileFinder for paths relative to "database.yml"
+  - BREAKING: rename "config_yml" option to "database_yml" in FileFinder
+  - feat: add support in custom protocols for paths relative to "database.yml" (@PaulLerner)
+  - BREAKING (feat): use "annotated" to crop "annotation" in custom protocols (@PaulLerner)
+  - fix: add support for int-like protocol name in custom protocols (@PaulLerner)
+
 Version 2.5 (2020-02-04)
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
