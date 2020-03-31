@@ -207,22 +207,23 @@ Protocols:
     SpeakerDiarization:
       ProtocolName:
         train:
-            annotation: path/to/annotation/train/file.rttm
-            annotated: path/to/annotated/train/file.uem
-            uris: path/to/list_of_uris/train/file.lst
+            annotation: /path/to/annotation/train/file.rttm
+            annotated: /path/to/annotated/train/file.uem
+            uris: /path/to/list_of_uris/train/file.lst
         development:
-            annotation: path/to/annotation/dev/file.rttm
+            annotation: /path/to/annotation/dev/file.rttm
         test:
-            annotated: path/to/annotated/test/file.uem
-            uris: path/to/list_of_uris/test/file.lst
-```
-Path to the files are either absolute or relative to this configuration file.  
-You can place the configuration file anywhere if you tell pyannote where it is :
-```bash
-export PYANNOTE_DATABASE_CONFIG=/path/to/database.yml
+            annotated: /path/to/annotated/test/file.uem
+            uris: /path/to/list_of_uris/test/file.lst
 ```
 
-This configuration file would automagically make 
+Path to the files are either absolute, relative to current working directory, or relative to this configuration file. You can place the configuration file anywhere as long as you tell `pyannote.database` where to find it:
+
+```bash
+export PYANNOTE_DATABASE_CONFIG="/path/to/database.yml"
+```
+
+The above configuration file would automagically make 
 `DatabaseName.SpeakerDiarization.ProtocolName` protocol available:
 
 ```python
