@@ -207,17 +207,23 @@ Protocols:
     SpeakerDiarization:
       ProtocolName:
         train:
-            annotation: path/to/annotation/train/file.rttm
-            annotated: path/to/annotated/train/file.uem
-            uris: path/to/list_of_uris/train/file.lst
+            annotation: /path/to/annotation/train/file.rttm
+            annotated: /path/to/annotated/train/file.uem
+            uris: /path/to/list_of_uris/train/file.lst
         development:
-            annotation: path/to/annotation/dev/file.rttm
+            annotation: /path/to/annotation/dev/file.rttm
         test:
-            annotated: path/to/annotated/test/file.uem
-            uris: path/to/list_of_uris/test/file.lst
+            annotated: /path/to/annotated/test/file.uem
+            uris: /path/to/list_of_uris/test/file.lst
 ```
 
-This configuration file would automagically make 
+Path to the files are either absolute, relative to current working directory, or relative to this configuration file. You can place the configuration file anywhere as long as you tell `pyannote.database` where to find it:
+
+```bash
+export PYANNOTE_DATABASE_CONFIG="/path/to/database.yml"
+```
+
+The above configuration file would automagically make 
 `DatabaseName.SpeakerDiarization.ProtocolName` protocol available:
 
 ```python
@@ -236,6 +242,8 @@ For instance, it would not be possible to train a speech activity detection mode
 
 When two or more are provided and disagree on the list of files, `uris` will 
 be prefered over `annotated`, which will be prefered over `annotation`.
+
+When `annotated` is provided, any annotation which is outside of the `annotated` part will not be considered.
 
 #### Domain
 
