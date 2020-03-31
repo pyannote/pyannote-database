@@ -29,11 +29,12 @@
 # Paul LERNER
 
 import os
+from typing import Text
+from pathlib import Path
 from . import protocol as Protocol
 from .database import Database
 from .util import load_lst, load_uem, load_mdtm, load_rttm, load_mapping
 import functools
-from pathlib import Path
 import yaml
 import pandas as pd
 from pyannote.core import Annotation, Timeline
@@ -200,25 +201,37 @@ def get_init(register):
 
     return init
 
-def make_absolute(path, config_yml):
-    """
+
+def resolve_path(path: Text, config_yml: Path) -> Path:
+    """Resolve path
+
     Parameters
     ----------
     path : `str`
-        Path, either absolute, or relative to `config_yml`
+        Path. Can be either absolute, relative to current working directory, or
+        relative to `config.yml`.
     config_yml : `Path`
         Path to pyannote.database configuration file in YAML format.
 
     Returns
     -------
-    absolute_path: `Path`
-        same as `path` but absolute.
+    resolved_path: `Path`
+        Resolved path.
     """
+
     path = Path(path).expanduser()
-    if path.is_absolute():
+
+    if path.is_file():
         return path
+
     else:
-        return config_yml.parent / path
+        relative_path = config_yml.parent / path
+        if relative_path.is_file():
+            return relative_path
+
+    msg = f'Could not find file "{path}".'
+    raise FileNotFoundError(msg)
+
 
 def add_custom_protocols(config_yml=None):
     """Update pyannote.database.{DATABASES|TASKS} with custom & meta protocols
@@ -309,13 +322,13 @@ def add_custom_protocols(config_yml=None):
                         file_rttm, file_lst, file_uem, domain_txt = \
                             None, None, None, None
                         if 'annotation' in paths:
-                            file_rttm = make_absolute(paths['annotation'], config_yml)
+                            file_rttm = resolve_path(paths['annotation'], config_yml)
                         if 'uris' in paths:
-                            file_lst = make_absolute(paths['uris'], config_yml)
+                            file_lst = resolve_path(paths['uris'], config_yml)
                         if 'annotated' in paths:
-                            file_uem = make_absolute(paths['annotated'], config_yml)
+                            file_uem = resolve_path(paths['annotated'], config_yml)
                         if 'domain' in paths:
-                            domain_txt = make_absolute(paths['domain'], config_yml)
+                            domain_txt = resolve_path(paths['domain'], config_yml)
 
                         # define xxx_iter method
                         protocol_methods[f'{sub}_iter'] = functools.partial(
