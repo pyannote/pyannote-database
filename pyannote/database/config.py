@@ -70,7 +70,7 @@ def get_database_yml(database_yml: Union[Text, Path] = None) -> Path:
         if not database_yml.is_file():
             msg = (
                 f'"PYANNOTE_DATABASE_CONFIG" links to a file that does '
-                f'exist: "{database_yml}".)
+                f'exist: "{database_yml}".')
             raise FileNotFoundError(msg)
 
     # does default "~/.pyannote/database.yml" file exist?
@@ -92,3 +92,5 @@ def get_database_yml(database_yml: Union[Text, Path] = None) -> Path:
             else:
                 msg += '.'
             raise FileNotFoundError(msg)
+
+    return database_yml
