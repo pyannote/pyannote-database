@@ -41,6 +41,7 @@ PathTemplate = Text
 
 from .config import get_database_yml
 
+
 class PyannoteDatabaseException(Exception):
     pass
 
@@ -98,7 +99,7 @@ class FileFinder:
         self.config_: Dict[DatabaseName, Union[PathTemplate, List[PathTemplate]]] = \
             config.get('Databases', dict())
 
-    def __call__(self, current_file: ProtocolFile) -> Path:
+    def __call__(self, current_file: 'ProtocolFile') -> Path:
         """Look for current file
 
         Parameter
