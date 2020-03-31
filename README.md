@@ -325,15 +325,15 @@ Databases:
 
 
 ```python
->>> from pyannote.database.util import FileFinder
->>> preprocessors = {'audio': FileFinder(config_yml='database.yml')}
+>>> from pyannote.database import FileFinder
+>>> preprocessors = {'audio': FileFinder(database_yml='database.yml')}
 >>> protocol = get_protocol('Etape.SpeakerDiarization.TV', preprocessors=preprocessors)
 >>> for item in protocol.train():
 ...     # now, `item` contains a `wav` key providing the path to the wav file
 ...     wav = item['audio']
 ```
 
-`config_yml` parameters defaults to the content of `PYANNOTE_DATABASE_CONFIG` environment variable when defined and to `~/.pyannote/database.yml` otherwise, so you can conveniently use this file to provide information about all the available databases, once and for all:
+`database_yml` parameters defaults, in this order, to `database.yml` in current working directory if it exists, to the content of `PYANNOTE_DATABASE_CONFIG` environment variable when defined, and to `~/.pyannote/database.yml` otherwise, so you can conveniently use this file to provide information about all the available databases, once and for all:
 
 ```bash
 $ cat ~/.pyannote/database.yml
@@ -342,11 +342,13 @@ Databases:
   REPERE:
     - /path/where/you/store/REPERE/database/phase1/{uri}.wav
     - /path/where/you/store/REPERE/database/phase2/{uri}.wav
+  VoxCeleb:
+    - /path/where/you/store/voxceleb1/*/wav/{uri}.wav
+    - /path/where/you/store/voxceleb1/*/wav/{uri}.wav
+    - /vol/corpora4/voxceleb/voxceleb2/**/{uri}.aac
 ```
 
-```python
->>> preprocessors = {'audio': FileFinder()}
-```
+Note that any pattern supported by `pathlib.Path.glob` is supported (but avoid `**` as much as possible).  Paths can also be relative to the location of `database.yml`.
 
 More generally, preprocessors can be used to augment/modify the yielded dictionaries on the fly:
 
