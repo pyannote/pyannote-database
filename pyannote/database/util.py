@@ -79,17 +79,9 @@ class FileFinder:
     pathlib.Path.glob
     """
 
-    def __init__(self, database_yml: Text = None,
-                       config_yml: Text = None):
+    def __init__(self, database_yml: Text = None):
 
         super().__init__()
-
-        if config_yml is not None:
-            database_yml = config_yml
-            msg = (
-                f'"FileFinder" keyword argument "config_yml" has been '
-                f'deprecated in favor of "database_yml".')
-            warnings.warn(msg, DeprecationWarning)
 
         self.database_yml = get_database_yml(database_yml=database_yml)
 
