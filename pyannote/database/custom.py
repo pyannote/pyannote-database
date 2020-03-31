@@ -28,7 +28,6 @@
 # Pavel KORSHUNOV - https://www.idiap.ch/~pkorshunov/
 # Paul LERNER
 
-import os
 from typing import Text
 from pathlib import Path
 from . import protocol as Protocol
@@ -36,9 +35,7 @@ from .database import Database
 from .util import load_lst, load_uem, load_mdtm, load_rttm, load_mapping
 import functools
 import yaml
-import pandas as pd
 from pyannote.core import Annotation, Timeline
-
 
 from . import DATABASES, TASKS
 
@@ -202,7 +199,7 @@ def get_init(register):
     return init
 
 
-def resolve_path(path: Text, config_yml: Path) -> Path:
+def resolve_path(path: Text, database_yml: Path) -> Path:
     """Resolve path
 
     Parameters
@@ -210,7 +207,7 @@ def resolve_path(path: Text, config_yml: Path) -> Path:
     path : `str`
         Path. Can be either absolute, relative to current working directory, or
         relative to `config.yml`.
-    config_yml : `Path`
+    database_yml : `Path`
         Path to pyannote.database configuration file in YAML format.
 
     Returns
@@ -225,7 +222,7 @@ def resolve_path(path: Text, config_yml: Path) -> Path:
         return path
 
     else:
-        relative_path = config_yml.parent / path
+        relative_path = database_yml.parent / path
         if relative_path.is_file():
             return relative_path
 
@@ -233,15 +230,8 @@ def resolve_path(path: Text, config_yml: Path) -> Path:
     raise FileNotFoundError(msg)
 
 
-def add_custom_protocols(config_yml=None):
+def add_custom_protocols():
     """Update pyannote.database.{DATABASES|TASKS} with custom & meta protocols
-
-    Parameters
-    ----------
-    config_yml : `str`, optional
-        Path to pyannote.database configuration file in YAML format.
-        Defaults to the content of PYANNOTE_DATABASE_CONFIG environment
-        variable if defined and to "~/.pyannote/database.yml" otherwise.
 
     Returns
     -------
@@ -249,13 +239,11 @@ def add_custom_protocols(config_yml=None):
     pyannote.database.TASKS
     """
 
-    if config_yml is None:
-        config_yml = os.environ.get("PYANNOTE_DATABASE_CONFIG",
-                                    "~/.pyannote/database.yml")
-    config_yml = Path(config_yml).expanduser()
+    from .config import get_database_yml
 
     try:
-        with open(config_yml, 'r') as fp:
+        database_yml = get_database_yml()
+        with open(database_yml, 'r') as fp:
             config = yaml.load(fp, Loader=yaml.SafeLoader)
 
     except FileNotFoundError:
@@ -323,13 +311,13 @@ def add_custom_protocols(config_yml=None):
                         file_rttm, file_lst, file_uem, domain_txt = \
                             None, None, None, None
                         if 'annotation' in paths:
-                            file_rttm = resolve_path(paths['annotation'], config_yml)
+                            file_rttm = resolve_path(paths['annotation'], database_yml)
                         if 'uris' in paths:
-                            file_lst = resolve_path(paths['uris'], config_yml)
+                            file_lst = resolve_path(paths['uris'], database_yml)
                         if 'annotated' in paths:
-                            file_uem = resolve_path(paths['annotated'], config_yml)
+                            file_uem = resolve_path(paths['annotated'], database_yml)
                         if 'domain' in paths:
-                            domain_txt = resolve_path(paths['domain'], config_yml)
+                            domain_txt = resolve_path(paths['domain'], database_yml)
 
                         # define xxx_iter method
                         protocol_methods[f'{sub}_iter'] = functools.partial(
