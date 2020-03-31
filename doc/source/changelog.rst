@@ -2,8 +2,8 @@
 Changelog
 #########
 
-Version 3.0 (2020-03-31)
-~~~~~~~~~~~~~~~~~~~~~~~~
+Version 3.0.1 (2020-03-31)
+~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   - BREAKING (feat): if a "database.yml" file exists in current working directory, it will be used even if PYANNOTE_DATABASE_CONFIG is set to another value.
   - feat: add support in FileFinder for paths relative to "database.yml"
