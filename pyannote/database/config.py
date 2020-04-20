@@ -58,7 +58,7 @@ def get_database_yml(database_yml: Union[Text, Path] = None) -> Path:
             msg = f"File '{database_yml}' does not exist."
             raise FileNotFoundError(msg)
 
-        return Path(database_yml)
+        return Path(database_yml).expanduser()
 
     # is there a file named "database.yml" in current working directory?
     if (Path.cwd() / 'database.yml').is_file():
@@ -69,7 +69,7 @@ def get_database_yml(database_yml: Union[Text, Path] = None) -> Path:
         database_yml = Path(os.environ.get("PYANNOTE_DATABASE_CONFIG")).expanduser()
         if not database_yml.is_file():
             msg = (
-                f'"PYANNOTE_DATABASE_CONFIG" links to a file that does '
+                f'"PYANNOTE_DATABASE_CONFIG" links to a file that does not'
                 f'exist: "{database_yml}".')
             raise FileNotFoundError(msg)
 
