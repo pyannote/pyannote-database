@@ -52,13 +52,13 @@ def get_database_yml(database_yml: Union[Text, Path] = None) -> Path:
 
     # when database_yml is provided, use it
     if database_yml is not None:
-
+        database_yml = Path(database_yml).expanduser()
         # does the provided file exist?
-        if not Path(database_yml).is_file():
+        if not database_yml.is_file():
             msg = f"File '{database_yml}' does not exist."
             raise FileNotFoundError(msg)
 
-        return Path(database_yml).expanduser()
+        return database_yml
 
     # is there a file named "database.yml" in current working directory?
     if (Path.cwd() / 'database.yml').is_file():
