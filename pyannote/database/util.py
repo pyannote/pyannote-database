@@ -111,7 +111,7 @@ class FileFinder:
         """
 
         uri = current_file["uri"]
-        database = current_file["database"]
+        database = str(current_file["database"])
 
         # read
         path_templates = self.config_[database]
