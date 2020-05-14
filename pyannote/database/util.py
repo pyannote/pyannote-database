@@ -89,7 +89,7 @@ class FileFinder:
             config = yaml.load(fp, Loader=yaml.SafeLoader)
 
         self.config_: Dict[DatabaseName, Union[PathTemplate, List[PathTemplate]]] = \
-            config.get('Databases', dict())
+            {str(database): path for database, path in config.get('Databases', dict()).items()}
 
     def __call__(self, current_file: 'ProtocolFile') -> Path:
         """Look for current file
