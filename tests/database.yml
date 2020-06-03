@@ -1,0 +1,38 @@
+Databases:
+   VoxCeleb:
+      - /path/to/voxceleb/voxceleb1/dev/wav/{uri}.wav
+      - /path/to/voxceleb/voxceleb1/test/wav/{uri}.wav
+      - /path/to/voxceleb/voxceleb2/dev/aac/{uri}.wav
+      - /path/to/voxceleb/voxceleb2/test/aac/{uri}.wav
+   MUSAN: /path/to/musan/{uri}.wav
+   AMI: /path/to/amicorpus/*/audio/{uri}.wav
+   MyVoxCeleb:
+      - /path/to/voxceleb/voxceleb1/dev/wav/{uri}.wav
+      - /path/to/voxceleb/voxceleb1/test/wav/{uri}.wav
+      - /path/to/voxceleb/voxceleb2/dev/aac/{uri}.wav
+      - /path/to/voxceleb/voxceleb2/test/aac/{uri}.wav
+
+Protocols:
+   AMI:
+      SpeakerDiarization:
+         MixHeadset:
+           train:
+              annotation: /path/to/AMI/MixHeadset.train.rttm
+              annotated: /path/to/AMI/MixHeadset.train.uem
+           development:
+              annotation: /path/to/AMI/MixHeadset.development.rttm
+              annotated: /path/to/AMI/MixHeadset.development.uem
+           test:
+              annotation: /path/to/AMI/MixHeadset.test.rttm
+              annotated: /path/to/AMI/MixHeadset.test.uem
+   MyVoxCeleb:
+      SpeakerVerification:
+         VoxCeleb2:
+           train:
+              annotation: /path/to/voxceleb/myvoxceleb/VoxCeleb2.train.rttm
+            #   annotated: /path/to/voxceleb/myvoxceleb/VoxCeleb2.train.uem
+           test_trial:
+              # annotation: /path/to/voxceleb/myvoxceleb/VoxCeleb2.test.rttm
+              # annotated: /path/to/voxceleb/myvoxceleb/VoxCeleb2.test.uem
+              duration: /path/to/voxceleb/myvoxceleb/vox1_all_duration.txt.gz # should contain all the file present in the trial
+              trial: /path/to/voxceleb/myvoxceleb/VoxCeleb2.test.trial 

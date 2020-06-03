@@ -35,14 +35,15 @@ from .database import Database
 from .util import load_lst, load_uem, load_mdtm, load_rttm, load_mapping
 import functools
 import yaml
-from pyannote.core import Annotation, Timeline
+from pyannote.core import Annotation, Timeline, Segment
+
+import pandas as pd
 
 from . import DATABASES, TASKS
 
 
 # annoying mapping...
 SUBSET_MAPPING = {'train': 'trn', 'development': 'dev', 'test': 'tst'}
-
 
 def meta_subset_iter(config):
     """This function will become a xxx_iter method of a meta-protocol
@@ -96,7 +97,7 @@ def meta_subset_iter(config):
 
 
 def subset_iter(database_name, file_lst=None, file_rttm=None,
-                file_uem=None, domain_txt=None):
+                file_uem=None, domain_txt=None, file_duration=None):
     """This function will become a xxx_iter method of a protocol.
 
     Parameters
@@ -118,6 +119,7 @@ def subset_iter(database_name, file_lst=None, file_rttm=None,
         Dictionary that provides information about a file.
         This must include (at the very least) 'uri' and 'database' keys.
     """
+    # TODO: add support for duration file instead of rttm and uem
 
     annotations, annotateds, uris = dict(), dict(), list()
 
@@ -187,6 +189,86 @@ def subset_iter(database_name, file_lst=None, file_rttm=None,
             current_file['domain'] = domains[uri]
 
         yield current_file
+
+
+def subset_try_iter(database_name, file_trial, file_uem=None, file_duration=None):
+    """This function will become a xxx_try_iter method of a protocol.
+
+    Parameters
+    ----------
+    database_name : `str`
+        Database name.
+    file_trial : `Path`
+        Path to file with a list of trials {0|1} {uri1}.wav {uri2}.wav.
+    file_uem : `Path`, optional
+        Path to UEM file.
+
+    Yields
+    ------
+    current_trial : `dict`
+        ['reference'] (`boolean`)
+            Groundtruth: True for a target trial, False for a non-target trial.
+
+        ['file{1|2}'] (`dict`)
+            Both parts of the trial are provided as dictionaries with the
+            following keys (as well as keys added by preprocessors):
+
+            ['uri'] (`str`)
+                Unique file identifier.
+
+            ['try_with'] (`pyannote.core.{Segment|Timeline}`), optional
+                Part(s) of the file to use in the trial. Default is to use the
+                whole file.
+    """
+    # load annotateds
+    annotateds = dict()
+    if file_uem is not None:
+        annotateds = load_uem(file_uem)
+
+    # load durations
+    if file_duration is not None:
+        durations = pd.read_table(file_duration, names=['uri', 'duration'],
+                                    index_col='uri', delim_whitespace=True)
+
+    # load trials
+    trials = pd.read_table(file_trial, delim_whitespace=True,
+                            names=['reference', 'file1', 'file2'])
+    trials.sort_values('file1', inplace=True)
+
+    skipped = 0
+    for _, reference, file1, file2 in trials.itertuples():
+        uri1 = file1[:-4] # -4 to remove the .wav extension
+        uri2 = file2[:-4]
+
+        if file_duration is not None:
+            try:
+                duration1 = durations.loc[uri1].item()
+                tw1 = Timeline(segments=[Segment(0, duration1)], uri=uri1)
+        
+                duration2 = durations.loc[uri2].item()
+                tw2 = Timeline(segments=[Segment(0, duration2)], uri=uri2)
+            except KeyError as key:
+                skipped+=1
+                print(f"Catched a KeyError on uri {key}")
+                print(f"Make sure every file used in '{file_trial}' are in '{file_duration}'")
+                print(f"Skipping this trial, total skipped : {skipped}")
+                continue
+
+        elif file_uem is not None:
+            tw1 = annotateds.get(uri1, Timeline(uri=uri1)) # return a Timeline
+            tw2 = annotateds.get(uri2, Timeline(uri=uri2))
+        
+        f1_dict = {'database':database_name, 'uri': uri1, 'try_with':tw1}
+        f2_dict = {'database':database_name, 'uri': uri2, 'try_with':tw2}
+
+        # FIXME: should 'annotation', 'annotated' and 'domain' be added to the file dict ?
+
+        current_trial = {
+            'reference': reference,
+            'file1': f1_dict,
+            'file2': f2_dict}
+
+        yield current_trial
 
 
 def get_init(register):
@@ -273,65 +355,124 @@ def add_custom_protocols():
                 TASKS[task_name] = set()
             TASKS[task_name].add(database_name)
 
-            # only speaker diarization TASKS are supported for now...
-            if task_name != 'SpeakerDiarization':
+            if task_name != 'SpeakerDiarization' and task_name != 'SpeakerVerification':
                 msg = (
-                    'Only speaker diarization protocols are supported for now.'
+                    'Only speaker diarization and verification protocols are supported for now.'
                 )
                 raise ValueError(msg)
+            if task_name == 'SpeakerDiarization':
+                # get protocol base class (here: SpeakerDiarizationProtocol)
+                protocol_base_class = getattr(Protocol, f'{task_name}Protocol')
 
-            # get protocol base class (here: SpeakerDiarizationProtocol)
-            protocol_base_class = getattr(Protocol, f'{task_name}Protocol')
+                # for each protocol
+                for protocol_name, subsets in protocols.items():
 
-            # for each protocol
-            for protocol_name, subsets in protocols.items():
+                    protocol_name = str(protocol_name)
 
-                protocol_name = str(protocol_name)
+                    # this dictionary is meant to contain "trn_iter", "dev_iter", and "tst_iter" methods
+                    protocol_methods = {}
 
-                # this dictionary is meant to contain "trn_iter", "dev_iter", and "tst_iter" methods
-                protocol_methods = {}
+                    # for each subset
+                    for subset, sub in SUBSET_MAPPING.items():
 
-                # for each subset
-                for subset, sub in SUBSET_MAPPING.items():
+                        # if database.yml does not provide a file for this subset,
+                        # skip it
+                        if subset not in subsets:
+                            continue
 
-                    # if database.yml does not provide a file for this subset,
-                    # skip it
-                    if subset not in subsets:
-                        continue
+                        # special treatment for meta-protocols
+                        if database_name == 'X':
 
-                    # special treatment for meta-protocols
-                    if database_name == 'X':
+                            protocol_methods[f'{sub}_iter'] = functools.partial(
+                                meta_subset_iter, subsets[subset])
 
-                        protocol_methods[f'{sub}_iter'] = functools.partial(
-                            meta_subset_iter, subsets[subset])
+                        else:
+                            paths = subsets[subset]
+                            file_rttm, file_lst, file_uem, domain_txt = \
+                                None, None, None, None
+                            if 'annotation' in paths:
+                                file_rttm = resolve_path(paths['annotation'], database_yml)
+                            if 'uris' in paths:
+                                file_lst = resolve_path(paths['uris'], database_yml)
+                            if 'annotated' in paths:
+                                file_uem = resolve_path(paths['annotated'], database_yml)
+                            if 'domain' in paths:
+                                domain_txt = resolve_path(paths['domain'], database_yml)
+                            # define xxx_iter method
+                            protocol_methods[f'{sub}_iter'] = functools.partial(
+                                subset_iter, database_name, file_rttm=file_rttm,
+                                file_lst=file_lst, file_uem=file_uem,
+                                domain_txt=domain_txt)
+                            
+                    # create protocol class on-the-fly
+                    protocol = type(protocol_name, (protocol_base_class,),
+                                    protocol_methods)
 
-                    else:
+                    # keep track of this protocol -- database.__init__ needs to
+                    # register it later...
+                    register.append((task_name, protocol_name, protocol))
+            
+            if task_name == 'SpeakerVerification':
+                # get protocol base class (here:  SpeakerVerificationProtocol)
+                protocol_base_class = getattr(Protocol, f'{task_name}Protocol')
 
-                        paths = subsets[subset]
-                        file_rttm, file_lst, file_uem, domain_txt = \
-                            None, None, None, None
-                        if 'annotation' in paths:
-                            file_rttm = resolve_path(paths['annotation'], database_yml)
-                        if 'uris' in paths:
-                            file_lst = resolve_path(paths['uris'], database_yml)
-                        if 'annotated' in paths:
-                            file_uem = resolve_path(paths['annotated'], database_yml)
-                        if 'domain' in paths:
-                            domain_txt = resolve_path(paths['domain'], database_yml)
+                # for each protocol
+                for protocol_name, subsets in protocols.items():
 
-                        # define xxx_iter method
-                        protocol_methods[f'{sub}_iter'] = functools.partial(
-                            subset_iter, database_name, file_rttm=file_rttm,
-                            file_lst=file_lst, file_uem=file_uem,
-                            domain_txt=domain_txt)
+                    protocol_name = str(protocol_name)
 
-                # create protocol class on-the-fly
-                protocol = type(protocol_name, (protocol_base_class,),
-                                protocol_methods)
+                    # this dictionary is meant to contain "trn_iter", "dev_iter", and "tst_iter" methods
+                    # also "trn_try_iter", "dev_try_iter", and "tst_try_iter" if SpkVerif
+                    protocol_methods = {}
 
-                # keep track of this protocol -- database.__init__ needs to
-                # register it later...
-                register.append((task_name, protocol_name, protocol))
+                    # for each subset
+                    for subset, sub in SUBSET_MAPPING.items():
+                        for appendix in ['', '_trial']:
+                            subset += appendix
+
+                            # if database.yml does not provide a file for this subset,
+                            # skip it
+                            if subset not in subsets:
+                                continue
+
+                            # TODO: Support meta protocols ?
+
+                            paths = subsets[subset]
+                            file_rttm, file_lst, file_uem, domain_txt, file_duration, file_trial = \
+                                None, None, None, None, None, None
+                            if 'annotation' in paths:
+                                file_rttm = resolve_path(paths['annotation'], database_yml)
+                            if 'uris' in paths:
+                                file_lst = resolve_path(paths['uris'], database_yml)
+                            if 'annotated' in paths:
+                                file_uem = resolve_path(paths['annotated'], database_yml)
+                            if 'domain' in paths:
+                                domain_txt = resolve_path(paths['domain'], database_yml)
+                            if 'duration' in paths: # duration key for a duration file
+                                # print("[V] adding duration file...")
+                                file_duration = resolve_path(paths['duration'], database_yml)
+                            if 'trial' in paths: # trial key for a trial file
+                                # print("[V] adding trial file")
+                                file_trial = resolve_path(paths['trial'], database_yml)
+                            if 'trial' in subset: # if there is trial in the corpus name
+                                # define xxx_try_iter method
+                                protocol_methods[f'{sub}_try_iter'] = functools.partial(
+                                        subset_try_iter, database_name, file_trial, 
+                                        file_uem=file_uem, file_duration=file_duration)
+                            else:
+                                # define xxx_iter method
+                                protocol_methods[f'{sub}_iter'] = functools.partial(
+                                    subset_iter, database_name, file_rttm=file_rttm,
+                                    file_lst=file_lst, file_uem=file_uem,
+                                    domain_txt=domain_txt, file_duration=file_duration)
+                            
+                    # create protocol class on-the-fly
+                    protocol = type(protocol_name, (protocol_base_class,),
+                                    protocol_methods)
+
+                    # keep track of this protocol -- database.__init__ needs to
+                    # register it later...
+                    register.append((task_name, protocol_name, protocol))
 
         # define Database.__init__ method
 
