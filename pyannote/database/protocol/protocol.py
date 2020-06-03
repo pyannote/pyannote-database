@@ -37,7 +37,7 @@ import warnings
 import collections
 import threading
 import itertools
-from typing import Iterator
+from typing import Union, Dict, Iterator
 
 
 class ProtocolFile(collections.abc.MutableMapping):
@@ -133,7 +133,7 @@ class ProtocolFile(collections.abc.MutableMapping):
 
             return len(set(self._store) | set(self.lazy))
 
-    def files(self) -> Iterator['ProtocolFile']:
+    def files(self) -> Iterator["ProtocolFile"]:
         """Iterate over all files
 
         When `current_file` refers to only one file,
@@ -161,7 +161,7 @@ class ProtocolFile(collections.abc.MutableMapping):
 
         """
 
-        uris = self['uri']
+        uris = self["uri"]
         if not isinstance(uris, list):
             yield self
             return
@@ -170,10 +170,10 @@ class ProtocolFile(collections.abc.MutableMapping):
 
         # iterate over precomputed keys and make sure
 
-        precomputed = {'uri': uris}
+        precomputed = {"uri": uris}
         for key, value in abs(self).items():
 
-            if key == 'uri':
+            if key == "uri":
                 continue
 
             if not isinstance(value, list):
@@ -191,8 +191,8 @@ class ProtocolFile(collections.abc.MutableMapping):
         keys = list(precomputed.keys())
         for values in zip(*precomputed.values()):
             precomputed_one = dict(zip(keys, values))
-            yield ProtocolFile(precomputed_one,
-                               self.lazy)
+            yield ProtocolFile(precomputed_one, self.lazy)
+
 
 class Protocol:
     """Base protocol
@@ -221,8 +221,10 @@ class Protocol:
             # containing placeholder for item key (e.g. '/path/to/{uri}.wav')
             elif isinstance(preprocessor, str):
                 preprocessor_copy = str(preprocessor)
+
                 def func(current_file):
                     return preprocessor_copy.format(**current_file)
+
                 self.preprocessors[key] = func
 
             else:
@@ -231,15 +233,14 @@ class Protocol:
 
         self.progress = progress
 
-    def preprocess(self, current_file):
+    def preprocess(self, current_file: Union[Dict, ProtocolFile]) -> ProtocolFile:
         return ProtocolFile(current_file, lazy=self.preprocessors)
 
     def __str__(self):
         return self.__doc__
 
     def files(self) -> Iterator[ProtocolFile]:
-        """Iterate over all files in `protocol`
-        """
+        """Iterate over all files in `protocol`"""
 
         # imported here to avoid circular imports
         from pyannote.database.util import get_unique_identifier
@@ -248,9 +249,9 @@ class Protocol:
         progress = self.progress
 
         methods = []
-        for suffix in ['', '_enrolment', '_trial']:
-            for subset in ['development', 'test', 'train']:
-                methods.append(f'{subset}{suffix}')
+        for suffix in ["", "_enrolment", "_trial"]:
+            for subset in ["development", "test", "train"]:
+                methods.append(f"{subset}{suffix}")
 
         yielded_uris = set()
 
@@ -277,7 +278,7 @@ class Protocol:
                 # this happens for speaker verification trials that contain
                 # two nested files "file1" and "file2"
                 # see https://github.com/pyannote/pyannote-db-voxceleb/issues/4
-                if 'uri' not in current_file:
+                if "uri" not in current_file:
                     continue
 
                 for current_file_ in current_file.files():
