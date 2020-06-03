@@ -3,7 +3,7 @@
 
 # The MIT License (MIT)
 
-# Copyright (c) 2016-2019 CNRS
+# Copyright (c) 2016-2020 CNRS
 
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -40,6 +40,12 @@ setup(
         'tqdm >= 4.10.0',
         'pandas >= 0.19',
     ],
+    entry_points={
+        "pyannote.database.loader": [
+            ".rttm = pyannote.database.loader:RTTMLoader",
+            ".uem = pyannote.database.loader:UEMLoader",
+        ],
+    },
     # versioneer
     version=versioneer.get_version(),
     cmdclass=versioneer.get_cmdclass(),
