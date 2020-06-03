@@ -37,6 +37,9 @@ from pkg_resources import iter_entry_points
 from .database import Database
 from .database import PyannoteDatabaseException
 
+from .protocol.protocol import Protocol
+from .protocol.protocol import ProtocolFile
+
 DATABASES = dict()
 TASKS = dict()
 
