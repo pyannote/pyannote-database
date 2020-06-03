@@ -58,11 +58,35 @@ class ProtocolFile(collections.abc.MutableMapping):
 
     """
 
-    def __init__(self, precomputed, lazy=None):
-        self._store = dict(precomputed)
+    def __init__(self, precomputed: Union[Dict, "ProtocolFile"], lazy: Dict = None):
+
         if lazy is None:
             lazy = dict()
-        self.lazy = dict(lazy)
+
+        if isinstance(precomputed, ProtocolFile):
+            # when 'precomputed' is a ProtocolFile, it may already contain lazy keys.
+
+            # we use 'precomputed' precomputed keys as precomputed keys
+            self._store: Dict = abs(precomputed)
+
+            # we handle the corner case where the intersection of 'precomputed' lazy keys
+            # and 'lazy' keys is not empty. this is currently achieved by "unlazying" the
+            # 'precomputed' one (which is probably not the most efficient solution).
+            for key in set(precomputed.lazy) & set(lazy):
+                self._store[key] = precomputed[key]
+
+            # we use the union of 'precomputed' lazy keys and provided 'lazy' keys as lazy keys
+            compound_lazy = dict(precomputed.lazy)
+            compound_lazy.update(lazy)
+            self.lazy: Dict = compound_lazy
+
+        else:
+            # when 'precomputed' is a Dict, we use it directly as precomputed keys
+            # and 'lazy' as lazy keys.
+            self._store = dict(precomputed)
+            self.lazy = dict(lazy)
+
+        # re-entrant lock used below to make ProtocolFile thread-safe
         self.lock_ = threading.RLock()
 
         # this is needed to avoid infinite recursion
