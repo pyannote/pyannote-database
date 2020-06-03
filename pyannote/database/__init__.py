@@ -3,7 +3,7 @@
 
 # The MIT License (MIT)
 
-# Copyright (c) 2016 CNRS
+# Copyright (c) 2016-2020 CNRS
 
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -27,9 +27,7 @@
 # Hervé BREDIN - http://herve.niderb.fr
 
 
-"""
-
-"""
+"""pyannote.database"""
 
 import sys
 from pkg_resources import iter_entry_points
@@ -44,7 +42,7 @@ DATABASES = dict()
 TASKS = dict()
 
 # load databases from entry points
-for o in iter_entry_points(group='pyannote.database.databases', name=None):
+for o in iter_entry_points(group="pyannote.database.databases", name=None):
 
     database_name = o.name
 
@@ -62,6 +60,7 @@ for o in iter_entry_points(group='pyannote.database.databases', name=None):
 
 # parse pyannote.database configuration file, looking for custom protocols
 from .custom import add_custom_protocols
+
 DATABASES, TASKS = add_custom_protocols()
 
 
@@ -111,17 +110,17 @@ def get_database(database_name, preprocessors={}, **kwargs):
 
     except KeyError as e:
 
-        if database_name == 'X':
+        if database_name == "X":
             msg = (
-                'Could not find any meta-protocol. Please refer to '
-                'pyannote.database documentation to learn how to define them: '
-                'https://github.com/pyannote/pyannote-database'
+                "Could not find any meta-protocol. Please refer to "
+                "pyannote.database documentation to learn how to define them: "
+                "https://github.com/pyannote/pyannote-database"
             )
         else:
             msg = (
                 'Could not find any protocol for "{name}" database. Please '
-                'refer to pyannote.database documentation to learn how to '
-                'define them: https://github.com/pyannote/pyannote-database'
+                "refer to pyannote.database documentation to learn how to "
+                "define them: https://github.com/pyannote/pyannote-database"
             )
             msg = msg.format(name=database_name)
         raise ValueError(msg)
@@ -148,12 +147,9 @@ def get_protocol(name, preprocessors={}, progress=False, **kwargs):
         Protocol instance
     """
 
-    database_name, task_name, protocol_name = name.split('.')
-    database = get_database(database_name,
-                            preprocessors=preprocessors,
-                            **kwargs)
-    protocol = database.get_protocol(task_name, protocol_name,
-                                     progress=progress)
+    database_name, task_name, protocol_name = name.split(".")
+    database = get_database(database_name, preprocessors=preprocessors, **kwargs)
+    protocol = database.get_protocol(task_name, protocol_name, progress=progress)
     return protocol
 
 
@@ -167,6 +163,8 @@ from .util import get_annotated
 from .util import get_unique_identifier
 from .util import get_label_identifier
 
+
 from ._version import get_versions
-__version__ = get_versions()['version']
+
+__version__ = get_versions()["version"]
 del get_versions
