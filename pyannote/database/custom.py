@@ -83,7 +83,7 @@ def Template(template: Text, database_yml: Path) -> Callable[[ProtocolFile], Any
     Loader = LOADERS[suffix].load()
 
     def load(current_file: Protocol_file):
-        path = resolve_path(Path(template.format(**current_file)), database_yml)
+        path = resolve_path(Path(template.format(**abs(current_file))), database_yml)
 
         # check if file exists
         if not path.is_file():
