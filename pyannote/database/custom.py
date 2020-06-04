@@ -76,13 +76,13 @@ def Template(template: Text, database_yml: Path) -> Callable[[ProtocolFile], Any
     """
 
     path = Path(template[1:])
-    if suffix not in LOADERS:
+    if path.suffix not in LOADERS:
         msg = f"No loader for files with '{path.suffix}' suffix"
         raise ValueError(msg)
 
-    Loader = LOADERS[suffix].load()
+    Loader = LOADERS[path.suffix].load()
 
-    def load(current_file: Protocol_file):
+    def load(current_file: ProtocolFile):
         path = resolve_path(Path(template.format(**current_file)), database_yml)
 
         # check if file exists
