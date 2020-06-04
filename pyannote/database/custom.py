@@ -75,7 +75,7 @@ def Template(template: Text, database_yml: Path) -> Callable[[ProtocolFile], Any
 
     """
 
-    path = Path(template[1:])
+    path = Path(template)
     if path.suffix not in LOADERS:
         msg = f"No loader for files with '{path.suffix}' suffix"
         raise ValueError(msg)
@@ -229,7 +229,7 @@ def subset_iter(
             continue
 
         if value.startswith("@"):
-            lazy_loader[key] = Template(value, database_yml)
+            lazy_loader[key] = Template(value[1:], database_yml)
 
         else:
 
