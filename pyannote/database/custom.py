@@ -65,7 +65,7 @@ def Template(template: Text, database_yml: Path) -> Callable[[ProtocolFile], Any
     Parameters
     ----------
     template : str
-        Path format template with "@" prefix (e.g. "@/path/to/{uri}.csv")
+        Path format template with "_" prefix (e.g. "_/path/to/{uri}.csv")
     database_yml : Path
         Path to database.yml configuration file.
 
@@ -228,7 +228,7 @@ def subset_iter(
         if key == "uri":
             continue
 
-        if value.startswith("@"):
+        if value.startswith("_"):
             lazy_loader[key] = Template(value[1:], database_yml)
 
         else:
