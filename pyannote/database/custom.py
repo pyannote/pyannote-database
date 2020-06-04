@@ -65,17 +65,16 @@ def Template(template: Text, database_yml: Path) -> Callable[[ProtocolFile], Any
     Parameters
     ----------
     template : str
-        Path format template with "@" prefix (e.g. "@/path/to/{uri}.csv")
+        Path format template (e.g. "/path/to/{uri}.csv")
     database_yml : Path
         Path to database.yml configuration file.
 
     Returns
     -------
     load : callable
-
     """
 
-    path = Path(template[1:])
+    path = Path(template)
     if path.suffix not in LOADERS:
         msg = f"No loader for files with '{path.suffix}' suffix"
         raise ValueError(msg)
@@ -228,8 +227,8 @@ def subset_iter(
         if key == "uri":
             continue
 
-        if value.startswith("@"):
-            lazy_loader[key] = Template(value, database_yml)
+        if value.startswith("_"):
+            lazy_loader[key] = Template(value[1:], database_yml)
 
         else:
 
