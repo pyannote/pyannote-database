@@ -128,7 +128,7 @@ def get_database(database_name, preprocessors={}, **kwargs):
     return database(preprocessors=preprocessors, **kwargs)
 
 
-def get_protocol(name, preprocessors={}, progress=False, **kwargs):
+def get_protocol(name, preprocessors={}) -> Protocol:
     """Get protocol by full name
 
     name : str
@@ -138,8 +138,6 @@ def get_protocol(name, preprocessors={}, progress=False, **kwargs):
         that item[key] = preprocessor(item). In case 'preprocessor' is not
         callable, it should be a string containing placeholder for item keys
         (e.g. {'audio': '/path/to/{uri}.wav'})
-    progress : bool, optional
-        Defaults to False.
 
     Returns
     -------
@@ -148,8 +146,8 @@ def get_protocol(name, preprocessors={}, progress=False, **kwargs):
     """
 
     database_name, task_name, protocol_name = name.split(".")
-    database = get_database(database_name, preprocessors=preprocessors, **kwargs)
-    protocol = database.get_protocol(task_name, protocol_name, progress=progress)
+    database = get_database(database_name, preprocessors=preprocessors)
+    protocol = database.get_protocol(task_name, protocol_name)
     return protocol
 
 

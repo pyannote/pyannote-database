@@ -34,10 +34,10 @@ setup(
     namespace_packages=["pyannote"],
     packages=find_packages(),
     install_requires=[
-        "pyannote.core >= 3.6",
+        "pyannote.core >= 4.1",
         "pyYAML >= 3.12",
-        "tqdm >= 4.10.0",
         "pandas >= 0.19",
+        "typing_extensions >= 3.7.4;python_version < '3.8'",
     ],
     entry_points={
         "pyannote.database.loader": [

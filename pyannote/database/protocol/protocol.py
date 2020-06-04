@@ -295,8 +295,8 @@ class Protocol:
         (e.g. {'audio': '/path/to/{uri}.wav'})
     """
 
-    def __init__(self, preprocessors={}, progress=False, **kwargs):
-        super(Protocol, self).__init__()
+    def __init__(self, preprocessors={}):
+        super().__init__()
 
         self.preprocessors = dict()
         for key, preprocessor in preprocessors.items():
@@ -317,8 +317,6 @@ class Protocol:
             else:
                 msg = f'"{key}" preprocessor is neither a callable nor a string.'
                 raise ValueError(msg)
-
-        self.progress = progress
 
     def preprocess(self, current_file: Union[Dict, ProtocolFile]) -> ProtocolFile:
         return ProtocolFile(current_file, lazy=self.preprocessors)
@@ -372,9 +370,6 @@ class Protocol:
         # imported here to avoid circular imports
         from pyannote.database.util import get_unique_identifier
 
-        # remember `progress` attribute
-        progress = self.progress
-
         methods = []
         for suffix in ["", "_enrolment", "_trial"]:
             for subset in ["development", "test", "train"]:
@@ -388,7 +383,6 @@ class Protocol:
                 continue
 
             try:
-                self.progress = False
                 file_generator = getattr(self, method)()
                 first_file = next(file_generator)
             except NotImplementedError as e:
@@ -396,7 +390,6 @@ class Protocol:
             except StopIteration as e:
                 continue
 
-            self.progress = True
             file_generator = getattr(self, method)()
 
             for current_file in file_generator:
@@ -418,6 +411,3 @@ class Protocol:
                     yield current_file_
 
                     yielded_uris.add(uri)
-
-        # revert `progress` attribute
-        self.progess = progress

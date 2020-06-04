@@ -3,7 +3,7 @@
 
 # The MIT License (MIT)
 
-# Copyright (c) 2017-2018 CNRS
+# Copyright (c) 2017-2020 CNRS
 
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -27,126 +27,77 @@
 # Hervé BREDIN - http://herve.niderb.fr
 
 
-from tqdm import tqdm
+from typing import Dict, Iterator
 from .speaker_diarization import SpeakerDiarizationProtocol
+from .protocol import Subset
+from .protocol import LEGACY_SUBSET_MAPPING
 
 
 class SpeakerVerificationProtocol(SpeakerDiarizationProtocol):
-    """Speaker verification protocol
+    """A protocol for speaker verification experiments
 
-    Parameters
-    ----------
-    preprocessors : dict or (key, preprocessor) iterable
-        When provided, each protocol item (dictionary) are preprocessed, such
-        that item[key] = preprocessor(item).
+    TODO: write docstring following SpeakerDiarizationProtocol 
+    docstring template. below is what used to be part of the 
+    docstring of xxxx_trial methods.
+
+    Each trial is yielded as a dictionary with the following keys:
+
+    ['reference'] (`boolean`)
+        Groundtruth: True for a target trial, False for a non-target trial.
+
+    ['file{1|2}'] (`dict`)
+        Both parts of the trial are provided as dictionaries with the
+        following keys (as well as keys added by preprocessors):
+
+        ['uri'] (`str`)
+            Unique file identifier.
+
+        ['try_with'] (`pyannote.core.{Segment|Timeline}`), optional
+            Part(s) of the file to use in the trial. Default is to use the
+            whole file.
+
+
     """
 
-    def trn_try_iter(self):
-        for trial in []:
+    def subset_trial_helper(self, subset: Subset) -> Iterator[Dict]:
+
+        try:
+            trials = getattr(self, f"{subset}_trial_iter")()
+        except (AttributeError, NotImplementedError) as e:
+            # previous pyannote.database versions used `trn_try_iter` instead
+            # of `train_trial_iter`, `dev_try_iter` instead of
+            # `development_trial_iter`, and `tst_try_iter` instead of
+            # `test_iter`. therefore, we use the legacy version when it is
+            # available (and the new one is not).
+            subset_legacy = LEGACY_SUBSET_MAPPING[subset]
+            try:
+                trials = getattr(self, f"{subset_legacy}_try_iter")()
+            except AttributeError as e:
+                msg = f"{subset}_trial_iter is not implemented."
+                raise AttributeError(msg)
+
+        for trial in trials:
+            trial["file1"] = self.preprocess(trial["file1"])
+            trial["file2"] = self.preprocess(trial["file2"])
             yield trial
 
-    def train_trial(self):
-        """Iterate over the trials of the train set
+    def train_trial_iter(self) -> Iterator[Dict]:
+        """Iterate over trials in the train subset"""
+        raise NotImplementedError()
 
-        Each trial is yielded as a dictionary with the following keys:
+    def development_trial_iter(self) -> Iterator[Dict]:
+        """Iterate over trials in the development subset"""
+        raise NotImplementedError()
 
-        ['reference'] (`boolean`)
-            Groundtruth: True for a target trial, False for a non-target trial.
+    def test_trial_iter(self) -> Iterator[Dict]:
+        """Iterate over trials in the test subset"""
+        raise NotImplementedError()
 
-        ['file{1|2}'] (`dict`)
-            Both parts of the trial are provided as dictionaries with the
-            following keys (as well as keys added by preprocessors):
+    def train_trial(self) -> Iterator[Dict]:
+        return self.subset_trial_helper("train")
 
-            ['uri'] (`str`)
-                Unique file identifier.
+    def development_trial(self) -> Iterator[Dict]:
+        return self.subset_trial_helper("development")
 
-            ['try_with'] (`pyannote.core.{Segment|Timeline}`), optional
-                Part(s) of the file to use in the trial. Default is to use the
-                whole file.
-        """
-
-        generator = self.trn_try_iter()
-
-        if self.progress:
-            generator = tqdm(
-                generator, desc='Trial (train set)',
-                total=getattr(self.trn_try_iter, 'n_items', None))
-
-        for current_trial in generator:
-            current_trial['file1'] = self.preprocess(current_trial['file1'])
-            current_trial['file2'] = self.preprocess(current_trial['file2'])
-            yield current_trial
-
-    def dev_try_iter(self):
-        for trial in []:
-            yield trial
-
-    def development_trial(self):
-        """Iterate over the trials of the development set
-
-        Each trial is yielded as a dictionary with the following keys:
-
-        [`reference`] (`boolean`)
-            Groundtruth: True for a target trial, False for a non-target trial.
-
-        [`file{1|2}`] (`dict`)
-            Both parts of the trial are provided as dictionaries with the
-            following keys (as well as keys added by preprocessors):
-
-            [`uri`] (`str`)
-                Unique file identifier.
-
-            [`try_with`] (`pyannote.core.{Segment|Timeline}`), optional
-                Part(s) of the file to use in the trial. Default is to use the
-                whole file.
-
-        """
-
-        generator = self.dev_try_iter()
-
-        if self.progress:
-            generator = tqdm(
-                generator, desc='Trial (development set)',
-                total=getattr(self.dev_try_iter, 'n_items', None))
-
-        for current_trial in generator:
-            current_trial['file1'] = self.preprocess(current_trial['file1'])
-            current_trial['file2'] = self.preprocess(current_trial['file2'])
-            yield current_trial
-
-    def tst_try_iter(self):
-        for trial in []:
-            yield trial
-
-    def test_trial(self):
-        """Iterate over the trials of the test set
-
-        Each trial is yielded as a dictionary with the following keys:
-
-        [`reference`] (`boolean`)
-            Groundtruth: True for a target trial, False for a non-target trial.
-
-        [`file{1|2}`] (`dict`)
-            Both parts of the trial are provided as dictionaries with the
-            following keys (as well as keys added by preprocessors):
-
-            [`uri`] (`str`)
-                Unique file identifier.
-
-            [`try_with`] (`pyannote.core.{Segment|Timeline}`), optional
-                Part(s) of the file to use in the trial. Default is to use the
-                whole file.
-
-        """
-
-        generator = self.tst_try_iter()
-
-        if self.progress:
-            generator = tqdm(
-                generator, desc='Trial (test set)',
-                total=getattr(self.tst_try_iter, 'n_items', None))
-
-        for current_trial in generator:
-            current_trial['file1'] = self.preprocess(current_trial['file1'])
-            current_trial['file2'] = self.preprocess(current_trial['file2'])
-            yield current_trial
+    def test_trial(self) -> Iterator[Dict]:
+        return self.subset_trial_helper("test")
