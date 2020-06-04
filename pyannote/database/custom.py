@@ -65,14 +65,13 @@ def Template(template: Text, database_yml: Path) -> Callable[[ProtocolFile], Any
     Parameters
     ----------
     template : str
-        Path format template with "_" prefix (e.g. "_/path/to/{uri}.csv")
+        Path format template (e.g. "/path/to/{uri}.csv")
     database_yml : Path
         Path to database.yml configuration file.
 
     Returns
     -------
     load : callable
-
     """
 
     path = Path(template)
