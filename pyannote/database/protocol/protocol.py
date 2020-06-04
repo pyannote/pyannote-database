@@ -39,6 +39,14 @@ import threading
 import itertools
 from typing import Union, Dict, Iterator
 
+try:
+    from typing import Literal
+except ImportError:
+    from typing_extensions import Literal
+
+Subset = Literal["train", "development", "test"]
+LEGACY_SUBSET_MAPPING = {"train": "trn", "development": "dev", "test": "tst"}
+
 
 class ProtocolFile(collections.abc.MutableMapping):
     """Protocol file with lazy preprocessors
@@ -219,16 +227,71 @@ class ProtocolFile(collections.abc.MutableMapping):
 
 
 class Protocol:
-    """Base protocol
+    """Experimental protocol 
 
-    This class should be inherited from, not used directly.
+    An experimental protocol usually defines three subsets: a training subset,
+    a development subset, and a test subset.   
+
+    An experimental protocol can be defined programmatically by creating a 
+    class that inherits from SpeakerDiarizationProtocol and implements at least
+    one of `train_iter`, `development_iter` and `test_iter` methods:
+
+        >>> class MyProtocol(Protocol):
+        ...     def train_iter(self) -> Iterator[Dict]:
+        ...         yield {"uri": "filename1", "any_other_key": "..."}
+        ...         yield {"uri": "filename2", "any_other_key": "..."}
+
+    `{subset}_iter` should return an iterator of dictionnaries with 
+        - "uri" key (mandatory) that provides a unique file identifier (usually
+          the filename),
+        - any other key that the protocol may provide.
+
+    It can then be used in Python like this:
+
+        >>> protocol = MyProtocol()
+        >>> for file in protocol.train():
+        ...    print(file["uri"])
+        filename1
+        filename2
+
+    An experimental protocol can also be defined using `pyannote.database`
+    configuration file, whose (configurable) path defaults to "~/database.yml".
+
+    ~~~ Content of ~/database.yml ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    Protocols:
+      MyDatabase:
+        Protocol:
+          MyProtocol:
+            train:
+                uri: /path/to/collection.lst
+                any_other_key: ... # see custom loader documentation
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    where "/path/to/collection.lst" contains the list of identifiers of the
+    files in the collection:
+
+    ~~~ Content of "/path/to/collection.lst ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    filename1
+    filename2
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    It can then be used in Python like this:
+
+        >>> from pyannote.database import get_protocol
+        >>> protocol = get_protocol('MyDatabase.Protocol.MyProtocol')
+        >>> for file in protocol.train():
+        ...    print(file["uri"])
+        filename1
+        filename2
+
+    This class is usually inherited from, but can be used directly.
 
     Parameters
     ----------
     preprocessors : dict
-        When provided, each protocol item (dictionary) are preprocessed, such
-        that item[key] = preprocessor(item). In case 'preprocessor' is not
-        callable, it should be a string containing placeholder for item keys
+        Preprocess protocol files so that `file[key] = preprocessors[key](file)`
+        for each key in `preprocessors`. In case `preprocessors[key]` is not
+        callable, it should be a string containing placeholders for `file` keys
         (e.g. {'audio': '/path/to/{uri}.wav'})
     """
 
@@ -262,6 +325,46 @@ class Protocol:
 
     def __str__(self):
         return self.__doc__
+
+    def train_iter(self) -> Iterator[Union[Dict, ProtocolFile]]:
+        """Iterate over files in the training subset"""
+        raise NotImplementedError()
+
+    def development_iter(self) -> Iterator[Union[Dict, ProtocolFile]]:
+        """Iterate over files in the development subset"""
+        raise NotImplementedError()
+
+    def test_iter(self) -> Iterator[Union[Dict, ProtocolFile]]:
+        """Iterate over files in the test subset"""
+        raise NotImplementedError()
+
+    def subset_helper(self, subset: Subset) -> Iterator[ProtocolFile]:
+
+        try:
+            files = getattr(self, f"{subset}_iter")()
+        except (AttributeError, NotImplementedError) as e:
+            # previous pyannote.database versions used `trn_iter` instead of
+            # `train_iter`, `dev_iter` instead of `development_iter`, and
+            # `tst_iter` instead of `test_iter`. therefore, we use the legacy
+            # version when it is available (and the new one is not).
+            subset_legacy = LEGACY_SUBSET_MAPPING[subset]
+            try:
+                files = getattr(self, f"{subset_legacy}_iter")()
+            except AttributeError as e:
+                msg = f"{subset}_iter is not implemented."
+                raise AttributeError(msg)
+
+        for file in files:
+            yield self.preprocess(file)
+
+    def train(self) -> Iterator[ProtocolFile]:
+        return self.subset_helper("train")
+
+    def development(self) -> Iterator[ProtocolFile]:
+        return self.subset_helper("development")
+
+    def test(self) -> Iterator[ProtocolFile]:
+        return self.subset_helper("test")
 
     def files(self) -> Iterator[ProtocolFile]:
         """Iterate over all files in `protocol`"""
