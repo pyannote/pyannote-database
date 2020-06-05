@@ -27,12 +27,52 @@
 # Hervé BREDIN - http://herve.niderb.fr
 
 
-from typing import Iterator, Union, Dict
+from typing import Iterator, Union, Dict, Callable, Optional, Text, Any
 from .protocol import Protocol
 from .protocol import ProtocolFile
 from .protocol import Subset
-
+from .protocol import Preprocessor
+from .protocol import Preprocessors
+from pyannote.core import Annotation
 from ..util import get_annotated
+import functools
+
+
+def crop_annotation(
+    current_file: ProtocolFile, existing_preprocessor: Optional[Preprocessor] = None
+) -> Annotation:
+    """Preprocessor that crops 'annotation' by 'annotated'
+
+    Returns 'annotation' unchanged if 'annotated' is not available
+
+    Parameters
+    ----------
+    current_file : ProtocolFile
+        Protocol file.
+    existing_preprocessor : Preprocessor, optional
+        When provided, this preprocessor must be used to get the initial 
+        'annotation' instead of getting it from 'current_file["annotation"]'
+
+    Returns
+    -------
+    cropped_annotation : Annotation
+        "annotation" cropped by "annotated".
+    """
+
+    if existing_preprocessor is None:
+        annotation = current_file["annotation"]
+    else:
+        annotation = existing_preprocessor(current_file)
+
+    if "annotated" not in current_file:
+        return annotation
+
+    # crop 'annotation' to 'annotated' extent
+    annotated = current_file["annotated"]
+    if annotated and not annotated.covers(annotation.get_timeline()):
+        return annotation.crop(annotated, mode="intersection")
+
+    return annotation
 
 
 class SpeakerDiarizationProtocol(Protocol):
@@ -58,10 +98,12 @@ class SpeakerDiarizationProtocol(Protocol):
           provides reference speaker diarization as a `pyannote.core.Annotation`
           instance,
         - "annotated" key (recommended) that describes which part of the file 
-          has been annotated, as a `pyannote.core.Timeline` instance. This is 
-          used by `pyannote.metrics` to remove un-annotated regions from the 
-          evaluation, and to prevent `pyannote.audio` from incorrectly 
-          considering empty un-annotated regions as non-speech,
+          has been annotated, as a `pyannote.core.Timeline` instance. Any part
+          of "annotation" that lives outside of the provided "annotated" will 
+          be removed. This is also used by `pyannote.metrics` to remove 
+          un-annotated regions from its evaluation report, and by 
+          `pyannote.audio` to not consider empty un-annotated regions as 
+          non-speech. 
         - any other key that the protocol may provide.
 
     It can then be used in Python like this:
@@ -126,6 +168,19 @@ class SpeakerDiarizationProtocol(Protocol):
         filename1
         filename2
     """
+
+    def __init__(self, preprocessors: Optional[Preprocessors] = None):
+
+        if preprocessors is None:
+            preprocessors = dict()
+
+        # wrap exisiting "annotation" preprocessor by crop_annotation so that
+        # "annotation" is automatically cropped by "annotated" when provided
+        preprocessors["annotation"] = functools.partial(
+            crop_annotation, existing_preprocessor=preprocessors.get("annotation", None)
+        )
+
+        super().__init__(preprocessors=preprocessors)
 
     def stats(self, subset: Subset = "train") -> Dict:
         """Obtain global statistics on a given subset
