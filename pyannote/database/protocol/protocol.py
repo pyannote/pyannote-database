@@ -37,7 +37,7 @@ import warnings
 import collections
 import threading
 import itertools
-from typing import Union, Dict, Iterator
+from typing import Union, Dict, Iterator, Callable, Any, Text, Optional
 
 try:
     from typing import Literal
@@ -46,6 +46,9 @@ except ImportError:
 
 Subset = Literal["train", "development", "test"]
 LEGACY_SUBSET_MAPPING = {"train": "trn", "development": "dev", "test": "tst"}
+
+Preprocessor = Callable[["ProtocolFile"], Any]
+Preprocessors = Dict[Text, Preprocessor]
 
 
 class ProtocolFile(collections.abc.MutableMapping):
@@ -295,8 +298,11 @@ class Protocol:
         (e.g. {'audio': '/path/to/{uri}.wav'})
     """
 
-    def __init__(self, preprocessors={}):
+    def __init__(self, preprocessors: Optional[Preprocessors] = None):
         super().__init__()
+
+        if preprocessors is None:
+            preprocessors = dict()
 
         self.preprocessors = dict()
         for key, preprocessor in preprocessors.items():
