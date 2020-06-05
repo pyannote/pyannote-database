@@ -47,7 +47,7 @@ from .database import Database
 from pyannote.database import ProtocolFile
 import yaml
 import warnings
-from typing import Text, Dict, Callable, Any
+from typing import Text, Dict, Callable, Any, Union
 import functools
 
 
@@ -118,12 +118,12 @@ def load_lst(file_lst):
     return [l.strip() for l in lines]
 
 
-def resolve_path(path: Text, database_yml: Path) -> Path:
+def resolve_path(path: Path, database_yml: Path) -> Path:
     """Resolve path
 
     Parameters
     ----------
-    path : `str`
+    path : `Path`
         Path. Can be either absolute, relative to current working directory, or
         relative to `config.yml`.
     database_yml : `Path`
@@ -135,7 +135,7 @@ def resolve_path(path: Text, database_yml: Path) -> Path:
         Resolved path.
     """
 
-    path = Path(path).expanduser()
+    path = path.expanduser()
 
     if path.is_file():
         return path
@@ -293,7 +293,7 @@ def create_protocol(
     Returns
     -------
     CustomProtocol : type or None
-        
+
     """
 
     try:
