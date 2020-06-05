@@ -43,6 +43,7 @@ setup(
         "pyannote.database.loader": [
             ".rttm = pyannote.database.loader:RTTMLoader",
             ".uem = pyannote.database.loader:UEMLoader",
+            ".ctm = pyannote.database.loader:CTMLoader",
         ],
     },
     # versioneer
