@@ -349,8 +349,8 @@ class Protocol:
             try:
                 files = getattr(self, f"{subset_legacy}_iter")()
             except AttributeError as e:
-                msg = f"{subset}_iter is not implemented."
-                raise AttributeError(msg)
+                msg = f"Protocol does not implement a {subset} subset."
+                raise NotImplementedError(msg)
 
         for file in files:
             yield self.preprocess(file)
