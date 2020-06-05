@@ -42,12 +42,14 @@ Protocols:
 
 from pathlib import Path
 
-from . import protocol as Protocol
+from . import protocol as protocol_module
 from .database import Database
 from pyannote.database import ProtocolFile
 import yaml
+import warnings
 from typing import Text, Dict, Callable, Any
 import functools
+
 
 from . import DATABASES, TASKS
 
@@ -272,13 +274,13 @@ def get_init(protocols):
     return init
 
 
-def new_speaker_diarization_protocol(
+def create_protocol(
     database: Text,
     task: Text,
     protocol: Text,
     protocol_entries: Dict,
     database_yml: Path,
-) -> type:
+) -> Union[type, None]:
     """Create new protocol class
 
     Parameters
@@ -290,17 +292,46 @@ def new_speaker_diarization_protocol(
 
     Returns
     -------
-    CustomProtocol : type
+    CustomProtocol : type or None
+        
     """
 
-    base_class = getattr(Protocol, f"{task}Protocol")
+    try:
+        base_class = getattr(
+            protocol_module, f"Protocol" if task == "Protocol" else f"{task}Protocol"
+        )
+    except AttributeError:
+        msg = (
+            f"Ignoring '{database}.{task}' protocols found in {database_yml} "
+            f"because '{task}' tasks are not supported yet."
+        )
+        return None
+
+    # Collections do not define subsets, so we artificially create one (called "files")
+    #
+    #    MyCollection:
+    #      uri: /path/to/collection.lst
+    #
+    # becomes
+    #
+    #    MyCollection:
+    #      files:
+    #        uri: /path/to/collection.lst
+    if task == "Collection":
+        protocol_entries = {"files": protocol_entries}
 
     methods = dict()
     for subset, subset_entries in protocol_entries.items():
 
-        # TODO. get rid of this ugly mapping in favor of "train" -> "train_iter"
-        subset_short = {"train": "trn", "development": "dev", "test": "tst"}[subset]
-        method_name = f"{subset_short}_iter"
+        if subset not in ["files", "train", "development", "test"]:
+            msg = (
+                f"Ignoring '{database}.{task}.{protocol}.{subset}' found in {database_yml} "
+                f"because '{subset}' entries are not supported yet."
+            )
+            warnings.warn(msg)
+            continue
+
+        method_name = f"{subset}_iter"
 
         if database == "X":
             methods[method_name] = functools.partial(
@@ -327,8 +358,7 @@ def new_speaker_diarization_protocol(
 
 
 def add_custom_protocols():
-    """
-    """
+    """Register databases, tasks, and protocols defined in configuration file"""
 
     from .config import get_database_yml
 
@@ -355,22 +385,20 @@ def add_custom_protocols():
         protocols[database] = []
         for task, task_entries in database_entries.items():
 
-            # update TASKS dictionary
-            if task not in TASKS:
-                TASKS[task] = set()
-            TASKS[task].add(database)
-
-            # only speaker diarization TASKS are supported for now...
-            if task != "SpeakerDiarization":
-                msg = "Only speaker diarization protocols are supported for now."
-                raise ValueError(msg)
-
             for protocol, protocol_entries in task_entries.items():
                 protocol = str(protocol)
-                CustomProtocol = new_speaker_diarization_protocol(
+                CustomProtocol = create_protocol(
                     database, task, protocol, protocol_entries, database_yml
                 )
+                if CustomProtocol is None:
+                    continue
+
                 protocols[database].append((task, protocol, CustomProtocol))
+
+                # update TASKS dictionary
+                if task not in TASKS:
+                    TASKS[task] = set()
+                TASKS[task].add(database)
 
         # create database class on-the-fly
         DATABASES[database] = type(

@@ -1,8 +1,29 @@
 Protocols:
   MyDatabase:
+
+    Collection:
+      MyCollection:
+        uri: lists/train.lst
+
     Protocol:
       MyProtocol:
         train:
-            uri: lists/train.lst
-            speaker: rttms/train.rttm
-            transcription: _ctms/{uri}.ctm
+          uri: lists/train.lst
+          speaker: rttms/train.rttm
+          transcription: _ctms/{uri}.ctm
+      
+    SpeakerDiarization:
+      MySpeakerDiarization:
+        train: 
+          uri: lists/train.lst
+          annotation: rttms/train.rttm
+          annotated: uems/train.uem
+    
+    SpeakerVerification:
+      MySpeakerVerification:
+        train:
+          uri: lists/train.lst
+          annotation: rttms/train.rttm
+          annotated: uems/train.uem
+        # test_trial:
+        #   trials: 
