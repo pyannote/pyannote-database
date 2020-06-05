@@ -370,14 +370,19 @@ class Protocol:
         # imported here to avoid circular imports
         from pyannote.database.util import get_unique_identifier
 
-        methods = []
-        for suffix in ["", "_enrolment", "_trial"]:
-            for subset in ["development", "test", "train"]:
-                methods.append(f"{subset}{suffix}")
-
         yielded_uris = set()
 
-        for method in methods:
+        for method in [
+            "development",
+            "development_enrolment",
+            "development_trial",
+            "test",
+            "test_enrolment",
+            "test_trial",
+            "train",
+            "train_enrolment",
+            "train_trial",
+        ]:
 
             if not hasattr(self, method):
                 continue
