@@ -32,6 +32,18 @@ import pandas as pd
 from pyannote.core import Segment, Timeline, Annotation
 from pyannote.database import ProtocolFile
 from pathlib import Path
+from typing import Union
+import warnings
+
+try:
+    from spacy.tokens import Token
+
+    Token.set_extension("time_start", default=None)
+    Token.set_extension("time_end", default=None)
+    Token.set_extension("confidence", default=0.0)
+
+except ImportError as e:
+    pass
 
 
 class RTTMLoader:
@@ -121,3 +133,55 @@ class UEMLoader:
             segments.append(segment)
 
         return Timeline(segments=segments, uri=uri)
+
+
+class CTMLoader:
+    """CTM loader
+
+    Parameter
+    ---------
+    ctm : Path
+        Path to CTM file
+    """
+
+    def __init__(self, ctm: Path):
+        self.ctm = ctm
+
+        names = ["uri", "channel", "start", "duration", "word", "confidence"]
+        dtype = {
+            "uri": str,
+            "start": float,
+            "duration": float,
+            "word": str,
+            "confidence": float,
+        }
+        self.data_ = pd.read_csv(
+            ctm, names=names, dtype=dtype, delim_whitespace=True
+        ).groupby("uri")
+
+    def __call__(self, current_file: ProtocolFile) -> Union["spacy.tokens.Doc", None]:
+
+        try:
+            from spacy.vocab import Vocab
+            from spacy.tokens import Doc
+        except ImportError as e:
+            msg = "Cannot load CTM files because spaCy is not available."
+            warnings.warn(msg)
+            return None
+
+        uri = current_file["uri"]
+
+        try:
+            lines = list(self.data_.get_group(uri).iterrows())
+        except KeyError:
+            lines = []
+
+        words = [line.word for _, line in lines]
+        doc = Doc(Vocab(), words=words)
+
+        for token, (_, line) in zip(doc, lines):
+            token._.time_start = line.start
+            token._.time_end = line.start + line.duration
+            token._.confidence = line.confidence
+
+        return doc
