@@ -49,7 +49,7 @@ class Database(object):
         self.preprocessors = preprocessors
 
     def register_protocol(self, task_name, protocol_name, protocol):
-        if not hasattr(self, 'protocols_'):
+        if not hasattr(self, "protocols_"):
             self.protocols_ = {}
         if task_name not in self.protocols_:
             self.protocols_[task_name] = {}
@@ -60,7 +60,7 @@ class Database(object):
         try:
             tasks = self.protocols_
         except AttributeError as e:
-            message = 'This database does not implement any protocol.'
+            message = "This database does not implement any protocol."
             raise PyannoteDatabaseException(message)
         return tasks
 
@@ -73,7 +73,8 @@ class Database(object):
 
     def get_protocol(self, task, protocol, **kwargs):
         return self.protocols_[task][protocol](
-            preprocessors=self.preprocessors, **kwargs)
+            preprocessors=self.preprocessors, **kwargs
+        )
 
     def __str__(self):
         return self.__doc__
