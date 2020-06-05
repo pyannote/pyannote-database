@@ -1,0 +1,8 @@
+Protocols:
+  MyDatabase:
+    Protocol:
+      MyProtocol:
+        train:
+            uri: lists/train.lst
+            speaker: rttms/train.rttm
+            transcription: _ctms/{uri}.ctm
