@@ -32,14 +32,17 @@
 import sys
 from pkg_resources import iter_entry_points
 
+from typing import Optional, Dict, Set, Text
+
 from .database import Database
 from .database import PyannoteDatabaseException
 
 from .protocol.protocol import Protocol
 from .protocol.protocol import ProtocolFile
+from .protocol.protocol import Preprocessors
 
 DATABASES = dict()
-TASKS = dict()
+TASKS: Dict[Text, Set[Text]] = dict()
 
 # load databases from entry points
 for o in iter_entry_points(group="pyannote.database.databases", name=None):
@@ -86,18 +89,13 @@ def get_databases(task=None):
     return sorted(TASKS.get(task, []))
 
 
-def get_database(database_name, preprocessors={}, **kwargs):
+def get_database(database_name, **kwargs):
     """Get database by name
 
     Parameters
     ----------
     name : str
         Database name.
-    preprocessors : dict or (key, preprocessor) iterable
-        When provided, each protocol item (dictionary) are preprocessed, such
-        that item[key] = preprocessor(item). In case 'preprocessor' is not
-        callable, it should be a string containing placeholder for item keys
-        (e.g. {'audio': '/path/to/{uri}.wav'})
 
     Returns
     -------
@@ -125,10 +123,10 @@ def get_database(database_name, preprocessors={}, **kwargs):
             msg = msg.format(name=database_name)
         raise ValueError(msg)
 
-    return database(preprocessors=preprocessors, **kwargs)
+    return database(**kwargs)
 
 
-def get_protocol(name, preprocessors={}) -> Protocol:
+def get_protocol(name, preprocessors: Optional[Preprocessors] = None) -> Protocol:
     """Get protocol by full name
 
     name : str
@@ -146,8 +144,10 @@ def get_protocol(name, preprocessors={}) -> Protocol:
     """
 
     database_name, task_name, protocol_name = name.split(".")
-    database = get_database(database_name, preprocessors=preprocessors)
-    protocol = database.get_protocol(task_name, protocol_name)
+    database = get_database(database_name)
+    protocol = database.get_protocol(
+        task_name, protocol_name, preprocessors=preprocessors
+    )
     return protocol
 
 

@@ -266,8 +266,8 @@ def subset_iter(
 
 
 def get_init(protocols):
-    def init(self, preprocessors={}):
-        super(self.__class__, self).__init__(preprocessors=preprocessors)
+    def init(self):
+        super(self.__class__, self).__init__()
         for protocol in protocols:
             self.register_protocol(*protocol)
 
