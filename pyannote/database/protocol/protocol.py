@@ -382,17 +382,14 @@ class Protocol:
             if not hasattr(self, method):
                 continue
 
-            try:
-                file_generator = getattr(self, method)()
-                first_file = next(file_generator)
-            except NotImplementedError as e:
-                continue
-            except StopIteration as e:
-                continue
+            def iterate():
+                try:
+                    for file in getattr(self, method)():
+                        yield file
+                except (AttributeError, NotImplementedError):
+                    return
 
-            file_generator = getattr(self, method)()
-
-            for current_file in file_generator:
+            for current_file in iterate():
 
                 # skip "files" that do not contain a "uri" entry.
                 # this happens for speaker verification trials that contain
