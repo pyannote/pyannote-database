@@ -1,364 +1,661 @@
 # pyannote-database
 
-This package provides a common interface to multimedia databases and associated
-experimental protocol.
-
-<!-- @import "[TOC]" {cmd="toc" depthFrom=2 depthTo=3 orderedList=false} -->
-<!-- code_chunk_output -->
-
-* [Installation](#installation)
-* [Databases & tasks](#databases-tasks)
-* [Protocols](#protocols)
-	* [Speaker diarization](#speaker-diarization)
-	* [Collections](#collections)
-	* [Speaker spotting](#speaker-spotting)
-* [Custom protocols](#custom-protocols)
-	* [Generic speaker diarization protocols](#generic-speaker-diarization-protocols)
-	* [pyannote.database plugins](#pyannotedatabase-plugins)
-	* [Meta protocols](#meta-protocols)
-* [Preprocessors](#preprocessors)
-
-<!-- /code_chunk_output -->
-
-
-## Installation
+Reproducible experimental protocols for multimedia (audio, video, text) database.
 
 ```bash
 $ pip install pyannote.database
 ```
 
-You can install database plugins separately, for instance, the ETAPE database plugin can be installed like that:
+- [Definitions](#definitions)
+- [Configuration file](#configuration-file)
+- [Data loaders](#data-loaders)
+- [Preprocessors](#preprocessors)
+- [`FileFinder`](#filefinder)
+- [Tasks](#tasks)
+  - [Collections](#collections)
+  - [Speaker diarization](#speaker-diarization)
+  - [Speaker verification](#speaker-verification)
+- [Meta-protocols](#meta-protocols)
+- [Plugins](#plugins)
+- [API](#api)
+  - [Databases and tasks](#databases-and-tasks)
+  - [Custom data loaders](#custom-data-loaders)
+    - [Defining custom data loaders](#defining-custom-data-loaders)
+    - [Registering custom data loaders](#registering-custom-data-loaders)
+    - [Testing custom data loaders](#testing-custom-data-loaders)
+  - [Protocols](#protocols)
+    - [Collections](#collections-1)
+    - [Speaker diarization](#speaker-diarization-1)
+    - [Speaker verification](#speaker-verification-1)
 
-```bash
-$ pip install pyannote.db.etape
-```
+## Definitions
 
-A bunch of `pyannote.database` plugins are already available (search for `pyannote.db` on [pypi](https://pypi.python.org/pypi?%3Aaction=search&term=pyannote.db&submit=search))
+In `pyannote.database` jargon, a **resource** can be any multimedia entity (e.g. an image, an audio file, a video file, or a webpage). In its most simple  form, it is modeled as a `pyannote.database.ProtocolFile` instance (basically a `dict` on steroids) with a `uri` key (URI stands for _unique resource identifier_) that identifies the entity.
 
-However, you might want to add (and contribute) one for your favorite databases. See [Custom protocols](#custom-protocols) for details.
+**Metadata** may be associated to a resource by adding keys to its `ProtocolFile`. For instance, one could add a `label` key to an image _resource_ describing whether it depicts a chihuahua or a muffin.
 
-## Databases & tasks
+A **database** is a collection of resources of the same nature (e.g. a collection of audio files). It is modeled as a `pyannote.database.Database` instance.
 
-Installed databases can be discovered using `get_databases`:
+An **experimental protocol** (`pyannote.database.Protocol`) usually defines three subsets:
+
+- a _train_ subset (_e.g._ used to train a neural network),
+- a _development_ subset (_e.g._ used to tune hyper-parameters),
+- a _test_ subset (_e.g._ used for evaluation).
+
+## Configuration file
+
+Experimental protocols are defined via a YAML configuration file:
+
+  ```yaml
+  Protocols:
+    MyDatabase:
+      Protocol:
+        MyProtocol:
+          train:
+              uri: /path/to/train.lst
+          development:
+              uri: /path/to/development.lst
+          test:
+              uri: /path/to/test.lst
+  ```
+
+where `/path/to/train.lst` contains the list of unique resource identifier (URI) of the
+files in the _train_ subset:
+
+  ```text
+  # /path/to/train.lst
+  filename1
+  filename2
+  ```
+
+`pyannote.database` will look for the configuration file at the following locations, sorted by priority:
+
+  1. `database.yml` in current working directory
+  2. path provided by the `PYANNOTE_DATABASE_CONFIG` environment variable
+  3. `~/.pyannote/database.yml`
+
+The newly defined `MyDatabase.Protocol.MyProtocol` can then be used in Python:
+
+  ```python
+  from pyannote.database import get_protocol
+  protocol = get_protocol('MyDatabase.Protocol.MyProtocol')
+  for resource in protocol.train():
+      print(resource["uri"])
+  filename1
+  filename2
+  ```
+
+Paths defined in the configuration file can be absolute or relative the directory containing the configuration file. For instance, the following file organization should work just fine:
+
+  ```text
+  .
+  ├── database.yml
+  └── lists
+      └── train.lst
+  ```
+
+with the content of `database.yml` as follows:
+
+  ```yaml
+  Protocols:
+    MyDatabase:
+      Protocol:
+        MyProtocol:
+          train:
+              uri: lists/train.lst
+  ```
+
+## Data loaders
+
+The above `MyDatabase.Protocol.MyProtocol` protocol is not very useful as it only allows to iterate over a list of resources with a single `'uri'` key. Metadata can be added to each resource with the following syntax:  
+
+  ```yaml
+  Protocols:
+    MyDatabase:
+      Protocol:
+        MyProtocol:
+          train:
+              uri: lists/train.lst
+              speaker: rttms/train.rttm
+              transcription: _ctms/{uri}.ctm
+  ```
+
+and the following directory structure:
+
+  ```text
+  .
+  ├── database.yml
+  ├── lists
+  |   └── train.lst
+  ├── rttms
+  |   └── train.rttm
+  └── ctms
+      ├── filename1.ctm
+      └── filename2.ctm
+  ```
+
+Now, resources have both `'speaker'` and `'transcription'` keys:
+
+  ```python
+  from pyannote.database import get_protocol
+  protocol = get_protocol('MyDatabase.Protocol.MyProtocol')
+  for resource in protocol.train():
+      assert "speaker" in resource
+      assert isinstance(resource["speaker"], pyannote.core.Annotation)
+      assert "transcription" in resource
+      assert isinstance(resource["transcription"], spacy.tokens.Doc)
+  ```
+
+What happened exactly? Data loaders were automatically selected based on metadata file suffix:
+
+- `pyannote.database.loader.RTTMLoader` for `speaker` entry with `.rttm` suffix
+- `pyannote.database.loader.CTMLoader` for  `transcription` entry with `ctm` suffix).
+
+and used to populate `speaker` and `transcription` keys. In pseudo-code:
+
+  ```python
+  # instantiate loader registered with `.rttm` suffix
+  speaker = RTTMLoader('rttms/train.rttm')
+
+  # entries with underscore (`_`) prefix serve as path templates
+  transcription_template = 'ctms/{uri}.ctm'
+
+  for resource in protocol.train():
+      # unique resource identifier
+      uri = resource['uri']
+
+      # only select parts of `rttms/train.rttm` that are relevant to current resource,
+      # convert it into a convenient data structure (here pyannote.core.Annotation), 
+      # and assign it to `'speaker'` resource key 
+      resource['speaker'] = speaker[uri]
+
+      # replace placeholders in `transcription` path template
+      ctm = transcription_template.format(uri=uri)
+
+      # instantiate loader registered with `.ctm` suffix
+      transcription = CTMLoader(ctm)
+
+      # only select parts of the `ctms/{uri}.ctm` that are relevant to current resource
+      # (here, most likely the whole file), convert it into a convenient data structure
+      # (here spacy.tokens.Doc), and assign it to `'transcription'` resource key 
+      resource['transcription'] = transcription[uri]
+  ```
+
+`pyannote.database` provides built-in data loaders for a limited set of file formats: `RTTMLoader` for `.rttm` files, `UEMLoader` for `.uem` files, and `CTMLoader` for `.ctm` files. See [Custom data loaders](#custom-data-loaders) section to learn how to add your own. 
+
+## Preprocessors
+
+When iterating over a protocol subset (e.g. using `for resource in protocol.train()`), resources are provided as instances of `pyannote.database.ProtocolFile`, which are basically `dict` instances whose values are computed lazily.
+
+For instance, in the code above, the value returned by `resource['speaker']` is only computed the first time it is accessed and then cached for all subsequent calls.  See [Custom data loaders](#custom-data-loaders) section for more details. 
+
+Similarly, resources can be augmented (or modified) on-the-fly with the `preprocessors` options for `get_protocol`. In the example below, a `dummy` key is added that simply returns the length of the `uri` string:
 
 ```python
->>> from pyannote.database import get_databases
->>> get_databases()
-['Etape']
+def compute_dummy(resource: ProtocolFile):
+    print(f"Computing 'dummy' key")
+    return len(resource["uri"])
+preprocessors = {"dummy": compute_dummy}
+protocol = get_protocol('Etape.SpeakerDiarization.TV', preprocessors=preprocessors)
+resource = next(protocol.train())
+resource["dummy"]
+Computing 'dummy' key
 ```
 
-Any installed database can then be imported using one of the following:
+## `FileFinder`
 
-```python
-# programmatically using "get_database"
->>> from pyannote.database import get_database
->>> database = get_database('Etape')
-```
+`FileFinder` is a special case of preprocessors is `pyannote.database.FileFinder` meant to automatically locate the media file associated with the `uri`. 
 
-```python
-# directly using "import"
->>> from pyannote.database import Etape
->>> database = Etape()
-```
+Say audio files are available at the following paths:
 
-Databases usually provide high level description when printed.
+  ```text
+  .
+  └── /path/to
+      └── audio
+          ├── filename1.wav
+          ├── filename2.mp3
+          ├── filename3.wav
+          ├── filename4.wav
+          └── filename5.mp3
+  ```
 
-```
->>> print(database)
-ETAPE corpus
+The `FileFinder` preprocessor relies on a `Databases:` section that should be added to the `database.yml` configuration file and indicates where to look for media files (using resource key placeholders):
 
-Reference
----------
-"The ETAPE corpus for the evaluation of speech-based TV content processing in the French language"
-Guillaume Gravier, Gilles Adda, Niklas Paulson, Matthieu Carré, Aude Giraudel, Olivier Galibert.
-Eighth International Conference on Language Resources and Evaluation, 2012.
+  ```yaml
+  Databases:
+    MyDatabase: 
+      - /path/to/audio/{uri}.wav
+      - /path/to/audio/{uri}.mp3
 
-Citation
---------
-@inproceedings{ETAPE,
-  title = {{The ETAPE Corpus for the Evaluation of Speech-based TV Content Processing in the French Language}},
-  author = {Gravier, Guillaume and Adda, Gilles and Paulson, Niklas and Carr{'e}, Matthieu and Giraudel, Aude and Galibert, Olivier},
-  booktitle = {{LREC - Eighth international conference on Language Resources and Evaluation}},
-  address = {Turkey},
-  year = {2012},
-}
+Protocols:
+    MyDatabase:
+      Protocol:
+        MyProtocol:
+          train:
+              uri: lists/train.lst
+  ```
 
-Website
--------
-http://www.afcp-parole.org/etape-en.html
-```
+Note that any pattern supported by `pathlib.Path.glob` is supported (but avoid `**` as much as possible).  Paths can also be relative to the location of `database.yml`. It will then do its best to locate the file at runtime:
 
-You can also use `help` to get the list of available methods.
+  ```python
+  from pyannote.database import FileFinder
+  preprocessors = {"audio": FileFinder()}
+  protocol = get_protocol('MyDatabase.', preprocessors=preprocessors)
+  for resource in protocol.train():
+      print(resource["audio"])
+  /path/to/audio/filename1.wav
+  /path/to/audio/filename2.mp3
+  ```
 
-```
->>> help(database)
-```
+## Tasks
 
-Some databases (especially multimodal ones) may be used for several tasks.
-One can get a list of tasks using `get_tasks` method:
+### Collections
 
-```python
->>> database.get_tasks()
-['SpeakerDiarization']
-```
+A collection of files can also be defined using `pyannote.database`
+configuration file using the `Collection` task:
 
-One can also get the overall list of tasks, as well as the list of databases
-that implement at least one protocol for a specific task.
+  ```yaml
+  # ~/database.yml
+  Protocols:
+    MyDatabase:
+      Collection:
+        MyCollection:
+          uri: /path/to/collection.lst
+          any_other_key: ... # see custom loader documentation
+  ```
 
-```python
->>> from pyannote.database import get_tasks
->>> get_tasks()
-['SpeakerDiarization']
->>> get_databases(task='SpeakerDiarization')
-['Etape']
-```
+where `/path/to/collection.lst` contains the list of identifiers of the
+files in the collection:
 
-This might come handy in case you want to automatically benchmark a particular
-approach on every database for a given task.
+  ```text
+  # /path/to/collection.lst
+  filename1
+  filename2
+  filename3
+  ```
 
-## Protocols
-([↑up to table of contents](#table-of-contents))
+It can the be used in Python like this:
 
-Once you have settled with a task, a database may implement several experimental protocols for this task.
-`get_protocols` can be used to get their list:
+  ```python
+  from pyannote.database import get_protocol
+  collection = get_protocol('MyDatabase.Collection.MyCollection')
+  for file in collection.files():
+     print(file["uri"])
+  filename1
+  filename2
+  filename3
+  ```   
 
-```python
->>> database.get_protocols('SpeakerDiarization')
-['Full', 'Radio', 'TV']
-```
+### Speaker diarization
 
-In this example, three speaker diarization protocols are available: 
-- one using the complete set of data;
-- one using only TV data;
-- one using only Radio data.
+A speaker diarization protocol can also be defined using `pyannote.database`
+configuration file using the `SpeakerDiarization` task:
 
-```python
->>> protocol = database.get_protocol('SpeakerDiarization', 'TV')
-```
+  ```yaml
+  Protocols:
+    MyDatabase:
+      SpeakerDiarization:
+        MyProtocol:
+          train:
+              uri: /path/to/collection.lst
+              annotation: /path/to/reference.rttm
+              annotated: /path/to/reference.uem
+  ```
 
-Protocols usually provide high level description when printed.
+where `/path/to/collection.lst` contains the list of identifiers of the
+files in the collection:
 
-```python
->>> print(protocol)
-Speaker diarization protocol using TV subset of ETAPE
-```
+  ```text
+  # /path/to/collection.lst
+  filename1
+  filename2
+  ```
 
-You can also use `help` to get the list of available methods.
+`/path/to/reference.rttm` contains the reference speaker diarization using
+RTTM format:
 
-```python
->>> help(protocol)
-```
+  ```text
+  # /path/to/reference.rttm
+  SPEAKER filename1 1 3.168 0.800 <NA> <NA> speaker_A <NA> <NA>
+  SPEAKER filename1 1 5.463 0.640 <NA> <NA> speaker_A <NA> <NA>
+  SPEAKER filename1 1 5.496 0.574 <NA> <NA> speaker_B <NA> <NA>
+  SPEAKER filename1 1 10.454 0.499 <NA> <NA> speaker_B <NA> <NA>
+  SPEAKER filename2 1 2.977 0.391 <NA> <NA> speaker_C <NA> <NA>
+  SPEAKER filename2 1 18.705 0.964 <NA> <NA> speaker_C <NA> <NA>
+  SPEAKER filename2 1 22.269 0.457 <NA> <NA> speaker_A <NA> <NA>
+  SPEAKER filename2 1 28.474 1.526 <NA> <NA> speaker_A <NA> <NA>
+  ```
 
-A shortcut `get_protocol` function is available if you already know which database, task, and protocol you want to use:
+`/path/to/reference.uem` describes the annotated regions using UEM format:
 
-```python
->>> from pyannote.database import get_protocol
->>> protocol = get_protocol('Etape.SpeakerDiarization.TV')
-```
+  ```text
+  filename1 NA 0.000 30.000
+  filename2 NA 0.000 30.000
+  filename2 NA 40.000 70.000
+  ```
 
-### Speaker diarization 
-([↑up to table of contents](#table-of-contents))
+It is recommended to provide the `annotated` key even if it covers the whole file. Any part of `annotation` that lives outside of the provided `annotated` will  be removed. It is also used by `pyannote.metrics` to remove un-annotated regions from the evaluation, and to prevent `pyannote.audio` from incorrectly considering empty un-annotated regions as non-speech.
 
-Speaker diarization protocols implement three methods: `train`, `development` and `test` that provide an iterator over the corresponding subset.
+It can then be used in Python like this:
 
-Those methods yield dictionaries (one per file/item) that can be used in the following way:
+  ```python
+  from pyannote.database import get_protocol
+  protocol = get_protocol('MyDatabase.SpeakerDiarization.MyProtocol')
+  for file in protocol.train()
+     print(file["uri"])
+     assert "annotation" in file
+     assert "annotated" in file
+  filename1
+  filename2
+  ```
 
-```python
->>> from pyannote.database import get_annotated
->>> for current_file in protocol.train():
-...
-...     # get the reference annotation (who speaks when)
-...     # as a pyannote.core.Annotation instance
-...     reference = current_file['annotation']
-...
-...     # sometimes, only partial annotations are available
-...     # get the annotated region as a pyannote.core.Timeline instance
-...     annotated = get_annotated(current_file)
-```
-
-### Collections 
-
-Collections protocols simply provide list of files:
-
-```python
->>> protocol = get_protocol('...')
->>> for current_file in protocol.files():
-...     pass
-```
-
-### Speaker spotting 
+### Speaker verification
 
 TODO
 
-
-## Custom protocols
-([↑up to table of contents](#table-of-contents))
-
-
-### Generic speaker diarization protocols
-([↑up to table of contents](#table-of-contents))
-
-`pyannote.database` supports speaker diarization protocols out-of-the-box through the provision of RTTM (and UEM) annotation files. It relies on the `~/.pyannote/database.yml` with the following format:
-
-```yaml
-# ~/.pyannote/database.yml
-Protocols:
-  DatabaseName:
-    SpeakerDiarization:
-      ProtocolName:
-        train:
-            annotation: /path/to/annotation/train/file.rttm
-            annotated: /path/to/annotated/train/file.uem
-            uris: /path/to/list_of_uris/train/file.lst
-        development:
-            annotation: /path/to/annotation/dev/file.rttm
-        test:
-            annotated: /path/to/annotated/test/file.uem
-            uris: /path/to/list_of_uris/test/file.lst
-```
-
-Path to the files are either absolute, relative to current working directory, or relative to this configuration file. You can place the configuration file anywhere as long as you tell `pyannote.database` where to find it:
-
-```bash
-export PYANNOTE_DATABASE_CONFIG="/path/to/database.yml"
-```
-
-The above configuration file would automagically make 
-`DatabaseName.SpeakerDiarization.ProtocolName` protocol available:
-
-```python
-from pyannote.database import get_protocol
-protocol = get_protocol('DatabaseName.SpeakerDiarization.ProtocolName')
-```
-
-All of `uris`, `annotated` and `annotation` are optional but at least one of 
-them must be provided
-- `uris` links to a text file containing one line per (train/dev/test) file;
-- `annotated` links to an evaluation map file in UEM format;
-- `annotation` links to an annotation file in RTTM format.
-
-Though they are optional, some tasks are not possible without some of these files. 
-For instance, it would not be possible to train a speech activity detection model with [`pyannote-audio`](https://github.com/pyannote/pyannote-audio) if the `annotation` file is not provided.
-
-When two or more are provided and disagree on the list of files, `uris` will 
-be prefered over `annotated`, which will be prefered over `annotation`.
-
-When `annotated` is provided, any annotation which is outside of the `annotated` part will not be considered.
-
-#### Domain
-
-One can also add a `domain` key linking to a text file mapping each file to its *[domain](https://en.wikipedia.org/wiki/Domain_adaptation)*:
-```
-file1 domain-of-file-1
-file2 domain-of-file-2
-file3 domain-of-file-3
-```
-This will end up in the `domain` key of the `current_file` dictionary.
-
-### pyannote.database plugins
-
-More more complex protocols (or if you want to allow other researchers to use your protocols easily), you can create (and share) your own `pyannote.database` plugin.
-
-See [`http://github.com/pyannote/pyannote-db-template`](http://github.com/pyannote/pyannote-db-template).
-
-### Meta protocols
-([↑up to table of contents](#table-of-contents))
+## Meta-protocols
 
 `pyannote.database` provides a way to combine several protocols (possibly
 from different databases) into one.
 
-This is achieved by defining those "meta-protocols" into `~/.pyannote/database.yml`.
+This is achieved by defining those "meta-protocols" into the configuration file with the special `X` database:
+
+  ```yaml
+  Protocols:
+    X:
+      Protocol:
+        MyMetaProtocol:
+          train:
+            MyDatabase.Protocol.MyProtocol: [train, development]
+            MyOtherDatabase.Protocol.MyOtherProtocol: [train, ]
+          development:
+            MyDatabase.Protocol.MyProtocol: [test, ]
+            MyOtherDatabase.Protocol.MyOtherProtocol: [development, ]
+          test:
+            MyOtherDatabase.Protocol.MyOtherProtocol: [test, ]
+```
+
+The new `X.Protocol.MyMetaProtocol` combines the `train` and `development` subsets of `MyDatabase.Protocol.MyProtocol` with the `train` subset of `MyOtherDatabase.Protocol.MyOtherProtocol` to build a meta `train` subset.
+
+This new "meta-protocol" can be used like any other protocol of the (fake) `X` database:
+
+  ```python
+  from pyannote.database import get_protocol
+  protocol = get_protocol('X.Protocol.MyMetaProtocol')
+  for resource in protocol.train():
+      pass
+  ```
+
+## Plugins
+
+For more complex protocols, you can create (and share) your own [`pyannote.database` plugin](http://github.com/pyannote/pyannote-db-template).
+
+A bunch of `pyannote.database` plugins are already available (search for `pyannote.db` on [pypi](https://pypi.python.org/pypi?%3Aaction=search&term=pyannote.db&submit=search))
+
+## API
+
+### Databases and tasks
+
+Available databases can be discovered using `get_databases`:
+
+  ```python
+  from pyannote.database import get_databases
+  get_databases()
+  ["MyDatabase"]
+  ```
+
+Any database can then be instantiated as follows:
+
+  ```python
+  from pyannote.database import get_database
+  database = get_database("MyDatabase")
+  ```
+
+Some databases (especially multimodal ones) may be used for several tasks.
+One can get a list of tasks using `get_tasks` method:
+
+  ```python
+  database.get_tasks()
+  ["SpeakerDiarization"]
+  ```
+
+One can also get the overall list of tasks, as well as the list of databases
+that implement at least one protocol for a specific task.
+
+  ```python
+  from pyannote.database import get_tasks
+  get_tasks()
+  ["SpeakerDiarization"]
+  get_databases(task="SpeakerDiarization")
+  ["MyDatabase"]
+  ```
+
+This might come handy in case you want to automatically benchmark a particular
+approach on every database for a given task.
+
+### Custom data loaders
+
+`pyannote.database` provides built-in data loaders for a limited set of file formats: `RTTMLoader` for `.rttm` files, `UEMLoader` for `.uem` files, and `CTMLoader` for `.ctm` files.
+
+In case those are not enough, `pyannote.database` supports the addition of custom data loaders using the `pyannote.database.loader` entry point.
+
+#### Defining custom data loaders
+
+Here is an example of a Python package called `your_package` that defines two custom data loaders for files with `.ext1` and `.ext2` suffix respectively.
+
+```python
+# ~~~~~~~~~~~~~~~~ YourPackage/your_package/loader.py ~~~~~~~~~~~~~~~~
+from pyannote.database import ProtocolFile
+from pathlib import Path
+
+class Ext1Loader:
+    def __init__(self, ext1: Path):
+        print(f'Initializing Ext1Loader with {ext1}')
+        # your code should obviously do something smarter.
+        # see pyannote.database.loader.RTTMLoader for an example.
+        self.ext1 = ext1
+
+    def __call__(self, current_file: ProtocolFile) -> Text:
+        uri = current_file["uri"]
+        print(f'Processing {uri} with Ext1Loader')
+        # your code should obviously do something smarter.
+        # see pyannote.database.loader.RTTMLoader for an example.
+        return f'{uri}.ext1'
+
+class Ext2Loader:
+    def __init__(self, ext2: Path):
+        print(f'Initializing Ext2Loader with {ext2}')
+        # your code should obviously do something smarter.
+        # see pyannote.database.loader.RTTMLoader for an example.
+        self.ext2 = ext2
+
+    def __call__(self, current_file: ProtocolFile) -> Text:
+        uri = current_file["uri"]
+        print(f'Processing {uri} with Ext2Loader')
+        # your code should obviously do something smarter.
+        # see pyannote.database.loader.RTTMLoader for an example.
+        return f'{uri}.ext2'
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+```
+
+The `__init__` method expects a unique positional argument of type `Path` that provides the path to the data file in the custom data format.
+
+`__call__` expects a unique positional argument of type `ProtocolFile` and returns the data for the given file. 
+
+It is recommended to make `__init__` as fast and light as possible and delegate all the data filtering and formatting to `__call__`. For instance, `RTTMLoader.__init__` uses `pandas` to load the full `.rttm` file as fast as possible in a `DataFrame`, while `RTTMLoader.__call__` takes care of selecting rows that correspond to the requested file and convert them into a `pyannote.core.Annotation`. 
+
+#### Registering custom data loaders
+
+At this point, `pyannote.database` has no idea of the existence of these new custom data loaders. They must be registered using the `pyannote.database.loader` entry-point in `your_package`'s `setup.py`, and then install the library `pip install your_package` (or `pip install -e YourPackage/` if it is not published on PyPI yet).
+
+```python
+# ~~~~~~~~~~~~~~~~~~~~~~~ YourPackage/setup.py ~~~~~~~~~~~~~~~~~~~~~~~
+from setuptools import setup, find_packages
+setup(
+    name="your_package",
+    packages=find_packages(),
+    install_requires=[
+        "pyannote.database >= 4.0",
+    ]
+    entry_points={
+        "pyannote.database.loader": [
+            # load files with extension '.ext1' 
+            # with your_package.loader.Ext1Loader
+            ".ext1 = your_package.loader:Ext1Loader",
+            # load files with extension '.ext2' 
+            # with your_package.loader.Ext2Loader
+            ".ext2 = your_package.loader:Ext2Loader",
+        ],
+    }
+)
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+```
+
+#### Testing custom data loaders
+
+Now that `.ext1` and `.ext2` data loaders are registered, they will be used automatically by `pyannote.database` when parsing the sample `demo/database.yml` custom protocol configuration file.
 
 ```yaml
-# ~/.pyannote/database.yml
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~ demo/database.yml ~~~~~~~~~~~~~~~~~~~~~~~~~~
 Protocols:
-  X:
+  MyDatabase:
     SpeakerDiarization:
-      ExtendedEtape:
+      MyProtocol:
         train:
-          Etape.SpeakerDiarization.TV: [train]
-          REPERE.SpeakerDiarization.Phase1: [train, development]
-          REPERE.SpeakerDiarization.Phase2: [train, development]
-        development:
-          Etape.SpeakerDiarization.TV: [development]
-        test:
-          Etape.SpeakerDiarization.TV: [test]
-
+           uri: train.lst
+           key1: train.ext1
+           key2: train.ext2
 ```
-
-This defines a new speaker diarization protocol called `ExtendedEtape` that is
-very similar to the existing `Etape.SpeakerDiarization.TV` protocol except its
-training set is augmented with (training and development) data from the
-`REPERE` corpus. Obviously, both `ETAPE` and `REPERE` packages need to be
-installed first (custom speaker diarization protocols are also supported):
-
-```bash
-$ pip install pyannote.db.etape
-$ pip install pyannote.db.repere
-```
-
-Then, this new "meta-protocol" can be used like any other protocol of the
-(fake) `X` database:
 
 ```python
+# tell pyannote.database about the configuration file
+>>> import os
+>>> os.environ['PYANNOTE_DATABASE_CONFIG'] = 'demo/database.yml'
+
+# load custom protocol
 >>> from pyannote.database import get_protocol
->>> protocol = get_protocol('X.SpeakerDiarization.ExtendedEtape')
->>> for current_file in protocol.train():
-...     pass
+>>> protocol = get_protocol('MyDatabase.SpeakerDiarization.MyProtocol')
+
+# get first file of training set
+>>> first_file = next(protocol.train())
+Initializing Ext1Loader with file train.ext1
+Initializing Ext2Loader with file train.ext2
+
+# access its "key1" and "key2" keys.
+>>> assert first_file["key1"] == 'fileA.ext1'
+Processing fileA with Ext1Loader
+>>> assert first_file["key2"] == 'fileA.ext2'
+Processing fileA with Ext2Loader
+# note how __call__ is only called now (and not before)
+# this is why it is better to delegate all the filtering and formatting to __call__
+
+>>> assert first_file["key1"] == 'fileA.ext1'
+# note how __call__ is not called the second time thanks to ProtocolFile built-in cache
 ```
 
-## Preprocessors
-([↑up to table of contents](#table-of-contents))
+### Protocols
 
-You may have noticed that the path to the audio file is not provided.
-This is because those files are not provided by the `pyannote.database` packages. You have to acquire them, copy them on your hard drive, and tell `pyannote.database` where to find them.
+An experimental protocol can be defined programmatically by creating a 
+class that inherits from SpeakerDiarizationProtocol and implements at least
+one of `train_iter`, `development_iter` and `test_iter` methods:
 
-To do that, create a file `database.yml` that describes how your system is setup:
+  ```python
+  class MyProtocol(Protocol):
+      def train_iter(self) -> Iterator[Dict]:
+          yield {"uri": "filename1", "any_other_key": "..."}
+          yield {"uri": "filename2", "any_other_key": "..."}
+  ```
 
-```bash
-$ cat database.yml
-Databases:
-  Etape: /path/where/your/stored/Etape/database/{uri}.wav
-```
+`{subset}_iter` should return an iterator of dictionnaries with 
+    - "uri" key (mandatory) that provides a unique file identifier (usually
+      the filename),
+    - any other key that the protocol may provide.
 
-`{uri}` is a placeholder telling `pyannote.database` to replace it by `item[uri]` before looking for the current file.
+It can then be used in Python like this:
+
+  ```python
+  protocol = MyProtocol()
+  for file in protocol.train():
+      print(file["uri"])
+  filename1
+  filename2
+  ```
+
+#### Collections
+
+A collection can be defined programmatically by creating a class that 
+inherits from CollectionProtocol and implements the `files_iter` method:
+
+  ```python
+  class MyCollection(CollectionProtocol):
+      def files_iter(self) -> Iterator[Dict]:
+          yield {"uri": "filename1", "any_other_key": "..."}
+          yield {"uri": "filename2", "any_other_key": "..."}
+          yield {"uri": "filename3", "any_other_key": "..."}
+  ```
+
+`files_iter` should return an iterator of dictionnaries with 
+    - a mandatory "uri" key that provides a unique file identifier (usually
+      the filename),
+    - any other key that the collection may provide.
+
+It can then be used in Python like this:
+
+  ```python
+  collection = MyCollection()
+  for file in collection.files():
+     print(file["uri"])
+  filename1
+  filename2
+  filename3
+  ```
+
+#### Speaker diarization
+
+A speaker diarization protocol can be defined programmatically by creating
+a class that inherits from SpeakerDiarizationProtocol and implements at 
+least one of `train_iter`, `development_iter` and `test_iter` methods:
+
+  ```python
+  class MySpeakerDiarizationProtocol(SpeakerDiarizationProtocol):
+      def train_iter(self) -> Iterator[Dict]:
+          yield {"uri": "filename1",
+                 "annotation": Annotation(...),
+                 "annotated": Timeline(...)}
+          yield {"uri": "filename2",
+                 "annotation": Annotation(...),
+                 "annotated": Timeline(...)}
+  ```
+
+`{subset}_iter` should return an iterator of dictionnaries with
+
+- "uri" key (mandatory) that provides a unique file identifier (usually
+  the filename),
+- "annotation" key (mandatory for train and development subsets) that 
+  provides reference speaker diarization as a `pyannote.core.Annotation`
+  instance,
+- "annotated" key (recommended) that describes which part of the file 
+  has been annotated, as a `pyannote.core.Timeline` instance. Any part
+  of "annotation" that lives outside of the provided "annotated" will 
+  be removed. This is also used by `pyannote.metrics` to remove 
+  un-annotated regions from its evaluation report, and by 
+  `pyannote.audio` to not consider empty un-annotated regions as 
+  non-speech. 
+- any other key that the protocol may provide.
+
+It can then be used in Python like this:
+
+  ```python
+  protocol = MySpeakerDiarizationProtocol()
+  for file in protocol.train():
+     print(file["uri"])
+  filename1
+  filename2
+  ```
+
+#### Speaker verification
+
+TODO
 
 
-```python
->>> from pyannote.database import FileFinder
->>> preprocessors = {'audio': FileFinder(database_yml='database.yml')}
->>> protocol = get_protocol('Etape.SpeakerDiarization.TV', preprocessors=preprocessors)
->>> for item in protocol.train():
-...     # now, `item` contains a `wav` key providing the path to the wav file
-...     wav = item['audio']
-```
 
-`database_yml` parameters defaults, in this order, to `database.yml` in current working directory if it exists, to the content of `PYANNOTE_DATABASE_CONFIG` environment variable when defined, and to `~/.pyannote/database.yml` otherwise, so you can conveniently use this file to provide information about all the available databases, once and for all:
-
-```bash
-$ cat ~/.pyannote/database.yml
-Databases:
-  Etape: /path/where/you/stored/Etape/database/{uri}.wav
-  REPERE:
-    - /path/where/you/store/REPERE/database/phase1/{uri}.wav
-    - /path/where/you/store/REPERE/database/phase2/{uri}.wav
-  VoxCeleb:
-    - /path/where/you/store/voxceleb1/*/wav/{uri}.wav
-    - /path/where/you/store/voxceleb1/*/wav/{uri}.wav
-    - /vol/corpora4/voxceleb/voxceleb2/**/{uri}.aac
-```
-
-Note that any pattern supported by `pathlib.Path.glob` is supported (but avoid `**` as much as possible).  Paths can also be relative to the location of `database.yml`.
-
-More generally, preprocessors can be used to augment/modify the yielded dictionaries on the fly:
-
-```python
->>> # function that takes a protocol item as input and returns whatever you want/need
->>> def my_preprocessor_func(item):
-...     return len(item['uri'])
->>> preprocessors = {'uri_length': my_preprocessor_func}
->>> protocol = get_protocol('Etape.SpeakerDiarization.TV', preprocessors=preprocessors)
->>> for item in protocol.train():
-...     # a new key 'uri_length' has been added to the current dictionary
-...     assert item['uri_length'] == len(item['uri'])
-```
