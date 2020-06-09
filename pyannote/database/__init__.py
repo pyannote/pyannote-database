@@ -39,6 +39,7 @@ from .database import PyannoteDatabaseException
 
 from .protocol.protocol import Protocol
 from .protocol.protocol import ProtocolFile
+from .protocol.protocol import Subset
 from .protocol.protocol import Preprocessors
 
 DATABASES = dict()
