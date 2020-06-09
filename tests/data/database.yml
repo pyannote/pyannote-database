@@ -27,3 +27,12 @@ Protocols:
           annotated: uems/train.uem
         train_trial:
           trial: trial/train.trial
+
+  X:
+    SpeakerDiarization:
+      MyMetaProtocol:
+        train: 
+          MyDatabase.Protocol.MyProtocol: [train, ]
+        development:
+          MyDatabase.SpeakerDiarization.MySpeakerDiarization: [train, ]
+          MyDatabase.SpeakerVerification.MySpeakerVerification: [train, ]
