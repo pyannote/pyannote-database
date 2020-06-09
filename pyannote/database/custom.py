@@ -181,11 +181,8 @@ def meta_subset_iter(
 
     for protocol, subsets in subset_entries.items():
         partial_protocol = get_protocol(protocol)
-
         for subset in subsets:
-            # TODO. get rid of this ugly mapping in favor of "train" -> "train_iter"
-            subset_short = {"train": "trn", "development": "dev", "test": "tst"}[subset]
-            method_name = f"{subset_short}_iter"
+            method_name = f"{subset}_iter"
             for file in getattr(partial_protocol, method_name)():
                 yield file
 
