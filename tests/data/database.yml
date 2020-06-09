@@ -25,5 +25,12 @@ Protocols:
           uri: lists/train.lst
           annotation: rttms/train.rttm
           annotated: uems/train.uem
-        # test_trial:
-        #   trials: 
+
+  X:
+    SpeakerDiarization:
+      MyMetaProtocol:
+        train: 
+          MyDatabase.Protocol.MyProtocol: [train, ]
+        development:
+          MyDatabase.SpeakerDiarization.MySpeakerDiarization: [train, ]
+          MyDatabase.SpeakerVerification.MySpeakerVerification: [train, ]

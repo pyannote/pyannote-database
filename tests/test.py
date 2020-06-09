@@ -54,3 +54,11 @@ assert len(files) == 2
 
 files = list(speaker_verification.files())
 assert len(files) == 2
+
+
+meta_protocol = get_protocol("X.SpeakerDiarization.MyMetaProtocol")
+files = list(meta_protocol.train())
+assert len(files) == 2
+
+files = list(meta_protocol.development())
+assert len(files) == 4
