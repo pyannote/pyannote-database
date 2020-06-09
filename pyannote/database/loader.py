@@ -185,3 +185,52 @@ class CTMLoader:
             token._.confidence = line.confidence
 
         return doc
+
+class MAPLoader:
+    """Mapping loader
+
+    For generic files with format :
+    {uri} {value}
+
+    Exemples :
+
+    file duration :
+
+    filename1 60.0
+    filename2 123.450
+    filename3 32.400
+
+    #TODO: 
+    Add support for non numeric types
+
+    Parameter
+    ---------
+    map : Path
+        Path to mapping file
+    """
+
+    def __init__(self, mapping: Path):
+        self.mapping = mapping
+
+        names = ["uri", "value"]
+        dtype = {
+            "uri": str,
+            "value": float
+        }
+        self.data_ = pd.read_csv(
+            mapping, names=names, dtype=dtype, delim_whitespace=True
+        ).groupby("uri").min() # if multiple duration are given, min takes the shorter one
+
+    def __call__(self, current_file: ProtocolFile) -> Union["spacy.tokens.Doc", None]:
+        uri = current_file["uri"]
+
+        segments = []
+        try:
+            duration = self.data_.loc[uri]['value']
+            segment = Segment(0, duration)
+            segments.append(segment)
+        except KeyError:
+            msg = f"Couldn't find duration for {uri} in {self.mapping}"
+            raise KeyError(msg)
+
+        return Timeline(segments=segments, uri=uri)

@@ -25,5 +25,5 @@ Protocols:
           uri: lists/train.lst
           annotation: rttms/train.rttm
           annotated: uems/train.uem
-        # test_trial:
-        #   trials: 
+        train_trial:
+          trial: trial/train.trial
