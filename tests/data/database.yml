@@ -11,7 +11,7 @@ Protocols:
           uri: lists/train.lst
           speaker: rttms/train.rttm
           transcription: _ctms/{uri}.ctm
-          mapping: mapping/domain.map
+          domain: mapping/domain.map
       
     SpeakerDiarization:
       MySpeakerDiarization:
