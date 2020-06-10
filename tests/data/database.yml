@@ -11,6 +11,7 @@ Protocols:
           uri: lists/train.lst
           speaker: rttms/train.rttm
           transcription: _ctms/{uri}.ctm
+          mapping: mapping/domain.map
       
     SpeakerDiarization:
       MySpeakerDiarization:
@@ -23,8 +24,7 @@ Protocols:
       MySpeakerVerification:
         train:
           uri: lists/train.lst
-          annotation: rttms/train.rttm
-          annotated: uems/train.uem
+          mapping: mapping/duration.map
         train_trial:
           trial: trial/train.trial
 

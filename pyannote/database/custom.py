@@ -340,7 +340,55 @@ def subset_trial_iter(
 
     trials = load_trial(resolve_path(Path(entries["trial"]), database_yml))
 
+    lazy_loader = dict()
+
+    for key, value in entries.items():
+
+        if key == "trial":
+            continue
+
+        if value.startswith("_"):
+            lazy_loader[key] = Template(value[1:], database_yml)
+
+        else:
+
+            path = resolve_path(Path(value), database_yml)
+
+            # check if file exists
+            if not path.is_file():
+                msg = f"No such file or directory: '{path}'"
+                raise FileNotFoundError(msg)
+
+            # check if loader exists
+            if path.suffix not in LOADERS:
+                msg = f"No loader for file with '{path.suffix}' suffix"
+                raise TypeError(msg)
+
+            # load custom loader class
+            Loader = LOADERS[path.suffix].load()
+
+            # TODO: As it is right now, every call to "subset_iter" also calls "Loader(path)".
+            # However, calling "Loader(path)" might be time consuming so we should probably cache it:            # following better behavior
+            # Current behavior:
+            #   for _ in protocol.train(): pass   # first call is slow (compute Loader(path))
+            #   for _ in protocol.train(): pass   # subsequent calls are equally slow (compute Loader(path))
+            # Proposed behavior:
+            #   for _ in protocol.train(): pass   # first call is slow (compute and cache Loader(path))
+            #   for _ in protocol.train(): pass   # subsequent calls are fast (use cached Loader(path))
+            lazy_loader[key] = Loader(path)
+
     for trial in trials:
+        # Adding lazy_loader before yelding the trial
+        uri1, uri2 = trial['file1']['uri'], trial['file2']['uri']
+
+        trial['file1'] = ProtocolFile(
+            {"uri": uri1, "database": database, "subset": subset}, lazy=lazy_loader
+        )
+
+        trial['file2'] = ProtocolFile(
+            {"uri": uri2, "database": database, "subset": subset}, lazy=lazy_loader
+        )
+
         yield trial
 
 def get_init(protocols):

@@ -194,14 +194,17 @@ class MAPLoader:
 
     Exemples :
 
-    file duration :
+        file duration :
 
-    filename1 60.0
-    filename2 123.450
-    filename3 32.400
+            filename1 60.0
+            filename2 123.450
+            filename3 32.400
 
-    #TODO: 
-    Add support for non numeric types
+        file domain :
+
+            filename1 radio
+            filename2 radio
+            filename3 phone
 
     Parameter
     ---------
@@ -215,22 +218,30 @@ class MAPLoader:
         names = ["uri", "value"]
         dtype = {
             "uri": str,
-            "value": float
         }
         self.data_ = pd.read_csv(
             mapping, names=names, dtype=dtype, delim_whitespace=True
-        ).groupby("uri").min() # if multiple duration are given, min takes the shorter one
+        ) 
+
+        # get colum 'value' dtype
+        self.value_dtype = self.data_.dtypes['value']
+
+        if value_dtype == float:
+            self.data_ = self.data_.groupby('uri').min() # if multiple duration are given, min takes the shorter one
+        else:
+            self.data_ = self.data_.groupby('uri')
 
     def __call__(self, current_file: ProtocolFile) -> Union["spacy.tokens.Doc", None]:
         uri = current_file["uri"]
 
-        segments = []
         try:
-            duration = self.data_.loc[uri]['value']
-            segment = Segment(0, duration)
-            segments.append(segment)
+            value = self.data_.loc[uri]['value']
         except KeyError:
-            msg = f"Couldn't find duration for {uri} in {self.mapping}"
+            msg = f"Couldn't find mapping for {uri} in {self.mapping}"
             raise KeyError(msg)
 
-        return Timeline(segments=segments, uri=uri)
+        if self.value_dtype == float:
+            return Timeline(segments=[Segment(0, value)], uri=uri)
+        else:      
+            return domain
+            
