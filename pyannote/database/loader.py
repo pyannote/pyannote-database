@@ -194,13 +194,13 @@ class MAPLoader:
 
     Exemples :
 
-        file duration :
+        duration.map :
 
             filename1 60.0
             filename2 123.450
             filename3 32.400
 
-        file domain :
+        domain.map :
 
             filename1 radio
             filename2 radio
@@ -223,15 +223,14 @@ class MAPLoader:
             mapping, names=names, dtype=dtype, delim_whitespace=True
         )
 
-        # get colum 'value' dtype
-        self.value_dtype = self.data_.dtypes['value']
+        # get colum 'value' dtype, allowing us to acces it during subset
+        self.dtype = self.data_.dtypes['value']
 
-        
         if self.data_.duplicated(['uri']).any():
             print(f"Found following duplicate key in file {mapping}")
             print(self.data_[self.data_.duplicated(['uri'], keep=False)])
             raise ValueError()
-            
+
         self.data_ = self.data_.groupby('uri')
 
     def __call__(self, current_file: ProtocolFile) -> Union["spacy.tokens.Doc", None]:
@@ -243,8 +242,4 @@ class MAPLoader:
             msg = f"Couldn't find mapping for {uri} in {self.mapping}"
             raise KeyError(msg)
 
-        if self.value_dtype == float:
-            return Timeline(segments=[Segment(0, value)], uri=uri)
-        else:      
-            return domain
-            
+        return value            
