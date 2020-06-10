@@ -221,15 +221,18 @@ class MAPLoader:
         }
         self.data_ = pd.read_csv(
             mapping, names=names, dtype=dtype, delim_whitespace=True
-        ) 
+        )
 
         # get colum 'value' dtype
         self.value_dtype = self.data_.dtypes['value']
 
-        if value_dtype == float:
-            self.data_ = self.data_.groupby('uri').min() # if multiple duration are given, min takes the shorter one
-        else:
-            self.data_ = self.data_.groupby('uri')
+        
+        if self.data_.duplicated(['uri']).any():
+            print(f"Found following duplicate key in file {mapping}")
+            print(self.data_[self.data_.duplicated(['uri'], keep=False)])
+            raise ValueError()
+            
+        self.data_ = self.data_.groupby('uri')
 
     def __call__(self, current_file: ProtocolFile) -> Union["spacy.tokens.Doc", None]:
         uri = current_file["uri"]
