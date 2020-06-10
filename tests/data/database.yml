@@ -24,7 +24,7 @@ Protocols:
       MySpeakerVerification:
         train:
           uri: lists/train.lst
-          mapping: mapping/duration.map
+          duration: mapping/duration.map
         train_trial:
           trial: trial/train.trial
 
