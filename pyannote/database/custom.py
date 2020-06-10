@@ -136,7 +136,6 @@ def load_trial(file_trial):
 
     trials = pd.read_table(file_trial, delim_whitespace=True,
                                names=['reference', 'uri1', 'uri2'])
-    trials.sort_values('uri1', inplace=True)
 
     list_trial = []
 
