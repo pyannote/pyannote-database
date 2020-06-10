@@ -137,25 +137,8 @@ def load_trial(file_trial):
     trials = pd.read_table(file_trial, delim_whitespace=True,
                                names=['reference', 'uri1', 'uri2'])
 
-    list_trial = []
-
     for _, reference, uri1, uri2 in trials.itertuples():
-        current_trial = {
-            'reference': reference,
-            'file1': {
-                'database':'VoxCeleb',
-                'uri': uri1,
-                'try_with': Timeline(segments=[], uri=uri1)
-            },
-            'file2': {
-                'database':'VoxCeleb',
-                'uri': uri2,
-                'try_with': Timeline(segments=[], uri=uri2)
-            }
-        }
-
-        list_trial.append(current_trial)
-    return list_trial
+        yield reference, uri1, uri2
 
 def resolve_path(path: Path, database_yml: Path) -> Path:
     """Resolve path
@@ -337,8 +320,6 @@ def subset_trial_iter(
         msg = f"Missing mandatory 'trial' entry in {database}.{task}.{protocol}.{subset}"
         raise ValueError(msg)
 
-    trials = load_trial(resolve_path(Path(entries["trial"]), database_yml))
-
     lazy_loader = dict()
 
     if 'duration' in entires.keys():
@@ -376,19 +357,20 @@ def subset_trial_iter(
             Loader = LOADERS[path.suffix].load()
             lazy_loader[key] = Loader(path)
 
-    for trial in trials:
-        # Adding lazy_loader before yelding the trial
-        uri1, uri2 = trial['file1']['uri'], trial['file2']['uri']
+    # meant to store and cache once `ProtocolFile` instance per file
+    files: Dict[Text, ProtocolFile] = dict()
 
-        trial['file1'] = ProtocolFile(
-            {"uri": uri1, "database": database, "subset": subset}, lazy=lazy_loader
-        )
+    # iterate trials and use preloaded test files
+    for reference, uri1, uri2 in load_trial(resolve_path(Path(entries["trial"]), database_yml)):
+        # create `ProtocolFile` only the first time this uri is encountered
+        if uri1 not in files:
+            files[uri1] = ProtocolFile({"uri": uri1, "database": database, "subset": subset}, lazy=lazy_loader)
+        if uri2 not in files:
+            files[uri2] = ProtocolFile({"uri": uri2, "database": database, "subset": subset}, lazy=lazy_loader)
 
-        trial['file2'] = ProtocolFile(
-            {"uri": uri2, "database": database, "subset": subset}, lazy=lazy_loader
-        )
-
-        yield trial
+        yield {'reference': reference,
+                'file1': files[uri1],
+                'file2': files[uri2]}
 
 def get_init(protocols):
     def init(self):
