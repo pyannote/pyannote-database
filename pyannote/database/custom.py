@@ -341,6 +341,15 @@ def subset_trial_iter(
 
     lazy_loader = dict()
 
+    if 'duration' in entires.keys():
+        def try_with(file: ProtocolFile):
+            return Timeline(segments=[Segment(0, file['duration'])], uri=file['uri'])
+        lazy_loader['try_with'] = try_with
+    elif 'annotated' in entires.keys():
+        def try_with(file: ProtocolFile):
+            return file['annotated']
+        lazy_loader['try_with'] = try_with
+
     for key, value in entries.items():
 
         if key == "trial":
@@ -365,15 +374,6 @@ def subset_trial_iter(
 
             # load custom loader class
             Loader = LOADERS[path.suffix].load()
-
-            # TODO: As it is right now, every call to "subset_iter" also calls "Loader(path)".
-            # However, calling "Loader(path)" might be time consuming so we should probably cache it:            # following better behavior
-            # Current behavior:
-            #   for _ in protocol.train(): pass   # first call is slow (compute Loader(path))
-            #   for _ in protocol.train(): pass   # subsequent calls are equally slow (compute Loader(path))
-            # Proposed behavior:
-            #   for _ in protocol.train(): pass   # first call is slow (compute and cache Loader(path))
-            #   for _ in protocol.train(): pass   # subsequent calls are fast (use cached Loader(path))
             lazy_loader[key] = Loader(path)
 
     for trial in trials:
