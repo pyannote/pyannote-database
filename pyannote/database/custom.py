@@ -249,15 +249,24 @@ def subset_iter(
         Subset
     entries : dict
         Subset entries.
-
-
     """
 
-    if "uri" not in entries:
+    if "uri" in entries:
+        uri = entries["uri"]
+
+    elif "uris" in entries:
+        uri = entries["uris"]
+        msg = (
+            f"Found deprecated 'uris' entry in {database}.{task}.{protocol}.{subset}. "
+            f"Please use 'uri' (singular) instead, in '{database_yml}'."
+        )
+        warnings.warn(msg, DeprecationWarning)
+
+    else:
         msg = f"Missing mandatory 'uri' entry in {database}.{task}.{protocol}.{subset}"
         raise ValueError(msg)
 
-    uris = load_lst(resolve_path(Path(entries["uri"]), database_yml))
+    uris = load_lst(resolve_path(Path(uri), database_yml))
 
     lazy_loader = dict()
 
@@ -287,7 +296,7 @@ def subset_iter(
             Loader = LOADERS[path.suffix].load()
 
             # TODO: As it is right now, every call to "subset_iter" also calls "Loader(path)".
-            # However, calling "Loader(path)" might be time consuming so we should probably cache it:            # following better behavior
+            # However, calling "Loader(path)" might be time consuming so we should probably cache it:
             # Current behavior:
             #   for _ in protocol.train(): pass   # first call is slow (compute Loader(path))
             #   for _ in protocol.train(): pass   # subsequent calls are equally slow (compute Loader(path))
