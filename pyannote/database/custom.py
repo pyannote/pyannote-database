@@ -293,13 +293,14 @@ def subset_iter(
             {"uri": uri, "database": database, "subset": subset}, lazy=lazy_loader
         )
 
-def subset_trial_iter(
-    database: Text,
-    task: Text,
-    protocol: Text,
-    subset: Text,
-    entries: Dict,
-    database_yml: Path,
+def subset_trial(
+    self,
+    database: Text = None,
+    task: Text = None,
+    protocol: Text = None,
+    subset: Text = None,
+    entries: Dict = None,
+    database_yml: Path = None,
 ):
     """
 
@@ -365,9 +366,9 @@ def subset_trial_iter(
     for reference, uri1, uri2 in load_trial(resolve_path(Path(entries["trial"]), database_yml)):
         # create `ProtocolFile` only the first time this uri is encountered
         if uri1 not in files:
-            files[uri1] = ProtocolFile({"uri": uri1, "database": database, "subset": subset}, lazy=lazy_loader)
+            files[uri1] = self.preprocess(ProtocolFile({"uri": uri1, "database": database, "subset": subset}, lazy=lazy_loader))
         if uri2 not in files:
-            files[uri2] = ProtocolFile({"uri": uri2, "database": database, "subset": subset}, lazy=lazy_loader)
+            files[uri2] = self.preprocess(ProtocolFile({"uri": uri2, "database": database, "subset": subset}, lazy=lazy_loader))
 
         yield {'reference': reference,
                 'file1': files[uri1],
@@ -441,14 +442,14 @@ def create_protocol(
 
         
         if 'trial' in subset_entries.keys():
-            methods[f"{subset}_trial_iter"] = functools.partial(
-                    subset_trial_iter,
-                    database,
-                    task,
-                    protocol,
-                    subset,
-                    subset_entries,
-                    database_yml,
+            methods[f"{subset}_trial"] = functools.partialmethod(
+                    subset_trial,
+                    database=database,
+                    task=task,
+                    protocol=protocol,
+                    subset=subset,
+                    entries=subset_entries,
+                    database_yml=database_yml,
                 )
         else:
             method_name = f"{subset}_iter"
