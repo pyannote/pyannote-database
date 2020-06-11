@@ -188,12 +188,13 @@ def meta_subset_iter(
 
 
 def subset_iter(
-    database: Text,
-    task: Text,
-    protocol: Text,
-    subset: Text,
-    entries: Dict,
-    database_yml: Path,
+    self,
+    database: Text = None,
+    task: Text = None,
+    protocol: Text = None,
+    subset: Text = None,
+    entries: Dict = None,
+    database_yml: Path = None,
 ):
     """
 
@@ -350,14 +351,14 @@ def create_protocol(
                 database_yml,
             )
         else:
-            methods[method_name] = functools.partial(
+            methods[method_name] = functools.partialmethod(
                 subset_iter,
-                database,
-                task,
-                protocol,
-                subset,
-                subset_entries,
-                database_yml,
+                database=database,
+                task=task,
+                protocol=protocol,
+                subset=subset,
+                entries=subset_entries,
+                database_yml=database_yml,
             )
 
     return type(protocol, (base_class,), methods)
