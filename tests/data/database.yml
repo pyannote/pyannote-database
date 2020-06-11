@@ -24,7 +24,8 @@ Protocols:
       MySpeakerVerification:
         train:
           uri: lists/train.lst
-          duration: mapping/duration.map
+          # duration: mapping/duration.map # can use duration or annotated
+          annotated: uems/train.uem
           trial: trial/train.trial
 
   X:

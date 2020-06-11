@@ -237,7 +237,7 @@ class MAPLoader:
         uri = current_file["uri"]
 
         try:
-            value = self.data_.loc[uri]['value']
+            value = self.data_.get_group(uri)['value'][0]
         except KeyError:
             msg = f"Couldn't find mapping for {uri} in {self.mapping}"
             raise KeyError(msg)

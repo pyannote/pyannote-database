@@ -51,7 +51,7 @@ from typing import Text, Dict, Callable, Any, Union
 import functools
 import pandas as pd
 
-from pyannote.core import Timeline
+from pyannote.core import Timeline, Segment
 from . import DATABASES, TASKS
 
 import pkg_resources
@@ -328,6 +328,7 @@ def subset_trial(
         def try_with(file: ProtocolFile):
             return Timeline(segments=[Segment(0, file['duration'])], uri=file['uri'])
         lazy_loader['try_with'] = try_with
+        
     elif 'annotated' in entries.keys():
         def try_with(file: ProtocolFile):
             return file['annotated']
