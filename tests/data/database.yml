@@ -25,7 +25,6 @@ Protocols:
         train:
           uri: lists/train.lst
           duration: mapping/duration.map
-        train_trial:
           trial: trial/train.trial
 
   X:

@@ -255,7 +255,7 @@ def subset_iter(
 
     for key, value in entries.items():
 
-        if key == "uri":
+        if key == "uri" or key == "trial":
             continue
 
         if value.startswith("_"):
@@ -323,18 +323,18 @@ def subset_trial_iter(
 
     lazy_loader = dict()
 
-    if 'duration' in entires.keys():
+    if 'duration' in entries.keys():
         def try_with(file: ProtocolFile):
             return Timeline(segments=[Segment(0, file['duration'])], uri=file['uri'])
         lazy_loader['try_with'] = try_with
-    elif 'annotated' in entires.keys():
+    elif 'annotated' in entries.keys():
         def try_with(file: ProtocolFile):
             return file['annotated']
         lazy_loader['try_with'] = try_with
 
     for key, value in entries.items():
 
-        if key == "trial":
+        if key == "uri" or key == "trial":
             continue
 
         if value.startswith("_"):
@@ -431,7 +431,7 @@ def create_protocol(
     methods = dict()
     for subset, subset_entries in protocol_entries.items():
 
-        if subset not in ["files", "train", "development", "test", "train_trial", "development_trial", "test_trial"]:
+        if subset not in ["files", "train", "development", "test"]:
             msg = (
                 f"Ignoring '{database}.{task}.{protocol}.{subset}' found in {database_yml} "
                 f"because '{subset}' entries are not supported yet."
@@ -439,9 +439,9 @@ def create_protocol(
             warnings.warn(msg)
             continue
 
-        method_name = f"{subset}_iter"
-        if 'trial' in subset:
-            methods[method_name] = functools.partial(
+        
+        if 'trial' in subset_entries.keys():
+            methods[f"{subset}_trial_iter"] = functools.partial(
                     subset_trial_iter,
                     database,
                     task,
@@ -451,6 +451,7 @@ def create_protocol(
                     database_yml,
                 )
         else:
+            method_name = f"{subset}_iter"
             if database == "X":
                 methods[method_name] = functools.partial(
                     meta_subset_iter,
