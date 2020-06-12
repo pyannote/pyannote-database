@@ -33,7 +33,7 @@ import pandas as pd
 from pyannote.core import Segment, Timeline, Annotation
 from pyannote.database import ProtocolFile
 from pathlib import Path
-from typing import Union
+from typing import Union, Any
 import warnings
 
 try:
@@ -46,6 +46,47 @@ try:
 except ImportError as e:
     pass
 
+def load_lst(file_lst):
+    """Load LST file
+
+    LST files provide a list of URIs (one line per URI)
+
+    Parameter
+    ---------
+    file_lst : `str`
+        Path to LST file.
+
+    Returns
+    -------
+    uris : `list`
+        List or uris
+    """
+
+    with open(file_lst, mode='r') as fp:
+        lines = fp.readlines()
+    return [l.strip() for l in lines]
+
+def load_trial(file_trial):
+    """Load trial file
+
+    Trial files provide a list of two URIs and their reference
+
+    Parameter
+    ---------
+    file_trial : `str`
+        Path to trial file.
+
+    Returns
+    -------
+    list_trial : `list`
+        List of trial
+    """
+
+    trials = pd.read_table(file_trial, delim_whitespace=True,
+                               names=['reference', 'uri1', 'uri2'])
+
+    for _, reference, uri1, uri2 in trials.itertuples():
+        yield reference, uri1, uri2
 
 class RTTMLoader:
     """RTTM loader

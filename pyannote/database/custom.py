@@ -50,13 +50,13 @@ import yaml
 import warnings
 from typing import Text, Dict, Callable, Any, Union
 import functools
-import pandas as pd
 
 from pyannote.core import Timeline, Segment
 from . import DATABASES, TASKS
 
 import pkg_resources
 
+from .loader import load_lst, load_trial
 LOADERS = {
     ep.name: ep
     for ep in pkg_resources.iter_entry_points(group="pyannote.database.loader")
@@ -97,49 +97,6 @@ def Template(template: Text, database_yml: Path) -> Callable[[ProtocolFile], Any
         return loader(current_file)
 
     return load
-
-
-def load_lst(file_lst):
-    """Load LST file
-
-    LST files provide a list of URIs (one line per URI)
-
-    Parameter
-    ---------
-    file_lst : `str`
-        Path to LST file.
-
-    Returns
-    -------
-    uris : `list`
-        List or uris
-    """
-
-    with open(file_lst, mode="r") as fp:
-        lines = fp.readlines()
-    return [l.strip() for l in lines]
-
-def load_trial(file_trial):
-    """Load trial file
-
-    Trial files provide a list of two URIs and their reference
-
-    Parameter
-    ---------
-    file_trial : `str`
-        Path to trial file.
-
-    Returns
-    -------
-    list_trial : `list`
-        List of trial
-    """
-
-    trials = pd.read_table(file_trial, delim_whitespace=True,
-                               names=['reference', 'uri1', 'uri2'])
-
-    for _, reference, uri1, uri2 in trials.itertuples():
-        yield reference, uri1, uri2
 
 def resolve_path(path: Path, database_yml: Path) -> Path:
     """Resolve path
@@ -313,7 +270,7 @@ def subset_trial(
         Task name (e.g. SpeakerDiarization, SpeakerVerification)
     protocol : str
         Protocol name (e.g. MyProtocol)
-    subset : {"train_trial", "development_trial", "test_trial"}
+    subset : {"train", "development", "test"}
         Subset
     entries : dict
         Subset entries.
@@ -431,9 +388,29 @@ def create_protocol(
             warnings.warn(msg)
             continue
 
-        
-        if 'trial' in subset_entries.keys():
-            methods[f"{subset}_trial"] = functools.partialmethod(
+        method_name = f"{subset}_iter"
+        if database == "X":
+            methods[method_name] = functools.partial(
+                meta_subset_iter,
+                database,
+                task,
+                protocol,
+                subset,
+                subset_entries,
+                database_yml,
+            )
+        else:
+            methods[method_name] = functools.partialmethod(
+                subset_iter,
+                database=database,
+                task=task,
+                protocol=protocol,
+                subset=subset,
+                entries=subset_entries,
+                database_yml=database_yml,
+            )
+            if 'trial' in subset_entries.keys():
+                methods[f"{subset}_trial"] = functools.partialmethod(
                     subset_trial,
                     database=database,
                     task=task,
@@ -442,28 +419,6 @@ def create_protocol(
                     entries=subset_entries,
                     database_yml=database_yml,
                 )
-        else:
-            method_name = f"{subset}_iter"
-            if database == "X":
-                methods[method_name] = functools.partial(
-                    meta_subset_iter,
-                    database,
-                    task,
-                    protocol,
-                    subset,
-                    subset_entries,
-                    database_yml,
-                )
-            else:
-                methods[method_name] = functools.partialmethod(
-                    subset_iter,
-                    database=database,
-                    task=task,
-                    protocol=protocol,
-                    subset=subset,
-                    entries=subset_entries,
-                    database_yml=database_yml,
-            )
 
     return type(protocol, (base_class,), methods)
 

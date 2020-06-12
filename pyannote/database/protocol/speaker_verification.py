@@ -59,20 +59,45 @@ class SpeakerVerificationProtocol(SpeakerDiarizationProtocol):
 
     """
 
-    def train_trial(self) -> Iterator[Dict]:
+    def subset_trial_helper(self, subset: Subset) -> Iterator[Dict]:
+
+        try:
+            trials = getattr(self, f"{subset}_trial_iter")()
+        except (AttributeError, NotImplementedError) as e:
+            # previous pyannote.database versions used `trn_try_iter` instead
+            # of `train_trial_iter`, `dev_try_iter` instead of
+            # `development_trial_iter`, and `tst_try_iter` instead of
+            # `test_iter`. therefore, we use the legacy version when it is
+            # available (and the new one is not).
+            subset_legacy = LEGACY_SUBSET_MAPPING[subset]
+            try:
+                trials = getattr(self, f"{subset_legacy}_try_iter")()
+            except AttributeError as e:
+                msg = f"{subset}_trial_iter is not implemented."
+                raise AttributeError(msg)
+
+        for trial in trials:
+            trial["file1"] = self.preprocess(trial["file1"])
+            trial["file2"] = self.preprocess(trial["file2"])
+            yield trial
+
+    def train_trial_iter(self) -> Iterator[Dict]:
         """Iterate over trials in the train subset"""
-        msg =  "Custom SpeakerVerification Protocol should implement train_trial\n"
-        msg += "Please make shure that 'train' have a 'trial' entry associated"
-        raise NotImplementedError(msg)
+        raise NotImplementedError()
+
+    def development_trial_iter(self) -> Iterator[Dict]:
+        """Iterate over trials in the development subset"""
+        raise NotImplementedError()
+
+    def test_trial_iter(self) -> Iterator[Dict]:
+        """Iterate over trials in the test subset"""
+        raise NotImplementedError()
+
+    def train_trial(self) -> Iterator[Dict]:
+        return self.subset_trial_helper("train")
 
     def development_trial(self) -> Iterator[Dict]:
-        """Iterate over trials in the development subset"""
-        msg =  "Custom SpeakerVerification Protocol should implement development_trial\n"
-        msg += "Please make shure that 'development' have a 'trial' entry associated"
-        raise NotImplementedError(msg)
+        return self.subset_trial_helper("development")
 
     def test_trial(self) -> Iterator[Dict]:
-        """Iterate over trials in the test subset"""
-        msg =  "Custom SpeakerVerification Protocol should implement test_trial\n"
-        msg += "Please make shure that 'test' have a 'trial' entry associated"
-        raise NotImplementedError(msg)
+        return self.subset_trial_helper("test")
