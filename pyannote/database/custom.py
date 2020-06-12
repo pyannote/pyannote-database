@@ -56,6 +56,8 @@ from . import DATABASES, TASKS
 
 import pkg_resources
 
+from .util import get_annotated
+
 from .loader import load_lst, load_trial
 LOADERS = {
     ep.name: ep
@@ -166,49 +168,18 @@ def meta_subset_iter(
             for file in getattr(partial_protocol, method_name)():
                 yield file
 
-
-def subset_iter(
-    self,
-    database: Text = None,
-    task: Text = None,
-    protocol: Text = None,
-    subset: Text = None,
+def gather_loaders(
     entries: Dict = None,
     database_yml: Path = None,
 ):
     """
-
     Parameters
     ----------
-    database : str
-        Database name (e.g. MyDatabase)
-    task : str
-        Task name (e.g. SpeakerDiarization, SpeakerVerification)
-    protocol : str
-        Protocol name (e.g. MyProtocol)
-    subset : {"train", "development", "test"}
-        Subset
     entries : dict
         Subset entries.
+    database_yml : `Path`
+        Path to the 'database.yml' file
     """
-
-    if "uri" in entries:
-        uri = entries["uri"]
-
-    elif "uris" in entries:
-        uri = entries["uris"]
-        msg = (
-            f"Found deprecated 'uris' entry in {database}.{task}.{protocol}.{subset}. "
-            f"Please use 'uri' (singular) instead, in '{database_yml}'."
-        )
-        warnings.warn(msg, DeprecationWarning)
-
-    else:
-        msg = f"Missing mandatory 'uri' entry in {database}.{task}.{protocol}.{subset}"
-        raise ValueError(msg)
-
-    uris = load_lst(resolve_path(Path(uri), database_yml))
-
     lazy_loader = dict()
 
     for key, value in entries.items():
@@ -245,6 +216,53 @@ def subset_iter(
             #   for _ in protocol.train(): pass   # first call is slow (compute and cache Loader(path))
             #   for _ in protocol.train(): pass   # subsequent calls are fast (use cached Loader(path))
             lazy_loader[key] = Loader(path)
+    return lazy_loader
+
+def subset_iter(
+    self,
+    database: Text = None,
+    task: Text = None,
+    protocol: Text = None,
+    subset: Text = None,
+    entries: Dict = None,
+    database_yml: Path = None,
+):
+    """
+
+    Parameters
+    ----------
+    database : str
+        Database name (e.g. MyDatabase)
+    task : str
+        Task name (e.g. SpeakerDiarization, SpeakerVerification)
+    protocol : str
+        Protocol name (e.g. MyProtocol)
+    subset : {"train", "development", "test"}
+        Subset
+    entries : dict
+        Subset entries.
+    database_yml : `Path`
+        Path to the 'database.yml' file
+    """
+
+    if "uri" in entries:
+        uri = entries["uri"]
+
+    elif "uris" in entries:
+        uri = entries["uris"]
+        msg = (
+            f"Found deprecated 'uris' entry in {database}.{task}.{protocol}.{subset}. "
+            f"Please use 'uri' (singular) instead, in '{database_yml}'."
+        )
+        warnings.warn(msg, DeprecationWarning)
+
+    else:
+        msg = f"Missing mandatory 'uri' entry in {database}.{task}.{protocol}.{subset}"
+        raise ValueError(msg)
+
+    uris = load_lst(resolve_path(Path(uri), database_yml))
+
+    lazy_loader = gather_loaders(entries=entries, database_yml=database_yml)
 
     for uri in uris:
         yield ProtocolFile(
@@ -274,38 +292,13 @@ def subset_trial(
         Subset
     entries : dict
         Subset entries.
+    database_yml : `Path`
+        Path to the 'database.yml' file
     """
 
 
-    lazy_loader = dict()
-
+    lazy_loader = gather_loaders(entries=entries, database_yml=database_yml)
     lazy_loader['try_with'] = get_annotated
-
-    for key, value in entries.items():
-
-        if key == "uri" or key == "trial":
-            continue
-
-        if value.startswith("_"):
-            lazy_loader[key] = Template(value[1:], database_yml)
-
-        else:
-
-            path = resolve_path(Path(value), database_yml)
-
-            # check if file exists
-            if not path.is_file():
-                msg = f"No such file or directory: '{path}'"
-                raise FileNotFoundError(msg)
-
-            # check if loader exists
-            if path.suffix not in LOADERS:
-                msg = f"No loader for file with '{path.suffix}' suffix"
-                raise TypeError(msg)
-
-            # load custom loader class
-            Loader = LOADERS[path.suffix].load()
-            lazy_loader[key] = Loader(path)
 
     # meant to store and cache one `ProtocolFile` instance per file
     files: Dict[Text, ProtocolFile] = dict()
