@@ -319,9 +319,6 @@ def subset_trial(
         Subset entries.
     """
 
-    if "trial" not in entries:
-        msg = f"Missing mandatory 'trial' entry in {database}.{task}.{protocol}.{subset}"
-        raise ValueError(msg)
 
     lazy_loader = dict()
 
@@ -353,7 +350,7 @@ def subset_trial(
             Loader = LOADERS[path.suffix].load()
             lazy_loader[key] = Loader(path)
 
-    # meant to store and cache once `ProtocolFile` instance per file
+    # meant to store and cache one `ProtocolFile` instance per file
     files: Dict[Text, ProtocolFile] = dict()
 
     # iterate trials and use preloaded test files
