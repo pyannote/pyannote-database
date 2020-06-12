@@ -305,14 +305,15 @@ def subset_trial(
     files: Dict[Text, ProtocolFile] = dict()
 
     # iterate trials and use preloaded test files
-    for reference, uri1, uri2 in load_trial(resolve_path(Path(entries["trial"]), database_yml)):
+    for trial in load_trial(resolve_path(Path(entries["trial"]), database_yml)):
         # create `ProtocolFile` only the first time this uri is encountered
+        uri1, uri2 = trial["uri1"], trial["uri2"]
         if uri1 not in files:
             files[uri1] = self.preprocess(ProtocolFile({"uri": uri1, "database": database, "subset": subset}, lazy=lazy_loader))
         if uri2 not in files:
             files[uri2] = self.preprocess(ProtocolFile({"uri": uri2, "database": database, "subset": subset}, lazy=lazy_loader))
 
-        yield {'reference': reference,
+        yield {'reference': trial["reference"],
                 'file1': files[uri1],
                 'file2': files[uri2]}
 

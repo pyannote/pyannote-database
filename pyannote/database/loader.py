@@ -86,7 +86,7 @@ def load_trial(file_trial):
                                names=['reference', 'uri1', 'uri2'])
 
     for _, reference, uri1, uri2 in trials.itertuples():
-        yield reference, uri1, uri2
+        yield {"reference":reference, "uri1":uri1, "uri2":uri2}
 
 class RTTMLoader:
     """RTTM loader
