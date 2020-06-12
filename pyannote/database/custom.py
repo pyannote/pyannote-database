@@ -53,6 +53,7 @@ import functools
 
 from pyannote.core import Timeline, Segment
 from . import DATABASES, TASKS
+from .protocol.protocol import Subset
 
 import pkg_resources
 
@@ -135,7 +136,7 @@ def meta_subset_iter(
     meta_database: Text,
     meta_task: Text,
     meta_protocol: Text,
-    meta_subset: Text,
+    meta_subset: Subset,
     subset_entries: Dict,
     database_yml: Path,
 ):
@@ -223,7 +224,7 @@ def subset_iter(
     database: Text = None,
     task: Text = None,
     protocol: Text = None,
-    subset: Text = None,
+    subset: Subset = None,
     entries: Dict = None,
     database_yml: Path = None,
 ):
@@ -274,7 +275,7 @@ def subset_trial(
     database: Text = None,
     task: Text = None,
     protocol: Text = None,
-    subset: Text = None,
+    subset: Subset = None,
     entries: Dict = None,
     database_yml: Path = None,
 ):
