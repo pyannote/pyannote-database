@@ -24,6 +24,7 @@ Protocols:
       MySpeakerVerification:
         train:
           uri: lists/train.lst
+          annotation: rttms/train.rttm # we need the annotation to specify the speaker !
           # duration: mapping/duration.map # can use duration or annotated
           annotated: uems/train.uem
           trial: trial/train.trial

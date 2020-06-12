@@ -27,6 +27,7 @@
 # Hervé BREDIN - http://herve.niderb.fr
 # Pavel KORSHUNOV - https://www.idiap.ch/~pkorshunov/
 # Paul LERNER
+# Vincent BRIGNATZ
 
 """Custom protocols
 

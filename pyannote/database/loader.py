@@ -25,6 +25,7 @@
 
 # AUTHORS
 # Hervé BREDIN - http://herve.niderb.fr
+# Vincent BRIGNATZ
 
 """Data loaders"""
 
