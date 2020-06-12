@@ -234,7 +234,7 @@ class MAPLoader:
 
         self.data_ = self.data_.groupby('uri')
 
-    def __call__(self, current_file: ProtocolFile) -> Union["spacy.tokens.Doc", None]:
+    def __call__(self, current_file: ProtocolFile) -> Any:
         uri = current_file["uri"]
 
         try:
