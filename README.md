@@ -655,7 +655,57 @@ It can then be used in Python like this:
 
 #### Speaker verification
 
-TODO
+A speaker verification protocol implement the `{subset}_trial` functions, usefull in speaker verification validation process. Note that SpeakerVerificationProtocol is a child from [SpeakerDiarizationProtocol](#speaker-diarization-1) meaning it shares the same `{subset}_iter` methods, and need a mandatory `{subset}_iter` method.
 
+A speaker verification protocol can be defined programmatically by creating a class that inherits from SpeakerVerificationProtocol and implement at least one of `train_trial_iter`, `development_trial_iter` and `test_trial_iter` methods: 
 
+  ```python
+  class MySpeakerVerificationProtocol(SpeakerVerificationProtocol):
+      def train_iter(self) -> Iterator[Dict]:
+          yield {"uri": "filename1",
+                 "annotation": Annotation(...),
+                 "annotated": Timeline(...)}
+          yield {"uri": "filename2",
+                 "annotation": Annotation(...),
+                 "annotated": Timeline(...)}
+      def train_trial_iter(self) -> Iterator[Dict]:
+          yield {"reference": 1,
+                 "file1": ProtocolFile(...),
+                 "file2": ProtocolFile(...)}
+          yield {"reference": 0,
+                 "file1": {
+                   "uri":"filename1",
+                   "try_with":Timeline(...)
+                    },
+                 "file1": {
+                   "uri":"filename3",
+                   "try_with":Timeline(...)
+                   }
+                 }
+  ```
 
+`{subset}_trial_iter` should return an iterator of dictionnaries with
+
+- "reference" key (mandatory) that provides a int portraying if the file1 and file2 share the same speaker (1 is same, 0 is different),
+
+- "file1" key (mandatory) that provides the first file,
+
+- "file2" key (mandatory) that provides the second file.
+
+The two files should be dictionaries or ```pyannote.database.protocol.protocol.ProtocolFile``` instances with 
+
+- "uri" key (mandatory),
+
+- "try_with" key (mandatory) that describes which part of the file should be used in the validation process, as a `pyannote.core.Timeline` instance.
+
+- any other key that the protocol may provide.
+
+It can then be used in Python like this:
+
+  ```python
+  protocol = MySpeakerVerificationProtocol()
+  for trial in protocol.train_trial():
+     print(f"{trial['reference']} {trial['file1']['uri']} {trial['file2']['uri']}")
+  1 filename1 filename2
+  0 filename1 filename3
+  ```
