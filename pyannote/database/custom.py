@@ -325,15 +325,7 @@ def subset_trial(
 
     lazy_loader = dict()
 
-    if 'duration' in entries.keys():
-        def try_with(file: ProtocolFile):
-            return Timeline(segments=[Segment(0, file['duration'])], uri=file['uri'])
-        lazy_loader['try_with'] = try_with
-        
-    elif 'annotated' in entries.keys():
-        def try_with(file: ProtocolFile):
-            return file['annotated']
-        lazy_loader['try_with'] = try_with
+    lazy_loader['try_with'] = get_annotated
 
     for key, value in entries.items():
 
