@@ -25,6 +25,7 @@
 
 # AUTHORS
 # Hervé BREDIN - http://herve.niderb.fr
+# Vincent BRIGNATZ
 
 """Data loaders"""
 
@@ -32,7 +33,7 @@ import pandas as pd
 from pyannote.core import Segment, Timeline, Annotation
 from pyannote.database import ProtocolFile
 from pathlib import Path
-from typing import Union
+from typing import Union, Any
 import warnings
 
 try:
@@ -45,6 +46,47 @@ try:
 except ImportError as e:
     pass
 
+def load_lst(file_lst):
+    """Load LST file
+
+    LST files provide a list of URIs (one line per URI)
+
+    Parameter
+    ---------
+    file_lst : `str`
+        Path to LST file.
+
+    Returns
+    -------
+    uris : `list`
+        List or uris
+    """
+
+    with open(file_lst, mode='r') as fp:
+        lines = fp.readlines()
+    return [l.strip() for l in lines]
+
+def load_trial(file_trial):
+    """Load trial file
+
+    Trial files provide a list of two URIs and their reference
+
+    Parameter
+    ---------
+    file_trial : `str`
+        Path to trial file.
+
+    Returns
+    -------
+    list_trial : `list`
+        List of trial
+    """
+
+    trials = pd.read_table(file_trial, delim_whitespace=True,
+                               names=['reference', 'uri1', 'uri2'])
+
+    for _, reference, uri1, uri2 in trials.itertuples():
+        yield {"reference":reference, "uri1":uri1, "uri2":uri2}
 
 class RTTMLoader:
     """RTTM loader
@@ -185,3 +227,61 @@ class CTMLoader:
             token._.confidence = line.confidence
 
         return doc
+
+class MAPLoader:
+    """Mapping loader
+
+    For generic files with format :
+    {uri} {value}
+
+    Exemples :
+
+        duration.map :
+
+            filename1 60.0
+            filename2 123.450
+            filename3 32.400
+
+        domain.map :
+
+            filename1 radio
+            filename2 radio
+            filename3 phone
+
+    Parameter
+    ---------
+    map : Path
+        Path to mapping file
+    """
+
+    def __init__(self, mapping: Path):
+        self.mapping = mapping
+
+        names = ["uri", "value"]
+        dtype = {
+            "uri": str,
+        }
+        self.data_ = pd.read_csv(
+            mapping, names=names, dtype=dtype, delim_whitespace=True
+        )
+
+        # get colum 'value' dtype, allowing us to acces it during subset
+        self.dtype = self.data_.dtypes['value']
+
+        if self.data_.duplicated(['uri']).any():
+            print(f"Found following duplicate key in file {mapping}")
+            print(self.data_[self.data_.duplicated(['uri'], keep=False)])
+            raise ValueError()
+
+        self.data_ = self.data_.groupby('uri')
+
+    def __call__(self, current_file: ProtocolFile) -> Any:
+        uri = current_file["uri"]
+
+        try:
+            value = self.data_.get_group(uri)['value'][0]
+        except KeyError:
+            msg = f"Couldn't find mapping for {uri} in {self.mapping}"
+            raise KeyError(msg)
+
+        return value            

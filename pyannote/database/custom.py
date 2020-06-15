@@ -27,6 +27,7 @@
 # Hervé BREDIN - http://herve.niderb.fr
 # Pavel KORSHUNOV - https://www.idiap.ch/~pkorshunov/
 # Paul LERNER
+# Vincent BRIGNATZ
 
 """Custom protocols
 
@@ -50,11 +51,15 @@ import warnings
 from typing import Text, Dict, Callable, Any, Union
 import functools
 
-
+from pyannote.core import Timeline, Segment
 from . import DATABASES, TASKS
+from .protocol.protocol import Subset
 
 import pkg_resources
 
+from .util import get_annotated
+
+from .loader import load_lst, load_trial
 LOADERS = {
     ep.name: ep
     for ep in pkg_resources.iter_entry_points(group="pyannote.database.loader")
@@ -96,28 +101,6 @@ def Template(template: Text, database_yml: Path) -> Callable[[ProtocolFile], Any
 
     return load
 
-
-def load_lst(file_lst):
-    """Load LST file
-
-    LST files provide a list of URIs (one line per URI)
-
-    Parameter
-    ---------
-    file_lst : `str`
-        Path to LST file.
-
-    Returns
-    -------
-    uris : `list`
-        List or uris
-    """
-
-    with open(file_lst, mode="r") as fp:
-        lines = fp.readlines()
-    return [l.strip() for l in lines]
-
-
 def resolve_path(path: Path, database_yml: Path) -> Path:
     """Resolve path
 
@@ -153,7 +136,7 @@ def meta_subset_iter(
     meta_database: Text,
     meta_task: Text,
     meta_protocol: Text,
-    meta_subset: Text,
+    meta_subset: Subset,
     subset_entries: Dict,
     database_yml: Path,
 ):
@@ -186,54 +169,23 @@ def meta_subset_iter(
             for file in getattr(partial_protocol, method_name)():
                 yield file
 
-
-def subset_iter(
-    self,
-    database: Text = None,
-    task: Text = None,
-    protocol: Text = None,
-    subset: Text = None,
+def gather_loaders(
     entries: Dict = None,
     database_yml: Path = None,
 ):
     """
-
     Parameters
     ----------
-    database : str
-        Database name (e.g. MyDatabase)
-    task : str
-        Task name (e.g. SpeakerDiarization, SpeakerVerification)
-    protocol : str
-        Protocol name (e.g. MyProtocol)
-    subset : {"train", "development", "test"}
-        Subset
     entries : dict
         Subset entries.
+    database_yml : `Path`
+        Path to the 'database.yml' file
     """
-
-    if "uri" in entries:
-        uri = entries["uri"]
-
-    elif "uris" in entries:
-        uri = entries["uris"]
-        msg = (
-            f"Found deprecated 'uris' entry in {database}.{task}.{protocol}.{subset}. "
-            f"Please use 'uri' (singular) instead, in '{database_yml}'."
-        )
-        warnings.warn(msg, DeprecationWarning)
-
-    else:
-        msg = f"Missing mandatory 'uri' entry in {database}.{task}.{protocol}.{subset}"
-        raise ValueError(msg)
-
-    uris = load_lst(resolve_path(Path(uri), database_yml))
-
     lazy_loader = dict()
 
     for key, value in entries.items():
 
-        if key == "uri":
+        if key == "uri" or key == "trial":
             continue
 
         if value.startswith("_"):
@@ -265,12 +217,105 @@ def subset_iter(
             #   for _ in protocol.train(): pass   # first call is slow (compute and cache Loader(path))
             #   for _ in protocol.train(): pass   # subsequent calls are fast (use cached Loader(path))
             lazy_loader[key] = Loader(path)
+    return lazy_loader
+
+def subset_iter(
+    self,
+    database: Text = None,
+    task: Text = None,
+    protocol: Text = None,
+    subset: Subset = None,
+    entries: Dict = None,
+    database_yml: Path = None,
+):
+    """
+
+    Parameters
+    ----------
+    database : str
+        Database name (e.g. MyDatabase)
+    task : str
+        Task name (e.g. SpeakerDiarization, SpeakerVerification)
+    protocol : str
+        Protocol name (e.g. MyProtocol)
+    subset : {"train", "development", "test"}
+        Subset
+    entries : dict
+        Subset entries.
+    database_yml : `Path`
+        Path to the 'database.yml' file
+    """
+
+    if "uri" in entries:
+        uri = entries["uri"]
+
+    elif "uris" in entries:
+        uri = entries["uris"]
+        msg = (
+            f"Found deprecated 'uris' entry in {database}.{task}.{protocol}.{subset}. "
+            f"Please use 'uri' (singular) instead, in '{database_yml}'."
+        )
+        warnings.warn(msg, DeprecationWarning)
+
+    else:
+        msg = f"Missing mandatory 'uri' entry in {database}.{task}.{protocol}.{subset}"
+        raise ValueError(msg)
+
+    uris = load_lst(resolve_path(Path(uri), database_yml))
+
+    lazy_loader = gather_loaders(entries=entries, database_yml=database_yml)
 
     for uri in uris:
         yield ProtocolFile(
             {"uri": uri, "database": database, "subset": subset}, lazy=lazy_loader
         )
 
+def subset_trial(
+    self,
+    database: Text = None,
+    task: Text = None,
+    protocol: Text = None,
+    subset: Subset = None,
+    entries: Dict = None,
+    database_yml: Path = None,
+):
+    """
+
+    Parameters
+    ----------
+    database : str
+        Database name (e.g. MyDatabase)
+    task : str
+        Task name (e.g. SpeakerDiarization, SpeakerVerification)
+    protocol : str
+        Protocol name (e.g. MyProtocol)
+    subset : {"train", "development", "test"}
+        Subset
+    entries : dict
+        Subset entries.
+    database_yml : `Path`
+        Path to the 'database.yml' file
+    """
+
+
+    lazy_loader = gather_loaders(entries=entries, database_yml=database_yml)
+    lazy_loader['try_with'] = get_annotated
+
+    # meant to store and cache one `ProtocolFile` instance per file
+    files: Dict[Text, ProtocolFile] = dict()
+
+    # iterate trials and use preloaded test files
+    for trial in load_trial(resolve_path(Path(entries["trial"]), database_yml)):
+        # create `ProtocolFile` only the first time this uri is encountered
+        uri1, uri2 = trial["uri1"], trial["uri2"]
+        if uri1 not in files:
+            files[uri1] = self.preprocess(ProtocolFile({"uri": uri1, "database": database, "subset": subset}, lazy=lazy_loader))
+        if uri2 not in files:
+            files[uri2] = self.preprocess(ProtocolFile({"uri": uri2, "database": database, "subset": subset}, lazy=lazy_loader))
+
+        yield {'reference': trial["reference"],
+                'file1': files[uri1],
+                'file2': files[uri2]}
 
 def get_init(protocols):
     def init(self):
@@ -339,7 +384,6 @@ def create_protocol(
             continue
 
         method_name = f"{subset}_iter"
-
         if database == "X":
             methods[method_name] = functools.partial(
                 meta_subset_iter,
@@ -360,6 +404,16 @@ def create_protocol(
                 entries=subset_entries,
                 database_yml=database_yml,
             )
+            if 'trial' in subset_entries.keys():
+                methods[f"{subset}_trial"] = functools.partialmethod(
+                    subset_trial,
+                    database=database,
+                    task=task,
+                    protocol=protocol,
+                    subset=subset,
+                    entries=subset_entries,
+                    database_yml=database_yml,
+                )
 
     return type(protocol, (base_class,), methods)
 

@@ -341,7 +341,7 @@ It can then be used in Python like this:
   ```python
   from pyannote.database import get_protocol
   protocol = get_protocol('MyDatabase.SpeakerDiarization.MyProtocol')
-  for file in protocol.train()
+  for file in protocol.train():
      print(file["uri"])
      assert "annotation" in file
      assert "annotated" in file
@@ -351,7 +351,85 @@ It can then be used in Python like this:
 
 ### Speaker verification
 
-TODO
+A speaker verification protocol can also be defined using `pyannote.database`
+configuration file using the `SpeakerVerification` task:
+
+  ```yaml
+  Protocols:
+    MyDatabase:
+      SpeakerVerification:
+        MyProtocol:
+          train:
+              uri: /path/to/collection.lst
+              annotation: /path/to/reference.rttm
+              duration: /path/to/duration.map
+              trial: /path/to/trial.txt
+  ```
+
+where `/path/to/collection.lst` contains the list of identifiers of the
+files in the collection:
+
+  ```text
+  # /path/to/collection.lst
+  filename1
+  filename2
+  filename3
+  ...
+  ```
+
+`/path/to/reference.rttm` contains the reference speaker diarization using
+RTTM format:
+
+  ```text
+  # /path/to/reference.rttm
+  SPEAKER filename1 1 3.168 0.800 <NA> <NA> speaker_A <NA> <NA>
+  SPEAKER filename1 1 5.463 0.640 <NA> <NA> speaker_A <NA> <NA>
+  SPEAKER filename1 1 5.496 0.574 <NA> <NA> speaker_B <NA> <NA>
+  SPEAKER filename1 1 10.454 0.499 <NA> <NA> speaker_B <NA> <NA>
+  SPEAKER filename2 1 2.977 0.391 <NA> <NA> speaker_C <NA> <NA>
+  SPEAKER filename2 1 18.705 0.964 <NA> <NA> speaker_C <NA> <NA>
+  SPEAKER filename2 1 22.269 0.457 <NA> <NA> speaker_A <NA> <NA>
+  SPEAKER filename2 1 28.474 1.526 <NA> <NA> speaker_A <NA> <NA>
+  ...
+  ```
+
+`/path/to/duration.map` contains the duration of the files:
+
+  ```text
+  filename1 30.000
+  filename2 30.000
+  ...
+  ```
+
+`/path/to/trial.txt` contains a list of trials :
+
+  ```text
+  1 filename1 filename2
+  0 filename1 filename3
+  ...
+  ```
+
+Note that giving the key 'trial' to a protocol will generate the method `{subset}` AND `{subset}_trial` (`train` and `train_trial` in our exemple).
+
+It can then be used in Python like this:
+
+  ```python
+  from pyannote.database import get_protocol
+  protocol = get_protocol('MyDatabase.SpeakerVerification.MyProtocol')
+  for file in protocol.train():
+     print(file["uri"])
+     assert "annotation" in file
+     assert "annotated" in file
+  print('-'*10)
+  for trial in protocol.train_trial():
+     print(f"{trial['reference']} {trial['file1']['uri']} {trial['file2']['uri']}")
+  filename1
+  filename2
+  filename3
+  ----------
+  1 filename1 filename2
+  0 filename1 filename3
+  ```
 
 ## Meta-protocols
 
@@ -655,7 +733,57 @@ It can then be used in Python like this:
 
 #### Speaker verification
 
-TODO
+A speaker verification protocol implement the `{subset}_trial` functions, useful in speaker verification validation process. Note that SpeakerVerificationProtocol is a child from [SpeakerDiarizationProtocol](#speaker-diarization-1) meaning it shares the same `{subset}_iter` methods, and need a mandatory `{subset}_iter` method.
 
+A speaker verification protocol can be defined programmatically by creating a class that inherits from SpeakerVerificationProtocol and implement at least one of `train_trial_iter`, `development_trial_iter` and `test_trial_iter` methods: 
 
+  ```python
+  class MySpeakerVerificationProtocol(SpeakerVerificationProtocol):
+      def train_iter(self) -> Iterator[Dict]:
+          yield {"uri": "filename1",
+                 "annotation": Annotation(...),
+                 "annotated": Timeline(...)}
+          yield {"uri": "filename2",
+                 "annotation": Annotation(...),
+                 "annotated": Timeline(...)}
+      def train_trial_iter(self) -> Iterator[Dict]:
+          yield {"reference": 1,
+                 "file1": ProtocolFile(...),
+                 "file2": ProtocolFile(...)}
+          yield {"reference": 0,
+                 "file1": {
+                   "uri":"filename1",
+                   "try_with":Timeline(...)
+                    },
+                 "file1": {
+                   "uri":"filename3",
+                   "try_with":Timeline(...)
+                   }
+                 }
+  ```
 
+`{subset}_trial_iter` should return an iterator of dictionnaries with
+
+- "reference" key (mandatory) that provides a int portraying if the file1 and file2 share the same speaker (1 is same, 0 is different),
+
+- "file1" key (mandatory) that provides the first file,
+
+- "file2" key (mandatory) that provides the second file.
+
+The two files should be dictionaries or ```pyannote.database.protocol.protocol.ProtocolFile``` instances with 
+
+- "uri" key (mandatory),
+
+- "try_with" key (mandatory) that describes which part of the file should be used in the validation process, as a `pyannote.core.Timeline` instance.
+
+- any other key that the protocol may provide.
+
+It can then be used in Python like this:
+
+  ```python
+  protocol = MySpeakerVerificationProtocol()
+  for trial in protocol.train_trial():
+     print(f"{trial['reference']} {trial['file1']['uri']} {trial['file2']['uri']}")
+  1 filename1 filename2
+  0 filename1 filename3
+  ```
