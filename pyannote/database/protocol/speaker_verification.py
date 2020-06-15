@@ -36,27 +36,98 @@ from .protocol import LEGACY_SUBSET_MAPPING
 class SpeakerVerificationProtocol(SpeakerDiarizationProtocol):
     """A protocol for speaker verification experiments
 
-    TODO: write docstring following SpeakerDiarizationProtocol 
-    docstring template. below is what used to be part of the 
-    docstring of xxxx_trial methods.
+    A speaker verification protocol can be defined programmatically by creating
+    a class that inherits from `SpeakerVerificationProtocol` and implement at 
+    least one of `train_trial_iter`, `development_trial_iter` and 
+    `test_trial_iter` methods: 
 
-    Each trial is yielded as a dictionary with the following keys:
+        >>> class MySpeakerVerificationProtocol(SpeakerVerificationProtocol):
+        ...     def train_trial_iter(self) -> Iterator[Dict]:
+        ...         yield {"reference": 0,
+        ...                "file1": {
+        ...                     "uri":"filename1",
+        ...                     "try_with":Timeline(...)
+        ...                },
+        ...                "file2": {
+        ...                     "uri":"filename3",
+        ...                     "try_with":Timeline(...)
+        ...                },
+        ...         }
 
-    ['reference'] (`boolean`)
-        Groundtruth: True for a target trial, False for a non-target trial.
+    `{subset}_trial_iter` should return an iterator of dictionnaries with
 
-    ['file{1|2}'] (`dict`)
-        Both parts of the trial are provided as dictionaries with the
-        following keys (as well as keys added by preprocessors):
+    - `reference` key (mandatory) that provides an int portraying whether `file1` and `file2` are uttered by the same speaker (1 is same, 0 is different),
+    - `file1` key (mandatory) that provides the first file,
+    - `file2` key (mandatory) that provides the second file.
 
-        ['uri'] (`str`)
-            Unique file identifier.
+    Both `file1` and `file2` should be provided as dictionaries or `pyannote.database.protocol.protocol.ProtocolFile` instances with 
 
-        ['try_with'] (`pyannote.core.{Segment|Timeline}`), optional
-            Part(s) of the file to use in the trial. Default is to use the
-            whole file.
+    - `uri` key (mandatory),
+    - `try_with` key (mandatory) that describes which part of the file should be used in the validation process, as a `pyannote.core.Timeline` instance.
+    - any other key that the protocol may provide.
 
+    It can then be used in Python like this:
 
+        >>> protocol = MySpeakerVerificationProtocol()
+        ... for trial in protocol.train_trial():
+        ...     print(f"{trial['reference']} {trial['file1']['uri']} {trial['file2']['uri']}")
+        1 filename1 filename2
+        0 filename1 filename3
+
+    A speaker verification protocol can also be defined using `pyannote.database`
+    configuration file, whose (configurable) path defaults to "~/database.yml".
+
+    ~~~ Content of ~/database.yml ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    Protocols:
+        MyDatabase:
+        SpeakerVerification:
+            MyProtocol:
+            train:
+                uri: /path/to/train.lst
+                duration: /path/to/duration.map
+                trial: /path/to/trial.txt
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    where `/path/to/train.lst` contains the list of identifiers of the
+    files in the collection:
+
+    ~~~ Content of /path/to/train.lst~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    filename1
+    filename2
+    filename3
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    `/path/to/duration.map` contains the duration of the files:
+
+    ~~~ Content of /path/to/duration.map ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    filename1 30.000
+    filename2 30.000
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    `/path/to/trial.txt` contains a list of trials :
+
+    ~~~ Content of /path/to/trial ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    1 filename1 filename2
+    0 filename1 filename3
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    `1` stands for _target_ trials and `0` for _non-target_ trials.
+    In the example below, it means that the same speaker uttered files 
+    `filename1` and `filename2` and that `filename1` and `filename3` are from
+    two different speakers. 
+
+    It can then be used in Python like this:
+
+        >>> from pyannote.database import get_protocol
+        >>> protocol = get_protocol('MyDatabase.SpeakerVerification.MyProtocol')
+        >>> for trial in protocol.train_trial():
+        ...     print(f"{trial['reference']} {trial['file1']['uri']} {trial['file2']['uri']}")
+        1 filename1 filename2
+        0 filename1 filename3
+
+    Note that speaker verification protocols (`SpeakerVerificationProtocol`) 
+    are a subclass of speaker diarization protocols (`SpeakerDiarizationProtocol`).
+    As such, they also define regular `{subset}` methods.
     """
 
     def subset_trial_helper(self, subset: Subset) -> Iterator[Dict]:
