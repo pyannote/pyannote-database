@@ -3,7 +3,7 @@
 
 # The MIT License (MIT)
 
-# Copyright (c) 2016-2019 CNRS
+# Copyright (c) 2016-2020 CNRS
 
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -30,25 +30,32 @@ import versioneer
 from setuptools import setup, find_packages
 
 setup(
-
     # package
-    namespace_packages=['pyannote'],
+    namespace_packages=["pyannote"],
     packages=find_packages(),
     install_requires=[
-        'pyannote.core >= 3.6',
-        'pyYAML >= 3.12',
-        'tqdm >= 4.10.0',
-        'pandas >= 0.19',
+        "pyannote.core >= 4.1",
+        "pyYAML >= 3.12",
+        "pandas >= 0.19",
+        "typing_extensions >= 3.7.4;python_version < '3.8'",
     ],
+    entry_points={
+        "pyannote.database.loader": [
+            ".rttm = pyannote.database.loader:RTTMLoader",
+            ".uem = pyannote.database.loader:UEMLoader",
+            ".ctm = pyannote.database.loader:CTMLoader",
+            ".map = pyannote.database.loader:MAPLoader"
+        ],
+    },
     # versioneer
     version=versioneer.get_version(),
     cmdclass=versioneer.get_cmdclass(),
     # PyPI
-    name='pyannote.database',
-    description=('Interface to multimedia databases and experimental protocols'),
-    author='Hervé Bredin',
-    author_email='bredin@limsi.fr',
-    url='http://pyannote.github.io/',
+    name="pyannote.database",
+    description=("Interface to multimedia databases and experimental protocols"),
+    author="Hervé Bredin",
+    author_email="bredin@limsi.fr",
+    url="http://pyannote.github.io/",
     classifiers=[
         "Development Status :: 4 - Beta",
         "Intended Audience :: Science/Research",
@@ -57,6 +64,7 @@ setup(
         "Programming Language :: Python :: 3",
         "Programming Language :: Python :: 3.6",
         "Programming Language :: Python :: 3.7",
-        "Topic :: Scientific/Engineering"
+        "Programming Language :: Python :: 3.8",
+        "Topic :: Scientific/Engineering",
     ],
 )

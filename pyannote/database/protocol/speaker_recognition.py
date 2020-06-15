@@ -3,7 +3,7 @@
 
 # The MIT License (MIT)
 
-# Copyright (c) 2016 CNRS
+# Copyright (c) 2016-2020 CNRS
 
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -28,7 +28,6 @@
 
 
 from .protocol import Protocol
-from tqdm import tqdm
 
 
 class SpeakerRecognitionProtocol(Protocol):
@@ -42,55 +41,56 @@ class SpeakerRecognitionProtocol(Protocol):
         callable, it should be a string containing placeholder for item keys
         (e.g. {'wav': '/path/to/{uri}.wav'})
     """
+
     def trn_iter(self):
         raise NotImplementedError(
-            'Custom speaker recognition protocol '
-            'should implement "trn_iter".')
+            "Custom speaker recognition protocol " 'should implement "trn_iter".'
+        )
 
     def trn_enroll_iter(self):
         raise NotImplementedError(
-            'Custom speaker recognition protocol '
-            'should implement "trn_enroll_iter".')
+            "Custom speaker recognition protocol " 'should implement "trn_enroll_iter".'
+        )
 
     def trn_test_iter(self):
         raise NotImplementedError(
-            'Custom speaker recognition protocol '
-            'should implement "trn_test_iter".')
+            "Custom speaker recognition protocol " 'should implement "trn_test_iter".'
+        )
 
     def trn_keys(self):
         raise NotImplementedError(
-            'Custom speaker recognition protocol '
-            'should implement "trn_keys".')
+            "Custom speaker recognition protocol " 'should implement "trn_keys".'
+        )
 
     def dev_enroll_iter(self):
         raise NotImplementedError(
-            'Custom speaker recognition protocol '
-            'should implement "dev_enroll_iter".')
+            "Custom speaker recognition protocol " 'should implement "dev_enroll_iter".'
+        )
 
     def dev_test_iter(self):
         raise NotImplementedError(
-            'Custom speaker recognition protocol '
-            'should implement "dev_test_iter".')
+            "Custom speaker recognition protocol " 'should implement "dev_test_iter".'
+        )
 
     def dev_keys(self):
         raise NotImplementedError(
-            'Custom speaker recognition protocol '
-            'should implement "dev_keys".')
+            "Custom speaker recognition protocol " 'should implement "dev_keys".'
+        )
 
     def tst_enroll_iter(self):
         raise NotImplementedError(
-            'Custom speaker recognition protocol '
-            'should implement "tst_enroll_iter".')
+            "Custom speaker recognition protocol " 'should implement "tst_enroll_iter".'
+        )
 
     def tst_test_iter(self):
         raise NotImplementedError(
-            'Custom speaker recognition protocol '
-            'should implement "tst_test_iter".')
+            "Custom speaker recognition protocol " 'should implement "tst_test_iter".'
+        )
 
     def tst_keys(self):
         raise NotImplementedError(
-            'Custom speaker recognition protocol '
-            'should implement tst_keys".')
+            "Custom speaker recognition protocol " 'should implement tst_keys".'
+        )
 
     def train(self, yield_name=False):
         """Iterate over the training set
@@ -117,10 +117,6 @@ Usage
         """
 
         generator = self.trn_iter()
-        if self.progress:
-            generator = tqdm(generator,
-                             desc='Training set',
-                             total=getattr(self.trn_iter, 'n_items', None))
 
         for name, item in generator:
             if yield_name:
@@ -150,10 +146,6 @@ Usage
         """
 
         generator = self.trn_enroll_iter()
-        if self.progress:
-            generator = tqdm(
-                generator, desc='Training set (enrollment)',
-                total=getattr(self.trn_enroll_iter, 'n_items', None))
 
         for name, item in generator:
             if yield_name:
@@ -183,10 +175,6 @@ Usage
         """
 
         generator = self.trn_test_iter()
-        if self.progress:
-            generator = tqdm(
-                generator, desc='Training set (test)',
-                total=getattr(self.trn_test_iter, 'n_items', None))
 
         for name, item in generator:
             if yield_name:
@@ -219,10 +207,6 @@ Usage
         """
 
         generator = self.dev_enroll_iter()
-        if self.progress:
-            generator = tqdm(
-                generator, desc='Development set (enrollment)',
-                total=getattr(self.dev_enroll_iter, 'n_items', None))
 
         for name, item in generator:
             if yield_name:
@@ -252,10 +236,6 @@ Usage
         """
 
         generator = self.dev_test_iter()
-        if self.progress:
-            generator = tqdm(
-                generator, desc='Development set (test)',
-                total=getattr(self.dev_test_iter, 'n_items', None))
 
         for name, item in generator:
             if yield_name:
@@ -291,10 +271,6 @@ Usage
         """
 
         generator = self.tst_enroll_iter()
-        if self.progress:
-            generator = tqdm(
-                generator, desc='Test set (enrollment)',
-                total=getattr(self.tst_enroll_iter, 'n_items', None))
 
         for name, item in generator:
             if yield_name:
@@ -324,10 +300,6 @@ Usage
         """
 
         generator = self.tst_test_iter()
-        if self.progress:
-            generator = tqdm(
-                generator, desc='Test set (test)',
-                total=getattr(self.tst_test_iter, 'n_items', None))
 
         for name, item in generator:
             if yield_name:
