@@ -251,8 +251,7 @@ Note that any pattern supported by `pathlib.Path.glob` is supported (but avoid `
 
 ### Collections
 
-A collection of files can also be defined using `pyannote.database`
-configuration file using the `Collection` task:
+A raw collection of files (i.e. without any train/development/test split) can be defined using the `Collection` task:
 
   ```yaml
   # ~/database.yml
@@ -288,8 +287,7 @@ It can the be used in Python like this:
 
 ### Speaker diarization
 
-A speaker diarization protocol can also be defined using `pyannote.database`
-configuration file using the `SpeakerDiarization` task:
+A protocol can be defined specifically for speaker diarization using the `SpeakerDiarization` task:
 
   ```yaml
   Protocols:
@@ -297,21 +295,21 @@ configuration file using the `SpeakerDiarization` task:
       SpeakerDiarization:
         MyProtocol:
           train:
-              uri: /path/to/collection.lst
-              annotation: /path/to/reference.rttm
-              annotated: /path/to/reference.uem
+              uri: /path/to/train.lst
+              annotation: /path/to/train.rttm
+              annotated: /path/to/train.uem
   ```
 
-where `/path/to/collection.lst` contains the list of identifiers of the
-files in the collection:
+where `/path/to/train.lst` contains the list of identifiers of the
+files in the training set:
 
   ```text
-  # /path/to/collection.lst
+  # /path/to/train.lst
   filename1
   filename2
   ```
 
-`/path/to/reference.rttm` contains the reference speaker diarization using
+`/path/to/train.rttm` contains the reference speaker diarization using
 RTTM format:
 
   ```text
@@ -326,7 +324,7 @@ RTTM format:
   SPEAKER filename2 1 28.474 1.526 <NA> <NA> speaker_A <NA> <NA>
   ```
 
-`/path/to/reference.uem` describes the annotated regions using UEM format:
+`/path/to/train.uem` describes the annotated regions using UEM format:
 
   ```text
   filename1 NA 0.000 30.000
@@ -351,8 +349,7 @@ It can then be used in Python like this:
 
 ### Speaker verification
 
-A speaker verification protocol can also be defined using `pyannote.database`
-configuration file using the `SpeakerVerification` task:
+A simple speaker verification protocol can be defined by adding a `trial` entry to a `SpeakerVerification` task:
 
   ```yaml
   Protocols:
@@ -360,13 +357,12 @@ configuration file using the `SpeakerVerification` task:
       SpeakerVerification:
         MyProtocol:
           train:
-              uri: /path/to/collection.lst
-              annotation: /path/to/reference.rttm
+              uri: /path/to/train.lst
               duration: /path/to/duration.map
               trial: /path/to/trial.txt
   ```
 
-where `/path/to/collection.lst` contains the list of identifiers of the
+where `/path/to/train.lst` contains the list of identifiers of the
 files in the collection:
 
   ```text
@@ -374,22 +370,6 @@ files in the collection:
   filename1
   filename2
   filename3
-  ...
-  ```
-
-`/path/to/reference.rttm` contains the reference speaker diarization using
-RTTM format:
-
-  ```text
-  # /path/to/reference.rttm
-  SPEAKER filename1 1 3.168 0.800 <NA> <NA> speaker_A <NA> <NA>
-  SPEAKER filename1 1 5.463 0.640 <NA> <NA> speaker_A <NA> <NA>
-  SPEAKER filename1 1 5.496 0.574 <NA> <NA> speaker_B <NA> <NA>
-  SPEAKER filename1 1 10.454 0.499 <NA> <NA> speaker_B <NA> <NA>
-  SPEAKER filename2 1 2.977 0.391 <NA> <NA> speaker_C <NA> <NA>
-  SPEAKER filename2 1 18.705 0.964 <NA> <NA> speaker_C <NA> <NA>
-  SPEAKER filename2 1 22.269 0.457 <NA> <NA> speaker_A <NA> <NA>
-  SPEAKER filename2 1 28.474 1.526 <NA> <NA> speaker_A <NA> <NA>
   ...
   ```
 
@@ -409,27 +389,21 @@ RTTM format:
   ...
   ```
 
-Note that giving the key 'trial' to a protocol will generate the method `{subset}` AND `{subset}_trial` (`train` and `train_trial` in our exemple).
+`1` stands for _target_ trials and `0` for _non-target_ trials.
+In the example below, it means that the same speaker uttered files `filename1` and `filename2` and that `filename1` and `filename3` are from two different speakers. 
 
 It can then be used in Python like this:
 
   ```python
   from pyannote.database import get_protocol
   protocol = get_protocol('MyDatabase.SpeakerVerification.MyProtocol')
-  for file in protocol.train():
-     print(file["uri"])
-     assert "annotation" in file
-     assert "annotated" in file
-  print('-'*10)
   for trial in protocol.train_trial():
      print(f"{trial['reference']} {trial['file1']['uri']} {trial['file2']['uri']}")
-  filename1
-  filename2
-  filename3
-  ----------
   1 filename1 filename2
   0 filename1 filename3
   ```
+
+Note that speaker verification protocols (`SpeakerVerificationProtocol`) are a subclass of speaker diarization protocols (`SpeakerDiarizationProtocol`). As such, they also define regular `{subset}` methods.
 
 ## Meta-protocols
 
@@ -733,9 +707,9 @@ It can then be used in Python like this:
 
 #### Speaker verification
 
-A speaker verification protocol implement the `{subset}_trial` functions, useful in speaker verification validation process. Note that SpeakerVerificationProtocol is a child from [SpeakerDiarizationProtocol](#speaker-diarization-1) meaning it shares the same `{subset}_iter` methods, and need a mandatory `{subset}_iter` method.
+A speaker verification protocol implement the `{subset}_trial` functions, useful in speaker verification validation process. Note that `SpeakerVerificationProtocol` is a subclass of [SpeakerDiarizationProtocol](#speaker-diarization-1). As such, it shares the same `{subset}_iter` methods, and need a mandatory `{subset}_iter` method.
 
-A speaker verification protocol can be defined programmatically by creating a class that inherits from SpeakerVerificationProtocol and implement at least one of `train_trial_iter`, `development_trial_iter` and `test_trial_iter` methods: 
+A speaker verification protocol can be defined programmatically by creating a class that inherits from `SpeakerVerificationProtocol` and implement at least one of `train_trial_iter`, `development_trial_iter` and `test_trial_iter` methods: 
 
   ```python
   class MySpeakerVerificationProtocol(SpeakerVerificationProtocol):
@@ -764,18 +738,14 @@ A speaker verification protocol can be defined programmatically by creating a cl
 
 `{subset}_trial_iter` should return an iterator of dictionnaries with
 
-- "reference" key (mandatory) that provides a int portraying if the file1 and file2 share the same speaker (1 is same, 0 is different),
+- `reference` key (mandatory) that provides an int portraying whether `file1` and `file2` are uttered by the same speaker (1 is same, 0 is different),
+- `file1` key (mandatory) that provides the first file,
+- `file2` key (mandatory) that provides the second file.
 
-- "file1" key (mandatory) that provides the first file,
+Both `file1` and `file2` should be provided as dictionaries or `pyannote.database.protocol.protocol.ProtocolFile` instances with 
 
-- "file2" key (mandatory) that provides the second file.
-
-The two files should be dictionaries or ```pyannote.database.protocol.protocol.ProtocolFile``` instances with 
-
-- "uri" key (mandatory),
-
-- "try_with" key (mandatory) that describes which part of the file should be used in the validation process, as a `pyannote.core.Timeline` instance.
-
+- `uri` key (mandatory),
+- `try_with` key (mandatory) that describes which part of the file should be used in the validation process, as a `pyannote.core.Timeline` instance.
 - any other key that the protocol may provide.
 
 It can then be used in Python like this:
