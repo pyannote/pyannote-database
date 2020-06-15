@@ -2,6 +2,19 @@
 Changelog
 #########
 
+
+Version 4.0.a0 (2020-06-15)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  - feat: add support for custom speaker verification protocols
+  - feat: add pyannote.database.loader entrypoint
+  - feat: add a few dataloaders (RTTM, UEM, CTM, MAP)
+  - feat: add support for nested ProtocolFile
+  - doc: major documentation update (README and docstrings)
+  - BREAKING: custom protocols must define a "uri" section
+  - BREAKING: remove support for "preprocessors" in Database constructor
+  - BREAKING: remove support for progress bars
+
 Version 3.0.1 (2020-03-31)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 

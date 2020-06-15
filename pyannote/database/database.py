@@ -27,29 +27,33 @@
 # Hervé BREDIN - http://herve.niderb.fr
 
 
+from typing import Optional
 from .util import PyannoteDatabaseException
+from .protocol.protocol import Preprocessors
+import warnings
 
 
-class Database(object):
+class Database:
     """Base database
 
     This class should be inherited from, not used directly.
 
-    Parameters
-    ----------
-    preprocessors : dict or (key, preprocessor) iterable
-        When provided, each protocol item (dictionary) are preprocessed, such
-        that item[key] = preprocessor(item). In case 'preprocessor' is not
-        callable, it should be a string containing placeholder for item keys
-        (e.g. {'audio': '/path/to/{uri}.wav'})
     """
 
-    def __init__(self, preprocessors={}):
+    def __init__(self, preprocessors=None):
+
+        if preprocessors is not None:
+            database_name = self.__class__.__name__
+            msg = (
+                f"Ignoring deprecated 'preprocessors' argument in {database_name}.__init__. "
+                f"Pass it to 'get_protocol' instead."
+            )
+            warnings.warn(msg)
+
         super(Database, self).__init__()
-        self.preprocessors = preprocessors
 
     def register_protocol(self, task_name, protocol_name, protocol):
-        if not hasattr(self, 'protocols_'):
+        if not hasattr(self, "protocols_"):
             self.protocols_ = {}
         if task_name not in self.protocols_:
             self.protocols_[task_name] = {}
@@ -60,7 +64,7 @@ class Database(object):
         try:
             tasks = self.protocols_
         except AttributeError as e:
-            message = 'This database does not implement any protocol.'
+            message = "This database does not implement any protocol."
             raise PyannoteDatabaseException(message)
         return tasks
 
@@ -71,9 +75,10 @@ class Database(object):
     def get_protocols(self, task):
         return sorted(self.protocols_[task].keys())
 
-    def get_protocol(self, task, protocol, **kwargs):
-        return self.protocols_[task][protocol](
-            preprocessors=self.preprocessors, **kwargs)
+    def get_protocol(
+        self, task, protocol, preprocessors: Optional[Preprocessors] = None
+    ):
+        return self.protocols_[task][protocol](preprocessors=preprocessors)
 
     def __str__(self):
         return self.__doc__

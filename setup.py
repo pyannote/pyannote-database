@@ -34,14 +34,20 @@ setup(
     namespace_packages=["pyannote"],
     packages=find_packages(),
     install_requires=[
-        "pyannote.core >= 3.6",
+        "pyannote.core >= 4.1",
         "pyYAML >= 3.12",
-        "tqdm >= 4.10.0",
         "pandas >= 0.19",
         "typer[all] >= 0.2.1",
+        "typing_extensions >= 3.7.4;python_version < '3.8'",
     ],
     entry_points={
         "console_scripts": ["pyannote-database=pyannote.database.cli:main",],
+        "pyannote.database.loader": [
+            ".rttm = pyannote.database.loader:RTTMLoader",
+            ".uem = pyannote.database.loader:UEMLoader",
+            ".ctm = pyannote.database.loader:CTMLoader",
+            ".map = pyannote.database.loader:MAPLoader"
+        ],
     },
     # versioneer
     version=versioneer.get_version(),
@@ -60,6 +66,7 @@ setup(
         "Programming Language :: Python :: 3",
         "Programming Language :: Python :: 3.6",
         "Programming Language :: Python :: 3.7",
+        "Programming Language :: Python :: 3.8",
         "Topic :: Scientific/Engineering",
     ],
 )

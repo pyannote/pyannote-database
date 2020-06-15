@@ -37,7 +37,18 @@ import warnings
 import collections
 import threading
 import itertools
-from typing import Iterator
+from typing import Union, Dict, Iterator, Callable, Any, Text, Optional
+
+try:
+    from typing import Literal
+except ImportError:
+    from typing_extensions import Literal
+
+Subset = Literal["train", "development", "test"]
+LEGACY_SUBSET_MAPPING = {"train": "trn", "development": "dev", "test": "tst"}
+
+Preprocessor = Callable[["ProtocolFile"], Any]
+Preprocessors = Dict[Text, Preprocessor]
 
 
 class ProtocolFile(collections.abc.MutableMapping):
@@ -58,11 +69,35 @@ class ProtocolFile(collections.abc.MutableMapping):
 
     """
 
-    def __init__(self, precomputed, lazy=None):
-        self._store = dict(precomputed)
+    def __init__(self, precomputed: Union[Dict, "ProtocolFile"], lazy: Dict = None):
+
         if lazy is None:
             lazy = dict()
-        self.lazy = dict(lazy)
+
+        if isinstance(precomputed, ProtocolFile):
+            # when 'precomputed' is a ProtocolFile, it may already contain lazy keys.
+
+            # we use 'precomputed' precomputed keys as precomputed keys
+            self._store: Dict = abs(precomputed)
+
+            # we handle the corner case where the intersection of 'precomputed' lazy keys
+            # and 'lazy' keys is not empty. this is currently achieved by "unlazying" the
+            # 'precomputed' one (which is probably not the most efficient solution).
+            for key in set(precomputed.lazy) & set(lazy):
+                self._store[key] = precomputed[key]
+
+            # we use the union of 'precomputed' lazy keys and provided 'lazy' keys as lazy keys
+            compound_lazy = dict(precomputed.lazy)
+            compound_lazy.update(lazy)
+            self.lazy: Dict = compound_lazy
+
+        else:
+            # when 'precomputed' is a Dict, we use it directly as precomputed keys
+            # and 'lazy' as lazy keys.
+            self._store = dict(precomputed)
+            self.lazy = dict(lazy)
+
+        # re-entrant lock used below to make ProtocolFile thread-safe
         self.lock_ = threading.RLock()
 
         # this is needed to avoid infinite recursion
@@ -133,7 +168,7 @@ class ProtocolFile(collections.abc.MutableMapping):
 
             return len(set(self._store) | set(self.lazy))
 
-    def files(self) -> Iterator['ProtocolFile']:
+    def files(self) -> Iterator["ProtocolFile"]:
         """Iterate over all files
 
         When `current_file` refers to only one file,
@@ -161,7 +196,7 @@ class ProtocolFile(collections.abc.MutableMapping):
 
         """
 
-        uris = self['uri']
+        uris = self["uri"]
         if not isinstance(uris, list):
             yield self
             return
@@ -170,10 +205,10 @@ class ProtocolFile(collections.abc.MutableMapping):
 
         # iterate over precomputed keys and make sure
 
-        precomputed = {'uri': uris}
+        precomputed = {"uri": uris}
         for key, value in abs(self).items():
 
-            if key == 'uri':
+            if key == "uri":
                 continue
 
             if not isinstance(value, list):
@@ -191,25 +226,83 @@ class ProtocolFile(collections.abc.MutableMapping):
         keys = list(precomputed.keys())
         for values in zip(*precomputed.values()):
             precomputed_one = dict(zip(keys, values))
-            yield ProtocolFile(precomputed_one,
-                               self.lazy)
+            yield ProtocolFile(precomputed_one, self.lazy)
+
 
 class Protocol:
-    """Base protocol
+    """Experimental protocol 
 
-    This class should be inherited from, not used directly.
+    An experimental protocol usually defines three subsets: a training subset,
+    a development subset, and a test subset.   
+
+    An experimental protocol can be defined programmatically by creating a 
+    class that inherits from SpeakerDiarizationProtocol and implements at least
+    one of `train_iter`, `development_iter` and `test_iter` methods:
+
+        >>> class MyProtocol(Protocol):
+        ...     def train_iter(self) -> Iterator[Dict]:
+        ...         yield {"uri": "filename1", "any_other_key": "..."}
+        ...         yield {"uri": "filename2", "any_other_key": "..."}
+
+    `{subset}_iter` should return an iterator of dictionnaries with 
+        - "uri" key (mandatory) that provides a unique file identifier (usually
+          the filename),
+        - any other key that the protocol may provide.
+
+    It can then be used in Python like this:
+
+        >>> protocol = MyProtocol()
+        >>> for file in protocol.train():
+        ...    print(file["uri"])
+        filename1
+        filename2
+
+    An experimental protocol can also be defined using `pyannote.database`
+    configuration file, whose (configurable) path defaults to "~/database.yml".
+
+    ~~~ Content of ~/database.yml ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    Protocols:
+      MyDatabase:
+        Protocol:
+          MyProtocol:
+            train:
+                uri: /path/to/collection.lst
+                any_other_key: ... # see custom loader documentation
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    where "/path/to/collection.lst" contains the list of identifiers of the
+    files in the collection:
+
+    ~~~ Content of "/path/to/collection.lst ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    filename1
+    filename2
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    It can then be used in Python like this:
+
+        >>> from pyannote.database import get_protocol
+        >>> protocol = get_protocol('MyDatabase.Protocol.MyProtocol')
+        >>> for file in protocol.train():
+        ...    print(file["uri"])
+        filename1
+        filename2
+
+    This class is usually inherited from, but can be used directly.
 
     Parameters
     ----------
     preprocessors : dict
-        When provided, each protocol item (dictionary) are preprocessed, such
-        that item[key] = preprocessor(item). In case 'preprocessor' is not
-        callable, it should be a string containing placeholder for item keys
+        Preprocess protocol files so that `file[key] = preprocessors[key](file)`
+        for each key in `preprocessors`. In case `preprocessors[key]` is not
+        callable, it should be a string containing placeholders for `file` keys
         (e.g. {'audio': '/path/to/{uri}.wav'})
     """
 
-    def __init__(self, preprocessors={}, progress=False, **kwargs):
-        super(Protocol, self).__init__()
+    def __init__(self, preprocessors: Optional[Preprocessors] = None):
+        super().__init__()
+
+        if preprocessors is None:
+            preprocessors = dict()
 
         self.preprocessors = dict()
         for key, preprocessor in preprocessors.items():
@@ -221,63 +314,99 @@ class Protocol:
             # containing placeholder for item key (e.g. '/path/to/{uri}.wav')
             elif isinstance(preprocessor, str):
                 preprocessor_copy = str(preprocessor)
+
                 def func(current_file):
                     return preprocessor_copy.format(**current_file)
+
                 self.preprocessors[key] = func
 
             else:
                 msg = f'"{key}" preprocessor is neither a callable nor a string.'
                 raise ValueError(msg)
 
-        self.progress = progress
-
-    def preprocess(self, current_file):
+    def preprocess(self, current_file: Union[Dict, ProtocolFile]) -> ProtocolFile:
         return ProtocolFile(current_file, lazy=self.preprocessors)
 
     def __str__(self):
         return self.__doc__
 
+    def train_iter(self) -> Iterator[Union[Dict, ProtocolFile]]:
+        """Iterate over files in the training subset"""
+        raise NotImplementedError()
+
+    def development_iter(self) -> Iterator[Union[Dict, ProtocolFile]]:
+        """Iterate over files in the development subset"""
+        raise NotImplementedError()
+
+    def test_iter(self) -> Iterator[Union[Dict, ProtocolFile]]:
+        """Iterate over files in the test subset"""
+        raise NotImplementedError()
+
+    def subset_helper(self, subset: Subset) -> Iterator[ProtocolFile]:
+
+        try:
+            files = getattr(self, f"{subset}_iter")()
+        except (AttributeError, NotImplementedError) as e:
+            # previous pyannote.database versions used `trn_iter` instead of
+            # `train_iter`, `dev_iter` instead of `development_iter`, and
+            # `tst_iter` instead of `test_iter`. therefore, we use the legacy
+            # version when it is available (and the new one is not).
+            subset_legacy = LEGACY_SUBSET_MAPPING[subset]
+            try:
+                files = getattr(self, f"{subset_legacy}_iter")()
+            except AttributeError as e:
+                msg = f"Protocol does not implement a {subset} subset."
+                raise NotImplementedError(msg)
+
+        for file in files:
+            yield self.preprocess(file)
+
+    def train(self) -> Iterator[ProtocolFile]:
+        return self.subset_helper("train")
+
+    def development(self) -> Iterator[ProtocolFile]:
+        return self.subset_helper("development")
+
+    def test(self) -> Iterator[ProtocolFile]:
+        return self.subset_helper("test")
+
     def files(self) -> Iterator[ProtocolFile]:
-        """Iterate over all files in `protocol`
-        """
+        """Iterate over all files in `protocol`"""
 
         # imported here to avoid circular imports
         from pyannote.database.util import get_unique_identifier
 
-        # remember `progress` attribute
-        progress = self.progress
-
-        methods = []
-        for suffix in ['', '_enrolment', '_trial']:
-            for subset in ['development', 'test', 'train']:
-                methods.append(f'{subset}{suffix}')
-
         yielded_uris = set()
 
-        for method in methods:
+        for method in [
+            "development",
+            "development_enrolment",
+            "development_trial",
+            "test",
+            "test_enrolment",
+            "test_trial",
+            "train",
+            "train_enrolment",
+            "train_trial",
+        ]:
 
             if not hasattr(self, method):
                 continue
 
-            try:
-                self.progress = False
-                file_generator = getattr(self, method)()
-                first_file = next(file_generator)
-            except NotImplementedError as e:
-                continue
-            except StopIteration as e:
-                continue
+            def iterate():
+                try:
+                    for file in getattr(self, method)():
+                        yield file
+                except (AttributeError, NotImplementedError):
+                    return
 
-            self.progress = True
-            file_generator = getattr(self, method)()
-
-            for current_file in file_generator:
+            for current_file in iterate():
 
                 # skip "files" that do not contain a "uri" entry.
                 # this happens for speaker verification trials that contain
                 # two nested files "file1" and "file2"
                 # see https://github.com/pyannote/pyannote-db-voxceleb/issues/4
-                if 'uri' not in current_file:
+                if "uri" not in current_file:
                     continue
 
                 for current_file_ in current_file.files():
@@ -290,6 +419,3 @@ class Protocol:
                     yield current_file_
 
                     yielded_uris.add(uri)
-
-        # revert `progress` attribute
-        self.progess = progress

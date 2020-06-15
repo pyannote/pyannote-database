@@ -3,7 +3,7 @@
 
 # The MIT License (MIT)
 
-# Copyright (c) 2016-2017 CNRS
+# Copyright (c) 2016-2020 CNRS
 
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -27,158 +27,184 @@
 # Hervé BREDIN - http://herve.niderb.fr
 
 
+from typing import Iterator, Union, Dict, Callable, Optional, Text, Any
 from .protocol import Protocol
-from tqdm import tqdm
+from .protocol import ProtocolFile
+from .protocol import Subset
+from .protocol import Preprocessor
+from .protocol import Preprocessors
+from pyannote.core import Annotation
 from ..util import get_annotated
+import functools
 
 
-class SpeakerDiarizationProtocol(Protocol):
-    """Speaker diarization protocol
+def crop_annotation(
+    current_file: ProtocolFile, existing_preprocessor: Optional[Preprocessor] = None
+) -> Annotation:
+    """Preprocessor that crops 'annotation' by 'annotated'
+
+    Returns 'annotation' unchanged if 'annotated' is not available
 
     Parameters
     ----------
-    preprocessors : dict or (key, preprocessor) iterable
-        When provided, each protocol item (dictionary) are preprocessed, such
-        that item[key] = preprocessor(item). In case 'preprocessor' is not
-        callable, it should be a string containing placeholder for item keys
-        (e.g. {'audio': '/path/to/{uri}.wav'})
+    current_file : ProtocolFile
+        Protocol file.
+    existing_preprocessor : Preprocessor, optional
+        When provided, this preprocessor must be used to get the initial 
+        'annotation' instead of getting it from 'current_file["annotation"]'
+
+    Returns
+    -------
+    cropped_annotation : Annotation
+        "annotation" cropped by "annotated".
     """
 
-    def trn_iter(self):
-        raise NotImplementedError(
-            'Custom speaker diarization protocol should implement "trn_iter".')
+    if existing_preprocessor is None:
+        annotation = current_file["annotation"]
+    else:
+        annotation = existing_preprocessor(current_file)
 
-    def dev_iter(self):
-        raise NotImplementedError(
-            'Custom speaker diarization protocol should implement "dev_iter".')
+    if "annotated" not in current_file:
+        return annotation
 
-    def tst_iter(self):
-        raise NotImplementedError(
-            'Custom speaker diarization protocol should implement "tst_iter".')
+    # crop 'annotation' to 'annotated' extent
+    annotated = current_file["annotated"]
+    if annotated and not annotated.covers(annotation.get_timeline()):
+        return annotation.crop(annotated, mode="intersection")
 
-    def train(self):
-        """Iterate over the training set
+    return annotation
 
-This will yield dictionaries with the followings keys:
 
-* database: str
-  unique database identifier
-* uri: str
-  uniform (or unique) resource identifier
-* annotated: pyannote.core.Timeline
-  parts of the resource that were manually annotated
-* annotation: pyannote.core.Annotation
-  actual annotations
+class SpeakerDiarizationProtocol(Protocol):
+    """A protocol for speaker diarization experiments
+    
+    A speaker diarization protocol can be defined programmatically by creating
+    a class that inherits from SpeakerDiarizationProtocol and implements at 
+    least one of `train_iter`, `development_iter` and `test_iter` methods:
 
-as well as keys coming from the provided preprocessors.
+        >>> class MySpeakerDiarizationProtocol(SpeakerDiarizationProtocol):
+        ...     def train_iter(self) -> Iterator[Dict]:
+        ...         yield {"uri": "filename1", 
+        ...                "annotation": Annotation(...), 
+        ...                "annotated": Timeline(...)}
+        ...         yield {"uri": "filename2", 
+        ...                "annotation": Annotation(...), 
+        ...                "annotated": Timeline(...)}
 
-Usage
------
->>> for item in protocol.train():
-...     uri = item['uri']
-...     annotated = item['annotated']
-...     annotation = item['annotation']
-        """
+    `{subset}_iter` should return an iterator of dictionnaries with 
+        - "uri" key (mandatory) that provides a unique file identifier (usually
+          the filename),
+        - "annotation" key (mandatory for train and development subsets) that 
+          provides reference speaker diarization as a `pyannote.core.Annotation`
+          instance,
+        - "annotated" key (recommended) that describes which part of the file 
+          has been annotated, as a `pyannote.core.Timeline` instance. Any part
+          of "annotation" that lives outside of the provided "annotated" will 
+          be removed. This is also used by `pyannote.metrics` to remove 
+          un-annotated regions from its evaluation report, and by 
+          `pyannote.audio` to not consider empty un-annotated regions as 
+          non-speech. 
+        - any other key that the protocol may provide.
 
-        generator = self.trn_iter()
+    It can then be used in Python like this:
 
-        if self.progress:
-            generator = tqdm(
-                generator, desc='Training set',
-                total=getattr(self.trn_iter, 'n_items', None))
+        >>> protocol = MySpeakerDiarizationProtocol()
+        >>> for file in protocol.train():
+        ...    print(file["uri"])
+        filename1
+        filename2
 
-        for item in generator:
-            yield self.preprocess(item)
+    A speaker diarization protocol can also be defined using `pyannote.database`
+    configuration file, whose (configurable) path defaults to "~/database.yml".
 
-    def development(self):
-        """Iterate over the development set
+    ~~~ Content of ~/database.yml ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    Protocols:
+      MyDatabase:
+        SpeakerDiarization:
+          MyProtocol:
+            train:
+                uri: /path/to/collection.lst
+                annotation: /path/to/reference.rttm
+                annotated: /path/to/reference.uem
+                any_other_key: ... # see custom loader documentation
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-This will yield dictionaries with the followings keys:
+    where "/path/to/collection.lst" contains the list of identifiers of the
+    files in the collection:
 
-* database: str
-  unique database identifier
-* uri: str
-  uniform (or unique) resource identifier
-* annotated: pyannote.core.Timeline, optional
-  parts of the resource that were manually annotated
-* annotation: pyannote.core.Annotation
-  actual annotations
+    ~~~ Content of "/path/to/collection.lst ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    filename1
+    filename2
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-as well as keys coming from the provided preprocessors.
+    "/path/to/reference.rttm" contains the reference speaker diarization using
+    RTTM format:
 
-Usage
------
->>> for item in protocol.development():
-...     uri = item['uri']
-...     annotated = item['annotated']
-...     annotation = item['annotation']
-        """
+    ~~~ Content of "/path/to/reference.rttm ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    SPEAKER filename1 1 3.168 0.800 <NA> <NA> speaker_A <NA> <NA>
+    SPEAKER filename1 1 5.463 0.640 <NA> <NA> speaker_A <NA> <NA>
+    SPEAKER filename1 1 5.496 0.574 <NA> <NA> speaker_B <NA> <NA>
+    SPEAKER filename1 1 10.454 0.499 <NA> <NA> speaker_B <NA> <NA>
+    SPEAKER filename2 1 2.977 0.391 <NA> <NA> speaker_C <NA> <NA>
+    SPEAKER filename2 1 18.705 0.964 <NA> <NA> speaker_C <NA> <NA>
+    SPEAKER filename2 1 22.269 0.457 <NA> <NA> speaker_A <NA> <NA>
+    SPEAKER filename2 1 28.474 1.526 <NA> <NA> speaker_A <NA> <NA>
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-        generator = self.dev_iter()
-        if self.progress:
-            generator = tqdm(
-                generator, desc='Development set',
-                total=getattr(self.dev_iter, 'n_items', None))
+    "/path/to/reference.uem" describes the annotated regions using UEM format:
 
-        for item in generator:
-            yield self.preprocess(item)
+    ~~~ Content of "/path/to/reference.uem ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    filename1 NA 0.000 30.000
+    filename2 NA 0.000 30.000
+    filename2 NA 40.000 70.000
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-    def test(self):
-        """Iterate over the test set
+    It can then be used in Python like this:
 
-This will yield dictionaries with the followings keys:
+        >>> from pyannote.database import get_protocol
+        >>> protocol = get_protocol('MyDatabase.SpeakerDiarization.MyProtocol')
+        >>> for file in protocol.train():
+        ...    print(file["uri"])
+        filename1
+        filename2
+    """
 
-* database: str
-  unique database identifier
-* uri: str
-  uniform (or unique) resource identifier
-* annotated: pyannote.core.Timeline, optional
-  parts of the resource that were manually annotated
-* annotation: pyannote.core.Annotation
-  actual annotations
+    def __init__(self, preprocessors: Optional[Preprocessors] = None):
 
-as well as keys coming from the provided preprocessors.
+        if preprocessors is None:
+            preprocessors = dict()
 
-Usage
------
->>> for item in protocol.test():
-...     uri = item['uri']
-...     annotated = item['annotated']
-...     annotation = item['annotation']
-        """
+        # wrap exisiting "annotation" preprocessor by crop_annotation so that
+        # "annotation" is automatically cropped by "annotated" when provided
+        preprocessors["annotation"] = functools.partial(
+            crop_annotation, existing_preprocessor=preprocessors.get("annotation", None)
+        )
 
-        generator = self.tst_iter()
-        if self.progress:
-            generator = tqdm(
-                generator, desc='Test set',
-                total=getattr(self.tst_iter, 'n_items', None))
+        super().__init__(preprocessors=preprocessors)
 
-        for item in generator:
-            yield self.preprocess(item)
-
-    def stats(self, subset):
+    def stats(self, subset: Subset = "train") -> Dict:
         """Obtain global statistics on a given subset
 
-Parameters
-----------
-subset : {'train', 'development', 'test'}
+        Parameters
+        ----------
+        subset : {'train', 'development', 'test'}
 
-Returns
--------
-stats : dict
-    Dictionary with the followings keys:
-    * annotated: float
-      total duration (in seconds) of the parts that were manually annotated
-    * annotation: float
-      total duration (in seconds) of actual (speech) annotations
-    * n_files: int
-      number of files in the subset
-    * labels: dict
-      maps speakers with their total speech duration (in seconds)
+        Returns
+        -------
+        stats : dict
+            Dictionary with the followings keys:
+            * annotated: float
+            total duration (in seconds) of the parts that were manually annotated
+            * annotation: float
+            total duration (in seconds) of actual (speech) annotations
+            * n_files: int
+            number of files in the subset
+            * labels: dict
+            maps speakers with their total speech duration (in seconds)
         """
 
-        annotated_duration = 0.
-        annotation_duration = 0.
+        annotated_duration = 0.0
+        annotation_duration = 0.0
         n_files = 0
         labels = {}
 
@@ -190,18 +216,20 @@ stats : dict
             annotated_duration += annotated.duration()
 
             # increment 'annotation' total duration
-            annotation = item['annotation']
+            annotation = item["annotation"]
             annotation_duration += annotation.get_timeline().duration()
 
             for label, duration in annotation.chart():
                 if label not in labels:
-                    labels[label] = 0.
+                    labels[label] = 0.0
                 labels[label] += duration
             n_files += 1
 
-        stats = {'annotated': annotated_duration,
-                 'annotation': annotation_duration,
-                 'n_files': n_files,
-                 'labels': labels}
+        stats = {
+            "annotated": annotated_duration,
+            "annotation": annotation_duration,
+            "n_files": n_files,
+            "labels": labels,
+        }
 
         return stats

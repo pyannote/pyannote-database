@@ -200,7 +200,7 @@ def get_unique_identifier(item):
 
     return IDENTIFIER.format(**item)
 
-
+# This function is used in custom.py
 def get_annotated(current_file):
     """Get part of the file that is annotated.
 
