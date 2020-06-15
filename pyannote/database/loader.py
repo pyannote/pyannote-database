@@ -38,6 +38,7 @@ import warnings
 
 try:
     from spacy.tokens import Token
+    from spacy.tokens import Doc
 
     Token.set_extension("time_start", default=None)
     Token.set_extension("time_end", default=None)
@@ -45,6 +46,7 @@ try:
 
 except ImportError as e:
     pass
+
 
 def load_lst(file_lst):
     """Load LST file
@@ -62,9 +64,10 @@ def load_lst(file_lst):
         List or uris
     """
 
-    with open(file_lst, mode='r') as fp:
+    with open(file_lst, mode="r") as fp:
         lines = fp.readlines()
     return [l.strip() for l in lines]
+
 
 def load_trial(file_trial):
     """Load trial file
@@ -82,11 +85,13 @@ def load_trial(file_trial):
         List of trial
     """
 
-    trials = pd.read_table(file_trial, delim_whitespace=True,
-                               names=['reference', 'uri1', 'uri2'])
+    trials = pd.read_table(
+        file_trial, delim_whitespace=True, names=["reference", "uri1", "uri2"]
+    )
 
     for _, reference, uri1, uri2 in trials.itertuples():
-        yield {"reference":reference, "uri1":uri1, "uri2":uri2}
+        yield {"reference": reference, "uri1": uri1, "uri2": uri2}
+
 
 class RTTMLoader:
     """RTTM loader
@@ -201,7 +206,7 @@ class CTMLoader:
             ctm, names=names, dtype=dtype, delim_whitespace=True
         ).groupby("uri")
 
-    def __call__(self, current_file: ProtocolFile) -> Union["spacy.tokens.Doc", None]:
+    def __call__(self, current_file: ProtocolFile) -> Union["Doc", None]:
 
         try:
             from spacy.vocab import Vocab
@@ -227,6 +232,7 @@ class CTMLoader:
             token._.confidence = line.confidence
 
         return doc
+
 
 class MAPLoader:
     """Mapping loader
@@ -266,22 +272,22 @@ class MAPLoader:
         )
 
         # get colum 'value' dtype, allowing us to acces it during subset
-        self.dtype = self.data_.dtypes['value']
+        self.dtype = self.data_.dtypes["value"]
 
-        if self.data_.duplicated(['uri']).any():
+        if self.data_.duplicated(["uri"]).any():
             print(f"Found following duplicate key in file {mapping}")
-            print(self.data_[self.data_.duplicated(['uri'], keep=False)])
+            print(self.data_[self.data_.duplicated(["uri"], keep=False)])
             raise ValueError()
 
-        self.data_ = self.data_.groupby('uri')
+        self.data_ = self.data_.groupby("uri")
 
     def __call__(self, current_file: ProtocolFile) -> Any:
         uri = current_file["uri"]
 
         try:
-            value = self.data_.get_group(uri)['value'][0]
+            value = self.data_.get_group(uri)["value"][0]
         except KeyError:
             msg = f"Couldn't find mapping for {uri} in {self.mapping}"
             raise KeyError(msg)
 
-        return value            
+        return value

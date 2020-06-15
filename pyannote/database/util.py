@@ -31,11 +31,13 @@ from pathlib import Path
 import warnings
 import pandas as pd
 from pyannote.core import Segment, Timeline, Annotation
+from .protocol.protocol import ProtocolFile
 
 from typing import Text
 from typing import Union
 from typing import Dict
 from typing import List
+
 DatabaseName = Text
 PathTemplate = Text
 
@@ -85,13 +87,15 @@ class FileFinder:
 
         self.database_yml = get_database_yml(database_yml=database_yml)
 
-        with open(self.database_yml, 'r') as fp:
+        with open(self.database_yml, "r") as fp:
             config = yaml.load(fp, Loader=yaml.SafeLoader)
 
-        self.config_: Dict[DatabaseName, Union[PathTemplate, List[PathTemplate]]] = \
-            {str(database): path for database, path in config.get('Databases', dict()).items()}
+        self.config_: Dict[DatabaseName, Union[PathTemplate, List[PathTemplate]]] = {
+            str(database): path
+            for database, path in config.get("Databases", dict()).items()
+        }
 
-    def __call__(self, current_file: 'ProtocolFile') -> Path:
+    def __call__(self, current_file: ProtocolFile) -> Path:
         """Look for current file
 
         Parameter
@@ -136,10 +140,10 @@ class FileFinder:
             #   root = '/path/to'
             #   pattern = '**/*/file.wav'
 
-            if '*' in str(path):
+            if "*" in str(path):
                 parts = path.parent.parts
                 for p, part in enumerate(parts):
-                    if '*' in part:
+                    if "*" in part:
                         break
 
                 root = path.parents[len(parts) - p]
@@ -157,15 +161,16 @@ class FileFinder:
         if len(found) == 0:
             msg = f'Could not find file "{uri}" in the following location(s):'
             for path in searched:
-                msg += f'\n - {path}'
+                msg += f"\n - {path}"
             raise FileNotFoundError(msg)
 
         if len(found) > 1:
             msg = (
                 f'Looked for file "{uri}" and found more than one '
-                f'({len(found)}) matching locations: ')
+                f"({len(found)}) matching locations: "
+            )
             for path in found:
-                msg += f'\n - {path}'
+                msg += f"\n - {path}"
             raise FileNotFoundError(msg)
 
 
@@ -190,15 +195,16 @@ def get_unique_identifier(item):
     IDENTIFIER = ""
 
     # {database}/{uri}_{channel}
-    database = item.get('database', None)
+    database = item.get("database", None)
     if database is not None:
         IDENTIFIER += "{database}/"
     IDENTIFIER += "{uri}"
-    channel = item.get('channel', None)
+    channel = item.get("channel", None)
     if channel is not None:
         IDENTIFIER += "_{channel:d}"
 
     return IDENTIFIER.format(**item)
+
 
 # This function is used in custom.py
 def get_annotated(current_file):
@@ -218,16 +224,16 @@ def get_annotated(current_file):
     """
 
     # if protocol provides 'annotated' key, use it
-    if 'annotated' in current_file:
-        annotated = current_file['annotated']
+    if "annotated" in current_file:
+        annotated = current_file["annotated"]
         return annotated
 
     # if it does not, but does provide 'audio' key
     # try and use wav duration
 
-    if 'duration' in current_file:
+    if "duration" in current_file:
         try:
-            duration = current_file['duration']
+            duration = current_file["duration"]
         except ImportError as e:
             pass
         else:
@@ -236,12 +242,14 @@ def get_annotated(current_file):
             warnings.warn(msg)
             return annotated
 
-    extent = current_file['annotation'].get_timeline().extent()
+    extent = current_file["annotation"].get_timeline().extent()
     annotated = Timeline([extent])
 
-    msg = (f'"annotated" was approximated by "annotation" extent. '
-           f'Please provide "annotated" directly, or at the very '
-           f'least, use a "duration" preprocessor.')
+    msg = (
+        f'"annotated" was approximated by "annotation" extent. '
+        f'Please provide "annotated" directly, or at the very '
+        f'least, use a "duration" preprocessor.'
+    )
     warnings.warn(msg)
 
     return annotated
@@ -265,8 +273,8 @@ def get_label_identifier(label, current_file):
 
     # TODO. when the "true" name of a person is used,
     # do not preprend database name.
-    database = current_file['database']
-    return database + '|' + label
+    database = current_file["database"]
+    return database + "|" + label
 
 
 def load_rttm(file_rttm):
@@ -283,15 +291,29 @@ def load_rttm(file_rttm):
         Speaker diarization as a {uri: pyannote.core.Annotation} dictionary.
     """
 
-    names = ['NA1', 'uri', 'NA2', 'start', 'duration',
-             'NA3', 'NA4', 'speaker', 'NA5', 'NA6']
-    dtype = {'uri': str, 'start': float, 'duration': float, 'speaker': str}
-    data = pd.read_csv(file_rttm, names=names, dtype=dtype,
-                       delim_whitespace=True,
-                       keep_default_na=False)
+    names = [
+        "NA1",
+        "uri",
+        "NA2",
+        "start",
+        "duration",
+        "NA3",
+        "NA4",
+        "speaker",
+        "NA5",
+        "NA6",
+    ]
+    dtype = {"uri": str, "start": float, "duration": float, "speaker": str}
+    data = pd.read_csv(
+        file_rttm,
+        names=names,
+        dtype=dtype,
+        delim_whitespace=True,
+        keep_default_na=False,
+    )
 
     annotations = dict()
-    for uri, turns in data.groupby('uri'):
+    for uri, turns in data.groupby("uri"):
         annotation = Annotation(uri=uri)
         for i, turn in turns.iterrows():
             segment = Segment(turn.start, turn.start + turn.duration)
@@ -319,11 +341,11 @@ class RTTMLoader(object):
         # preload everything in memory
         self.hypotheses_ = {}
         if train is not None:
-            self.hypotheses_['train'] = load_rttm(train)
+            self.hypotheses_["train"] = load_rttm(train)
         if development is not None:
-            self.hypotheses_['development'] = load_rttm(development)
+            self.hypotheses_["development"] = load_rttm(development)
         if test is not None:
-            self.hypotheses_['test'] = load_rttm(test)
+            self.hypotheses_["test"] = load_rttm(test)
 
     def __call__(self, current_file):
         """Return RTTM content for current file
@@ -339,7 +361,7 @@ class RTTMLoader(object):
             Annotation
         """
 
-        uri = current_file['uri']
+        uri = current_file["uri"]
         found = []
         for subset, hypotheses in self.hypotheses_.items():
             if uri in hypotheses:
@@ -348,14 +370,10 @@ class RTTMLoader(object):
         if len(found) == 1:
             return found[0]
         elif len(found) == 0:
-            msg = (
-                f'Could not find any hypothesis for "{uri}".'
-            )
+            msg = f'Could not find any hypothesis for "{uri}".'
             raise ValueError(msg)
         else:
-            msg = (
-                f'Found {len(found)} hypotheses for "{uri}".'
-            )
+            msg = f'Found {len(found)} hypotheses for "{uri}".'
             raise ValueError(msg)
 
 
@@ -373,14 +391,18 @@ def load_mdtm(file_mdtm):
         Speaker diarization as a {uri: pyannote.core.Annotation} dictionary.
     """
 
-    names = ['uri', 'NA1', 'start', 'duration', 'NA2', 'NA3', 'NA4', 'speaker']
-    dtype = {'uri': str, 'start': float, 'duration': float, 'speaker': str}
-    data = pd.read_csv(file_mdtm, names=names, dtype=dtype,
-                       delim_whitespace=True,
-                       keep_default_na=False)
+    names = ["uri", "NA1", "start", "duration", "NA2", "NA3", "NA4", "speaker"]
+    dtype = {"uri": str, "start": float, "duration": float, "speaker": str}
+    data = pd.read_csv(
+        file_mdtm,
+        names=names,
+        dtype=dtype,
+        delim_whitespace=True,
+        keep_default_na=False,
+    )
 
     annotations = dict()
-    for uri, turns in data.groupby('uri'):
+    for uri, turns in data.groupby("uri"):
         annotation = Annotation(uri=uri)
         for i, turn in turns.iterrows():
             segment = Segment(turn.start, turn.start + turn.duration)
@@ -404,15 +426,13 @@ def load_uem(file_uem):
         Evaluation map as a {uri: pyannote.core.Timeline} dictionary.
     """
 
-    names = ['uri', 'NA1', 'start', 'end']
-    dtype = {'uri': str, 'start': float, 'end': float}
-    data = pd.read_csv(file_uem, names=names, dtype=dtype,
-                       delim_whitespace=True)
+    names = ["uri", "NA1", "start", "end"]
+    dtype = {"uri": str, "start": float, "end": float}
+    data = pd.read_csv(file_uem, names=names, dtype=dtype, delim_whitespace=True)
 
     timelines = dict()
-    for uri, parts in data.groupby('uri'):
-        segments = [Segment(part.start, part.end)
-                    for i, part in parts.iterrows()]
+    for uri, parts in data.groupby("uri"):
+        segments = [Segment(part.start, part.end) for i, part in parts.iterrows()]
         timelines[uri] = Timeline(segments=segments, uri=uri)
 
     return timelines
@@ -434,7 +454,7 @@ def load_lst(file_lst):
         List or uris
     """
 
-    with open(file_lst, mode='r') as fp:
+    with open(file_lst, mode="r") as fp:
         lines = fp.readlines()
     return [l.strip() for l in lines]
 
@@ -453,7 +473,7 @@ def load_mapping(mapping_txt):
         {1st field: 2nd field} dictionary
     """
 
-    with open(mapping_txt, mode='r') as fp:
+    with open(mapping_txt, mode="r") as fp:
         lines = fp.readlines()
 
     mapping = dict()
@@ -484,6 +504,7 @@ class LabelMapper(object):
                                 preprocessors=preprocessors)
 
     """
+
     def __init__(self, mapping, keep_missing=False):
         self.mapping = mapping
         self.keep_missing = keep_missing
@@ -491,13 +512,13 @@ class LabelMapper(object):
     def __call__(self, current_file):
 
         if not self.keep_missing:
-            missing = set(current_file['annotation'].labels()) - set(self.mapping)
+            missing = set(current_file["annotation"].labels()) - set(self.mapping)
             if missing and not self.keep_missing:
                 label = missing.pop()
                 msg = (
                     f'No mapping found for label "{label}". Set "keep_missing" '
-                    f'to True to keep labels with no mapping.'
+                    f"to True to keep labels with no mapping."
                 )
                 raise ValueError(msg)
 
-        return current_file['annotation'].rename_labels(mapping=self.mapping)
+        return current_file["annotation"].rename_labels(mapping=self.mapping)
