@@ -3,7 +3,7 @@
 
 # The MIT License (MIT)
 
-# Copyright (c) 2016-2018 CNRS
+# Copyright (c) 2016-2020 CNRS
 
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -26,10 +26,21 @@
 # AUTHORS
 # Hervé BREDIN - http://herve.niderb.fr
 
-
+from .protocol import Protocol
 from .collection import CollectionProtocol
 from .speaker_diarization import SpeakerDiarizationProtocol
 from .speaker_spotting import SpeakerSpottingProtocol
 from .speaker_verification import SpeakerVerificationProtocol
 from .speaker_identification import SpeakerIdentificationProtocol
 from .speaker_recognition import SpeakerRecognitionProtocol
+
+
+__all__ = [
+    "Protocol",
+    "CollectionProtocol",
+    "SpeakerDiarizationProtocol",
+    "SpeakerVerificationProtocol",
+    "SpeakerSpottingProtocol",
+    "SpeakerIdentificationProtocol",
+    "SpeakerRecognitionProtocol",
+]

@@ -3,7 +3,7 @@
 
 # The MIT License (MIT)
 
-# Copyright (c) 2017 CNRS
+# Copyright (c) 2017-2020 CNRS
 
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -27,9 +27,6 @@
 # Hervé BREDIN - http://herve.niderb.fr
 
 
-from .protocol import Protocol
-from tqdm import tqdm
-from ..util import get_annotated
 from .speaker_diarization import SpeakerDiarizationProtocol
 
 
@@ -47,7 +44,8 @@ class SpeakerSpottingProtocol(SpeakerDiarizationProtocol):
 
     def trn_iter(self):
         raise NotImplementedError(
-            'Custom speaker spotting protocol should implement "trn_iter".')
+            'Custom speaker spotting protocol should implement "trn_iter".'
+        )
 
     def trn_enrol_iter(self):
         pass
@@ -57,27 +55,33 @@ class SpeakerSpottingProtocol(SpeakerDiarizationProtocol):
 
     def dev_iter(self):
         raise NotImplementedError(
-            'Custom speaker spotting protocol should implement "dev_iter".')
+            'Custom speaker spotting protocol should implement "dev_iter".'
+        )
 
     def dev_enrol_iter(self):
         raise NotImplementedError(
-            'Custom speaker spotting protocol should implement "dev_enrol_iter".')
+            'Custom speaker spotting protocol should implement "dev_enrol_iter".'
+        )
 
     def dev_try_iter(self):
         raise NotImplementedError(
-            'Custom speaker spotting protocol should implement "dev_try_iter".')
+            'Custom speaker spotting protocol should implement "dev_try_iter".'
+        )
 
     def tst_iter(self):
         raise NotImplementedError(
-            'Custom speaker spotting protocol should implement "tst_iter".')
+            'Custom speaker spotting protocol should implement "tst_iter".'
+        )
 
     def tst_enrol_iter(self):
         raise NotImplementedError(
-            'Custom speaker spotting protocol should implement "tst_enrol_iter".')
+            'Custom speaker spotting protocol should implement "tst_enrol_iter".'
+        )
 
     def tst_try_iter(self):
         raise NotImplementedError(
-            'Custom speaker spotting protocol should implement "tst_try_iter".')
+            'Custom speaker spotting protocol should implement "tst_try_iter".'
+        )
 
     def train_enrolment(self):
         """Iterate over the enrolments of the train set
@@ -112,10 +116,6 @@ class SpeakerSpottingProtocol(SpeakerDiarizationProtocol):
         """
 
         generator = self.trn_enrol_iter()
-        if self.progress:
-            generator = tqdm(
-                generator, desc='Enrolment (train set)',
-                total=getattr(self.trn_enrol_iter, 'n_items', None))
 
         for current_enrolment in generator:
             yield self.preprocess(current_enrolment)
@@ -158,10 +158,6 @@ class SpeakerSpottingProtocol(SpeakerDiarizationProtocol):
         """
 
         generator = self.trn_try_iter()
-        if self.progress:
-            generator = tqdm(
-                generator, desc='Trial (train set)',
-                total=getattr(self.trn_try_iter, 'n_items', None))
 
         for current_trial in generator:
             yield self.preprocess(current_trial)
@@ -199,10 +195,6 @@ class SpeakerSpottingProtocol(SpeakerDiarizationProtocol):
         """
 
         generator = self.dev_enrol_iter()
-        if self.progress:
-            generator = tqdm(
-                generator, desc='Enrolment (development set)',
-                total=getattr(self.dev_enrol_iter, 'n_items', None))
 
         for current_enrolment in generator:
             yield self.preprocess(current_enrolment)
@@ -245,14 +237,9 @@ class SpeakerSpottingProtocol(SpeakerDiarizationProtocol):
         """
 
         generator = self.dev_try_iter()
-        if self.progress:
-            generator = tqdm(
-                generator, desc='Trial (development set)',
-                total=getattr(self.dev_try_iter, 'n_items', None))
 
         for current_trial in generator:
             yield self.preprocess(current_trial)
-
 
     def test_enrolment(self):
         """Iterate over the enrolments of the test set
@@ -287,10 +274,6 @@ class SpeakerSpottingProtocol(SpeakerDiarizationProtocol):
         """
 
         generator = self.tst_enrol_iter()
-        if self.progress:
-            generator = tqdm(
-                generator, desc='Enrolment (test set)',
-                total=getattr(self.tst_enrol_iter, 'n_items', None))
 
         for current_enrolment in generator:
             yield self.preprocess(current_enrolment)
@@ -333,10 +316,6 @@ class SpeakerSpottingProtocol(SpeakerDiarizationProtocol):
         """
 
         generator = self.tst_try_iter()
-        if self.progress:
-            generator = tqdm(
-                generator, desc='Trial (test set)',
-                total=getattr(self.tst_try_iter, 'n_items', None))
 
         for current_trial in generator:
             yield self.preprocess(current_trial)

@@ -52,45 +52,50 @@ def get_database_yml(database_yml: Union[Text, Path] = None) -> Path:
 
     # when database_yml is provided, use it
     if database_yml is not None:
-
+        database_yml = Path(database_yml).expanduser()
         # does the provided file exist?
-        if not Path(database_yml).is_file():
+        if not database_yml.is_file():
             msg = f"File '{database_yml}' does not exist."
             raise FileNotFoundError(msg)
 
-        return Path(database_yml)
+        return database_yml
 
     # is there a file named "database.yml" in current working directory?
-    if (Path.cwd() / 'database.yml').is_file():
-        database_yml = Path.cwd() / 'database.yml'
+    if (Path.cwd() / "database.yml").is_file():
+        database_yml = Path.cwd() / "database.yml"
 
     # does PYANNOTE_DATABASE_CONFIG environment variable links to an existing file?
     elif os.environ.get("PYANNOTE_DATABASE_CONFIG") is not None:
         database_yml = Path(os.environ.get("PYANNOTE_DATABASE_CONFIG")).expanduser()
         if not database_yml.is_file():
             msg = (
-                f'"PYANNOTE_DATABASE_CONFIG" links to a file that does '
-                f'exist: "{database_yml}".')
+                f'"PYANNOTE_DATABASE_CONFIG" links to a file that does not'
+                f'exist: "{database_yml}".'
+            )
             raise FileNotFoundError(msg)
 
     # does default "~/.pyannote/database.yml" file exist?
     else:
-        database_yml = Path('~/.pyannote/database.yml').expanduser()
+        database_yml = Path("~/.pyannote/database.yml").expanduser()
 
         # if it does not, let the user know that nothing worked and in which
         # locations "database.yml" was looked for.
         if not database_yml.is_file():
             msg = (
                 f'"pyannote.database" relies on a YAML configuration file but '
-                f'could not find any. Here are the locations that were '
-                f'looked for: {Path.cwd() / "database.yml"}, {database_yml}')
+                f"could not find any. Here are the locations that were "
+                f'looked for: {Path.cwd() / "database.yml"}, {database_yml}'
+            )
             if os.environ.get("PYANNOTE_DATABASE_CONFIG") is not None:
-                database_yml = Path(os.environ.get("PYANNOTE_DATABASE_CONFIG")).expanduser()
+                database_yml = Path(
+                    os.environ.get("PYANNOTE_DATABASE_CONFIG")
+                ).expanduser()
                 msg += (
-                    f', and {database_yml} (given by '
-                    f'PYANNOTE_DATABASE_CONFIG environment variable).')
+                    f", and {database_yml} (given by "
+                    f"PYANNOTE_DATABASE_CONFIG environment variable)."
+                )
             else:
-                msg += '.'
+                msg += "."
             raise FileNotFoundError(msg)
 
     return database_yml

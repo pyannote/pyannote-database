@@ -3,7 +3,7 @@
 
 # The MIT License (MIT)
 
-# Copyright (c) 2018 CNRS
+# Copyright (c) 2018-2020 CNRS
 
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -27,67 +27,72 @@
 # Hervé BREDIN - http://herve.niderb.fr
 
 
+from typing import Iterator, Dict
 from .protocol import Protocol
-from tqdm import tqdm
 
 
 class CollectionProtocol(Protocol):
-    """Collection
+    """A collection of files with no train/dev/test split
 
-    Parameters
-    ----------
-    preprocessors : dict or (key, preprocessor) iterable
-        When provided, each protocol item (dictionary) are preprocessed, such
-        that item[key] = preprocessor(item). In case 'preprocessor' is not
-        callable, it should be a string containing placeholder for item keys
-        (e.g. {'audio': '/path/to/{uri}.wav'})
-    progress : boolean, optional
-        Show iteration progress. Defaults to False.
+    A collection can be defined programmatically by creating a class that
+    inherits from CollectionProtocol and implements the `files_iter` method:
 
-    Usage
-    -----
-    >>> collection = get_protocol('YOUR_PROTOCOL_GOES_HERE')
-    >>> for current_file in collection.files():
-    ...    # do something with current_file
-    ...    pass
+        >>> class MyCollection(CollectionProtocol):
+        ...     def files_iter(self) -> Iterator[Dict]:
+        ...         yield {"uri": "filename1", "any_other_key": "..."}
+        ...         yield {"uri": "filename2", "any_other_key": "..."}
+        ...         yield {"uri": "filename3", "any_other_key": "..."}
 
+    `files_iter` should return an iterator of dictionnaries with
+        - a mandatory "uri" key that provides a unique file identifier (usually
+          the filename),
+        - any other key that the collection may provide.
+
+    It can then be used in Python like this:
+
+        >>> collection = MyCollection()
+        >>> for file in collection.files():
+        ...    print(file["uri"])
+        filename1
+        filename2
+        filename3
+
+    A collection can also be defined using `pyannote.database` configuration
+    file, whose (configurable) path defaults to "~/database.yml".
+
+    ~~~ Content of ~/database.yml ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    Protocols:
+      MyDatabase:
+        Collection:
+          MyCollection:
+            uri: /path/to/collection.lst
+            any_other_key: ... # see custom loader documentation
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    where "/path/to/collection.lst" contains the list of identifiers of the
+    files in the collection:
+
+    ~~~ Content of "/path/to/collection.lst ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    filename1
+    filename2
+    filename3
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    It can the be used in Python like this:
+
+        >>> from pyannote.database import get_protocol
+        >>> collection = get_protocol('MyDatabase.Collection.MyCollection')
+        >>> for file in collection.files():
+        ...    print(file["uri"])
+        filename1
+        filename2
+        filename3
     """
 
-    def files_iter(self):
-        raise NotImplementedError(
-            'Custom collection protocol should implement "files_iter".')
+    # this method should be overriden
+    def files_iter(self) -> Iterator[Dict]:
+        raise NotImplementedError()
 
-    def files(self):
-        """Iterate over the collection
-
-        Yields
-        ------
-        current_file : dict
-            ['database'] (`str`) unique database identifier
-            ['uri'] (`str`) unique resource identifier
-        """
-
-        generator = self.files_iter()
-
-        if self.progress:
-            generator = tqdm(
-                generator, desc='Files',
-                total=getattr(self.files_iter, 'n_items', None))
-
-        for item in generator:
-            yield self.preprocess(item)
-
-    def stats(self):
-        """Collection statistics
-
-        Returns
-        -------
-        stats : dict
-            ['n_files'] (`int`) number of files in collection
-        """
-
-        n_files = 0
-        for current_file in self.files():
-            n_files += 1
-
-        return {'n_files': n_files}
+    # this allows Protocol.files() to iterate over the collection
+    def train_iter(self) -> Iterator[Dict]:
+        return self.files_iter()
