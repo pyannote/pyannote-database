@@ -3,8 +3,8 @@ Changelog
 #########
 
 
-Version 4.0.a0 (2020-06-15)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Version 4.0 (2020-06-15)
+~~~~~~~~~~~~~~~~~~~~~~~~
 
   - feat: add support for custom speaker verification protocols
   - feat: add pyannote.database.loader entrypoint
