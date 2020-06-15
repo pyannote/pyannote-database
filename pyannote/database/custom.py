@@ -51,7 +51,6 @@ import warnings
 from typing import Text, Dict, Callable, Any, Union
 import functools
 
-from pyannote.core import Timeline, Segment
 from . import DATABASES, TASKS
 from .protocol.protocol import Subset
 
@@ -60,6 +59,7 @@ import pkg_resources
 from .util import get_annotated
 
 from .loader import load_lst, load_trial
+
 LOADERS = {
     ep.name: ep
     for ep in pkg_resources.iter_entry_points(group="pyannote.database.loader")
@@ -100,6 +100,7 @@ def Template(template: Text, database_yml: Path) -> Callable[[ProtocolFile], Any
         return loader(current_file)
 
     return load
+
 
 def resolve_path(path: Path, database_yml: Path) -> Path:
     """Resolve path
@@ -169,9 +170,9 @@ def meta_subset_iter(
             for file in getattr(partial_protocol, method_name)():
                 yield file
 
+
 def gather_loaders(
-    entries: Dict = None,
-    database_yml: Path = None,
+    entries: Dict = None, database_yml: Path = None,
 ):
     """
     Parameters
@@ -218,6 +219,7 @@ def gather_loaders(
             #   for _ in protocol.train(): pass   # subsequent calls are fast (use cached Loader(path))
             lazy_loader[key] = Loader(path)
     return lazy_loader
+
 
 def subset_iter(
     self,
@@ -270,6 +272,7 @@ def subset_iter(
             {"uri": uri, "database": database, "subset": subset}, lazy=lazy_loader
         )
 
+
 def subset_trial(
     self,
     database: Text = None,
@@ -297,9 +300,8 @@ def subset_trial(
         Path to the 'database.yml' file
     """
 
-
     lazy_loader = gather_loaders(entries=entries, database_yml=database_yml)
-    lazy_loader['try_with'] = get_annotated
+    lazy_loader["try_with"] = get_annotated
 
     # meant to store and cache one `ProtocolFile` instance per file
     files: Dict[Text, ProtocolFile] = dict()
@@ -309,13 +311,26 @@ def subset_trial(
         # create `ProtocolFile` only the first time this uri is encountered
         uri1, uri2 = trial["uri1"], trial["uri2"]
         if uri1 not in files:
-            files[uri1] = self.preprocess(ProtocolFile({"uri": uri1, "database": database, "subset": subset}, lazy=lazy_loader))
+            files[uri1] = self.preprocess(
+                ProtocolFile(
+                    {"uri": uri1, "database": database, "subset": subset},
+                    lazy=lazy_loader,
+                )
+            )
         if uri2 not in files:
-            files[uri2] = self.preprocess(ProtocolFile({"uri": uri2, "database": database, "subset": subset}, lazy=lazy_loader))
+            files[uri2] = self.preprocess(
+                ProtocolFile(
+                    {"uri": uri2, "database": database, "subset": subset},
+                    lazy=lazy_loader,
+                )
+            )
 
-        yield {'reference': trial["reference"],
-                'file1': files[uri1],
-                'file2': files[uri2]}
+        yield {
+            "reference": trial["reference"],
+            "file1": files[uri1],
+            "file2": files[uri2],
+        }
+
 
 def get_init(protocols):
     def init(self):
@@ -350,7 +365,7 @@ def create_protocol(
 
     try:
         base_class = getattr(
-            protocol_module, f"Protocol" if task == "Protocol" else f"{task}Protocol"
+            protocol_module, "Protocol" if task == "Protocol" else f"{task}Protocol"
         )
     except AttributeError:
         msg = (
@@ -404,7 +419,7 @@ def create_protocol(
                 entries=subset_entries,
                 database_yml=database_yml,
             )
-            if 'trial' in subset_entries.keys():
+            if "trial" in subset_entries.keys():
                 methods[f"{subset}_trial"] = functools.partialmethod(
                     subset_trial,
                     database=database,

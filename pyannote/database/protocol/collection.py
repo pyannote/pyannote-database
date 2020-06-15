@@ -34,7 +34,7 @@ from .protocol import Protocol
 class CollectionProtocol(Protocol):
     """A collection of files with no train/dev/test split
 
-    A collection can be defined programmatically by creating a class that 
+    A collection can be defined programmatically by creating a class that
     inherits from CollectionProtocol and implements the `files_iter` method:
 
         >>> class MyCollection(CollectionProtocol):
@@ -43,7 +43,7 @@ class CollectionProtocol(Protocol):
         ...         yield {"uri": "filename2", "any_other_key": "..."}
         ...         yield {"uri": "filename3", "any_other_key": "..."}
 
-    `files_iter` should return an iterator of dictionnaries with 
+    `files_iter` should return an iterator of dictionnaries with
         - a mandatory "uri" key that provides a unique file identifier (usually
           the filename),
         - any other key that the collection may provide.
@@ -57,7 +57,7 @@ class CollectionProtocol(Protocol):
         filename2
         filename3
 
-    A collection can also be defined using `pyannote.database` configuration 
+    A collection can also be defined using `pyannote.database` configuration
     file, whose (configurable) path defaults to "~/database.yml".
 
     ~~~ Content of ~/database.yml ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -86,7 +86,7 @@ class CollectionProtocol(Protocol):
         ...    print(file["uri"])
         filename1
         filename2
-        filename3   
+        filename3
     """
 
     # this method should be overriden

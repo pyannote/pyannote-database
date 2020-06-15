@@ -230,12 +230,12 @@ class ProtocolFile(collections.abc.MutableMapping):
 
 
 class Protocol:
-    """Experimental protocol 
+    """Experimental protocol
 
     An experimental protocol usually defines three subsets: a training subset,
-    a development subset, and a test subset.   
+    a development subset, and a test subset.
 
-    An experimental protocol can be defined programmatically by creating a 
+    An experimental protocol can be defined programmatically by creating a
     class that inherits from SpeakerDiarizationProtocol and implements at least
     one of `train_iter`, `development_iter` and `test_iter` methods:
 
@@ -244,7 +244,7 @@ class Protocol:
         ...         yield {"uri": "filename1", "any_other_key": "..."}
         ...         yield {"uri": "filename2", "any_other_key": "..."}
 
-    `{subset}_iter` should return an iterator of dictionnaries with 
+    `{subset}_iter` should return an iterator of dictionnaries with
         - "uri" key (mandatory) that provides a unique file identifier (usually
           the filename),
         - any other key that the protocol may provide.
@@ -346,7 +346,7 @@ class Protocol:
 
         try:
             files = getattr(self, f"{subset}_iter")()
-        except (AttributeError, NotImplementedError) as e:
+        except (AttributeError, NotImplementedError):
             # previous pyannote.database versions used `trn_iter` instead of
             # `train_iter`, `dev_iter` instead of `development_iter`, and
             # `tst_iter` instead of `test_iter`. therefore, we use the legacy
@@ -354,7 +354,7 @@ class Protocol:
             subset_legacy = LEGACY_SUBSET_MAPPING[subset]
             try:
                 files = getattr(self, f"{subset_legacy}_iter")()
-            except AttributeError as e:
+            except AttributeError:
                 msg = f"Protocol does not implement a {subset} subset."
                 raise NotImplementedError(msg)
 

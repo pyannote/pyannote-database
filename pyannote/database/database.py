@@ -63,7 +63,7 @@ class Database:
     def _get_tasks(self):
         try:
             tasks = self.protocols_
-        except AttributeError as e:
+        except AttributeError:
             message = "This database does not implement any protocol."
             raise PyannoteDatabaseException(message)
         return tasks

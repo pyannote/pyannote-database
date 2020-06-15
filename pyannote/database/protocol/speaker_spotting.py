@@ -27,8 +27,6 @@
 # Hervé BREDIN - http://herve.niderb.fr
 
 
-from .protocol import Protocol
-from ..util import get_annotated
 from .speaker_diarization import SpeakerDiarizationProtocol
 
 

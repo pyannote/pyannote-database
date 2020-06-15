@@ -37,9 +37,9 @@ class SpeakerVerificationProtocol(SpeakerDiarizationProtocol):
     """A protocol for speaker verification experiments
 
     A speaker verification protocol can be defined programmatically by creating
-    a class that inherits from `SpeakerVerificationProtocol` and implement at 
-    least one of `train_trial_iter`, `development_trial_iter` and 
-    `test_trial_iter` methods: 
+    a class that inherits from `SpeakerVerificationProtocol` and implement at
+    least one of `train_trial_iter`, `development_trial_iter` and
+    `test_trial_iter` methods:
 
         >>> class MySpeakerVerificationProtocol(SpeakerVerificationProtocol):
         ...     def train_trial_iter(self) -> Iterator[Dict]:
@@ -56,14 +56,18 @@ class SpeakerVerificationProtocol(SpeakerDiarizationProtocol):
 
     `{subset}_trial_iter` should return an iterator of dictionnaries with
 
-    - `reference` key (mandatory) that provides an int portraying whether `file1` and `file2` are uttered by the same speaker (1 is same, 0 is different),
+    - `reference` key (mandatory) that provides an int portraying whether
+      `file1` and `file2` are uttered by the same speaker (1 is same, 0 is
+      different),
     - `file1` key (mandatory) that provides the first file,
     - `file2` key (mandatory) that provides the second file.
 
-    Both `file1` and `file2` should be provided as dictionaries or `pyannote.database.protocol.protocol.ProtocolFile` instances with 
+    Both `file1` and `file2` should be provided as dictionaries or ProtocolFile
+    instances with
 
     - `uri` key (mandatory),
-    - `try_with` key (mandatory) that describes which part of the file should be used in the validation process, as a `pyannote.core.Timeline` instance.
+    - `try_with` key (mandatory) that describes which part of the file should
+      be used in the validation process, as a `pyannote.core.Timeline` instance.
     - any other key that the protocol may provide.
 
     It can then be used in Python like this:
@@ -112,9 +116,9 @@ class SpeakerVerificationProtocol(SpeakerDiarizationProtocol):
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
     `1` stands for _target_ trials and `0` for _non-target_ trials.
-    In the example below, it means that the same speaker uttered files 
+    In the example below, it means that the same speaker uttered files
     `filename1` and `filename2` and that `filename1` and `filename3` are from
-    two different speakers. 
+    two different speakers.
 
     It can then be used in Python like this:
 
@@ -125,7 +129,7 @@ class SpeakerVerificationProtocol(SpeakerDiarizationProtocol):
         1 filename1 filename2
         0 filename1 filename3
 
-    Note that speaker verification protocols (`SpeakerVerificationProtocol`) 
+    Note that speaker verification protocols (`SpeakerVerificationProtocol`)
     are a subclass of speaker diarization protocols (`SpeakerDiarizationProtocol`).
     As such, they also define regular `{subset}` methods.
     """
@@ -134,7 +138,7 @@ class SpeakerVerificationProtocol(SpeakerDiarizationProtocol):
 
         try:
             trials = getattr(self, f"{subset}_trial_iter")()
-        except (AttributeError, NotImplementedError) as e:
+        except (AttributeError, NotImplementedError):
             # previous pyannote.database versions used `trn_try_iter` instead
             # of `train_trial_iter`, `dev_try_iter` instead of
             # `development_trial_iter`, and `tst_try_iter` instead of
@@ -143,7 +147,7 @@ class SpeakerVerificationProtocol(SpeakerDiarizationProtocol):
             subset_legacy = LEGACY_SUBSET_MAPPING[subset]
             try:
                 trials = getattr(self, f"{subset_legacy}_try_iter")()
-            except AttributeError as e:
+            except AttributeError:
                 msg = f"{subset}_trial_iter is not implemented."
                 raise AttributeError(msg)
 

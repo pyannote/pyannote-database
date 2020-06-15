@@ -37,9 +37,11 @@ setup(
         "pyannote.core >= 4.1",
         "pyYAML >= 3.12",
         "pandas >= 0.19",
+        "typer[all] >= 0.2.1",
         "typing_extensions >= 3.7.4;python_version < '3.8'",
     ],
     entry_points={
+        "console_scripts": ["pyannote-database=pyannote.database.cli:main",],
         "pyannote.database.loader": [
             ".rttm = pyannote.database.loader:RTTMLoader",
             ".uem = pyannote.database.loader:UEMLoader",

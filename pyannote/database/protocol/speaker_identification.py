@@ -29,6 +29,7 @@
 
 from .speaker_verification import SpeakerVerificationProtocol
 
+
 class SpeakerIdentificationProtocol(SpeakerVerificationProtocol):
     """Speaker identification protocol
 
@@ -40,4 +41,5 @@ class SpeakerIdentificationProtocol(SpeakerVerificationProtocol):
         callable, it should be a string containing placeholder for item keys
         (e.g. {'audio': '/path/to/{uri}.wav'})
     """
+
     pass
