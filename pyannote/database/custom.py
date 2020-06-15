@@ -51,7 +51,6 @@ import warnings
 from typing import Text, Dict, Callable, Any, Union
 import functools
 
-from pyannote.core import Timeline, Segment
 from . import DATABASES, TASKS
 from .protocol.protocol import Subset
 
@@ -366,7 +365,7 @@ def create_protocol(
 
     try:
         base_class = getattr(
-            protocol_module, f"Protocol" if task == "Protocol" else f"{task}Protocol"
+            protocol_module, "Protocol" if task == "Protocol" else f"{task}Protocol"
         )
     except AttributeError:
         msg = (

@@ -32,6 +32,7 @@ import warnings
 import pandas as pd
 from pyannote.core import Segment, Timeline, Annotation
 from .protocol.protocol import ProtocolFile
+from .config import get_database_yml
 
 from typing import Text
 from typing import Union
@@ -40,8 +41,6 @@ from typing import List
 
 DatabaseName = Text
 PathTemplate = Text
-
-from .config import get_database_yml
 
 
 class PyannoteDatabaseException(Exception):
@@ -234,11 +233,11 @@ def get_annotated(current_file):
     if "duration" in current_file:
         try:
             duration = current_file["duration"]
-        except ImportError as e:
+        except ImportError:
             pass
         else:
             annotated = Timeline([Segment(0, duration)])
-            msg = f'"annotated" was approximated by [0, audio duration].'
+            msg = '"annotated" was approximated by [0, audio duration].'
             warnings.warn(msg)
             return annotated
 
@@ -246,9 +245,9 @@ def get_annotated(current_file):
     annotated = Timeline([extent])
 
     msg = (
-        f'"annotated" was approximated by "annotation" extent. '
-        f'Please provide "annotated" directly, or at the very '
-        f'least, use a "duration" preprocessor.'
+        '"annotated" was approximated by "annotation" extent. '
+        'Please provide "annotated" directly, or at the very '
+        'least, use a "duration" preprocessor.'
     )
     warnings.warn(msg)
 
@@ -456,7 +455,7 @@ def load_lst(file_lst):
 
     with open(file_lst, mode="r") as fp:
         lines = fp.readlines()
-    return [l.strip() for l in lines]
+    return [line.strip() for line in lines]
 
 
 def load_mapping(mapping_txt):

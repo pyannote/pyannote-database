@@ -44,7 +44,7 @@ try:
     Token.set_extension("time_end", default=None)
     Token.set_extension("confidence", default=0.0)
 
-except ImportError as e:
+except ImportError:
     pass
 
 
@@ -66,7 +66,7 @@ def load_lst(file_lst):
 
     with open(file_lst, mode="r") as fp:
         lines = fp.readlines()
-    return [l.strip() for l in lines]
+    return [line.strip() for line in lines]
 
 
 def load_trial(file_trial):
@@ -95,7 +95,7 @@ def load_trial(file_trial):
 
 class RTTMLoader:
     """RTTM loader
-    
+
     Parameter
     ---------
     rttm : Path
@@ -147,7 +147,7 @@ class RTTMLoader:
 
 class UEMLoader:
     """UEM loader
-    
+
     Parameter
     ---------
     uem : Path
@@ -211,7 +211,7 @@ class CTMLoader:
         try:
             from spacy.vocab import Vocab
             from spacy.tokens import Doc
-        except ImportError as e:
+        except ImportError:
             msg = "Cannot load CTM files because spaCy is not available."
             warnings.warn(msg)
             return None

@@ -42,8 +42,21 @@ from .protocol.protocol import ProtocolFile
 from .protocol.protocol import Subset
 from .protocol.protocol import Preprocessors
 
+from .util import FileFinder
+from .util import get_annotated
+from .util import get_unique_identifier
+from .util import get_label_identifier
+
+from ._version import get_versions
+
 DATABASES = dict()
 TASKS: Dict[Text, Set[Text]] = dict()
+
+from .custom import add_custom_protocols
+
+__version__ = get_versions()["version"]
+del get_versions
+
 
 # load databases from entry points
 for o in iter_entry_points(group="pyannote.database.databases", name=None):
@@ -63,8 +76,6 @@ for o in iter_entry_points(group="pyannote.database.databases", name=None):
     setattr(sys.modules[__name__], database_name, DatabaseClass)
 
 # parse pyannote.database configuration file, looking for custom protocols
-from .custom import add_custom_protocols
-
 DATABASES, TASKS = add_custom_protocols()
 
 
@@ -107,7 +118,7 @@ def get_database(database_name, **kwargs):
     try:
         database = DATABASES[database_name]
 
-    except KeyError as e:
+    except KeyError:
 
         if database_name == "X":
             msg = (
@@ -157,13 +168,18 @@ def get_tasks():
     return sorted(TASKS)
 
 
-from .util import FileFinder
-from .util import get_annotated
-from .util import get_unique_identifier
-from .util import get_label_identifier
-
-
-from ._version import get_versions
-
-__version__ = get_versions()["version"]
-del get_versions
+__all__ = [
+    "Database",
+    "PyannoteDatabaseException",
+    "get_databases",
+    "get_database",
+    "get_tasks",
+    "Protocol",
+    "get_protocol",
+    "ProtocolFile",
+    "Subset",
+    "FileFinder",
+    "get_annotated",
+    "get_unique_identifier",
+    "get_label_identifier",
+]

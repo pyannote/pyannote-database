@@ -33,3 +33,14 @@ from .speaker_spotting import SpeakerSpottingProtocol
 from .speaker_verification import SpeakerVerificationProtocol
 from .speaker_identification import SpeakerIdentificationProtocol
 from .speaker_recognition import SpeakerRecognitionProtocol
+
+
+__all__ = [
+    "Protocol",
+    "CollectionProtocol",
+    "SpeakerDiarizationProtocol",
+    "SpeakerVerificationProtocol",
+    "SpeakerSpottingProtocol",
+    "SpeakerIdentificationProtocol",
+    "SpeakerRecognitionProtocol",
+]

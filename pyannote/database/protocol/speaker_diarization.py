@@ -27,14 +27,13 @@
 # Hervé BREDIN - http://herve.niderb.fr
 
 
-from typing import Iterator, Union, Dict, Callable, Optional, Text, Any
+from typing import Dict, Optional
 from .protocol import Protocol
 from .protocol import ProtocolFile
 from .protocol import Subset
 from .protocol import Preprocessor
 from .protocol import Preprocessors
 from pyannote.core import Annotation
-from ..util import get_annotated
 import functools
 
 
@@ -50,7 +49,7 @@ def crop_annotation(
     current_file : ProtocolFile
         Protocol file.
     existing_preprocessor : Preprocessor, optional
-        When provided, this preprocessor must be used to get the initial 
+        When provided, this preprocessor must be used to get the initial
         'annotation' instead of getting it from 'current_file["annotation"]'
 
     Returns
@@ -77,33 +76,33 @@ def crop_annotation(
 
 class SpeakerDiarizationProtocol(Protocol):
     """A protocol for speaker diarization experiments
-    
+
     A speaker diarization protocol can be defined programmatically by creating
-    a class that inherits from SpeakerDiarizationProtocol and implements at 
+    a class that inherits from SpeakerDiarizationProtocol and implements at
     least one of `train_iter`, `development_iter` and `test_iter` methods:
 
         >>> class MySpeakerDiarizationProtocol(SpeakerDiarizationProtocol):
         ...     def train_iter(self) -> Iterator[Dict]:
-        ...         yield {"uri": "filename1", 
-        ...                "annotation": Annotation(...), 
+        ...         yield {"uri": "filename1",
+        ...                "annotation": Annotation(...),
         ...                "annotated": Timeline(...)}
-        ...         yield {"uri": "filename2", 
-        ...                "annotation": Annotation(...), 
+        ...         yield {"uri": "filename2",
+        ...                "annotation": Annotation(...),
         ...                "annotated": Timeline(...)}
 
-    `{subset}_iter` should return an iterator of dictionnaries with 
+    `{subset}_iter` should return an iterator of dictionnaries with
         - "uri" key (mandatory) that provides a unique file identifier (usually
           the filename),
-        - "annotation" key (mandatory for train and development subsets) that 
+        - "annotation" key (mandatory for train and development subsets) that
           provides reference speaker diarization as a `pyannote.core.Annotation`
           instance,
-        - "annotated" key (recommended) that describes which part of the file 
+        - "annotated" key (recommended) that describes which part of the file
           has been annotated, as a `pyannote.core.Timeline` instance. Any part
-          of "annotation" that lives outside of the provided "annotated" will 
-          be removed. This is also used by `pyannote.metrics` to remove 
-          un-annotated regions from its evaluation report, and by 
-          `pyannote.audio` to not consider empty un-annotated regions as 
-          non-speech. 
+          of "annotation" that lives outside of the provided "annotated" will
+          be removed. This is also used by `pyannote.metrics` to remove
+          un-annotated regions from its evaluation report, and by
+          `pyannote.audio` to not consider empty un-annotated regions as
+          non-speech.
         - any other key that the protocol may provide.
 
     It can then be used in Python like this:
@@ -203,12 +202,12 @@ class SpeakerDiarizationProtocol(Protocol):
             maps speakers with their total speech duration (in seconds)
         """
 
+        from ..util import get_annotated
+
         annotated_duration = 0.0
         annotation_duration = 0.0
         n_files = 0
         labels = {}
-
-        lower_bound = False
 
         for item in getattr(self, subset)():
 

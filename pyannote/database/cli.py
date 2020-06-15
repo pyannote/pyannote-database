@@ -30,7 +30,7 @@
 import typer
 from enum import Enum
 import math
-from typing import Optional, Text
+from typing import Text
 from pyannote.database import Database
 from pyannote.database import get_databases
 from pyannote.database import get_tasks
