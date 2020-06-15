@@ -733,7 +733,7 @@ It can then be used in Python like this:
 
 #### Speaker verification
 
-A speaker verification protocol implement the `{subset}_trial` functions, usefull in speaker verification validation process. Note that SpeakerVerificationProtocol is a child from [SpeakerDiarizationProtocol](#speaker-diarization-1) meaning it shares the same `{subset}_iter` methods, and need a mandatory `{subset}_iter` method.
+A speaker verification protocol implement the `{subset}_trial` functions, useful in speaker verification validation process. Note that SpeakerVerificationProtocol is a child from [SpeakerDiarizationProtocol](#speaker-diarization-1) meaning it shares the same `{subset}_iter` methods, and need a mandatory `{subset}_iter` method.
 
 A speaker verification protocol can be defined programmatically by creating a class that inherits from SpeakerVerificationProtocol and implement at least one of `train_trial_iter`, `development_trial_iter` and `test_trial_iter` methods: 
 
