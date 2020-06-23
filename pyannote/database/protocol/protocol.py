@@ -123,8 +123,8 @@ class ProtocolFile(collections.abc.MutableMapping):
                 del self.lazy[key]
 
                 # warn the user when a precomputed key is modified
-                if key in self._store:
-                    msg = 'Existing key "{key}" may have been modified.'
+                if key in self._store and value != self._store[key]:
+                    msg = 'Existing precomputed key "{key}" has been modified by a preprocessor.'
                     warnings.warn(msg.format(key=key))
 
                 # store the output of the lazy computation
