@@ -2,6 +2,11 @@
 Changelog
 #########
 
+Version 4.0.1 (2020-06-26)
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  - feat: set "name" attribute in get_protocol
+  - fix: display warning only when precomputed value is modified
 
 Version 4.0 (2020-06-15)
 ~~~~~~~~~~~~~~~~~~~~~~~~
