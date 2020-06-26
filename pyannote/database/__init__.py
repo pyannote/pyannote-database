@@ -160,6 +160,7 @@ def get_protocol(name, preprocessors: Optional[Preprocessors] = None) -> Protoco
     protocol = database.get_protocol(
         task_name, protocol_name, preprocessors=preprocessors
     )
+    protocol.name = name
     return protocol
 
 
