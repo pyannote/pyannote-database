@@ -119,13 +119,15 @@ class ProtocolFile(collections.abc.MutableMapping):
                 self.evaluating_.update([key])
 
                 # apply preprocessor once and remove it
-                value = self.lazy[key](self)
+                preprocessor = self.lazy[key]
+                value = preprocessor(self)
                 del self.lazy[key]
 
                 # warn the user when a precomputed key is modified
                 if key in self._store and value != self._store[key]:
                     msg = (
-                        f"Key '{key}' of file '{self._store['uri']}' has been modified."
+                        f"Key '{key}' of file '{self._store['uri']}' "
+                        f"has been modified by {preprocessor} preprocessor."
                     )
                     warnings.warn(msg)
 
