@@ -33,8 +33,46 @@ from .protocol import ProtocolFile
 from .protocol import Subset
 from .protocol import Preprocessor
 from .protocol import Preprocessors
-from pyannote.core import Annotation
+from pyannote.core import Segment, Timeline, Annotation
 import functools
+
+
+def crop_annotated(
+    current_file: ProtocolFile, existing_preprocessor: Optional[Preprocessor] = None
+) -> Timeline:
+    """Preprocessor that crops 'annotated' according to 'duration'
+
+    Returns 'annotated' unchanged if 'duration' is not available
+
+    Parameters
+    ----------
+    current_file : ProtocolFile
+        Protocol file.
+    existing_preprocessor : Preprocessor, optional
+        When provided, this preprocessor must be used to get the initial
+        'annotated' instead of getting it from 'current_file["annotated"]'
+
+    Returns
+    -------
+    cropped_annotated : Timeline
+        "annotated" cropped by "duration".
+    """
+
+    if existing_preprocessor is None:
+        annotated = current_file["annotated"]
+    else:
+        annotated = existing_preprocessor(current_file)
+
+    if "duration" not in current_file:
+        return annotated
+
+    # crop 'annotated' to 'duration'
+    duration = Segment(0, current_file["duration"])
+
+    if annotated and not annotated.extent() in duration:
+        return annotated.crop(duration, mode="intersection")
+
+    return annotated
 
 
 def crop_annotation(
@@ -172,6 +210,12 @@ class SpeakerDiarizationProtocol(Protocol):
 
         if preprocessors is None:
             preprocessors = dict()
+
+        # wrap exisiting "annotated" preprocessor by crop_annotated so that
+        # "annotated" is automatically cropped by "duration" when provided
+        preprocessors["annotated"] = functools.partial(
+            crop_annotated, existing_preprocessor=preprocessors.get("annotated", None)
+        )
 
         # wrap exisiting "annotation" preprocessor by crop_annotation so that
         # "annotation" is automatically cropped by "annotated" when provided
