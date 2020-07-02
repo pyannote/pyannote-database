@@ -124,8 +124,10 @@ class ProtocolFile(collections.abc.MutableMapping):
 
                 # warn the user when a precomputed key is modified
                 if key in self._store and value != self._store[key]:
-                    msg = 'Existing precomputed key "{key}" has been modified by a preprocessor.'
-                    warnings.warn(msg.format(key=key))
+                    msg = (
+                        f"Key '{key}' of file '{self._store['uri']}' has been modified."
+                    )
+                    warnings.warn(msg)
 
                 # store the output of the lazy computation
                 # so that it is available for future access
