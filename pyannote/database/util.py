@@ -197,7 +197,7 @@ def get_unique_identifier(item):
     database = item.get("database", None)
     if database is not None:
         IDENTIFIER += f"{database}/"
-    IDENTIFIER += f"{item['uri']}"
+    IDENTIFIER += item['uri']
     channel = item.get("channel", None)
     if channel is not None:
         IDENTIFIER += f"_{channel:d}"
