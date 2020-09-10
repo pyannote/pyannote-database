@@ -196,13 +196,13 @@ def get_unique_identifier(item):
     # {database}/{uri}_{channel}
     database = item.get("database", None)
     if database is not None:
-        IDENTIFIER += "{database}/"
-    IDENTIFIER += "{uri}"
+        IDENTIFIER += f"{database}/"
+    IDENTIFIER += item['uri']
     channel = item.get("channel", None)
     if channel is not None:
-        IDENTIFIER += "_{channel:d}"
+        IDENTIFIER += f"_{channel:d}"
 
-    return IDENTIFIER.format(**item)
+    return IDENTIFIER
 
 
 # This function is used in custom.py
