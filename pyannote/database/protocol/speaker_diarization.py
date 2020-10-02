@@ -59,9 +59,12 @@ def crop_annotation(
     """
 
     if existing_preprocessor is None:
-        annotation = current_file["annotation"]
+        annotation = current_file.get("annotation", None)
     else:
         annotation = existing_preprocessor(current_file)
+
+    if annotation is None:
+        return None
 
     if "annotated" not in current_file:
         return annotation
