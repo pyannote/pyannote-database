@@ -32,6 +32,11 @@ from typing import Text
 from typing import Union
 
 
+DATABASE_YML = {'main':None}
+
+def _set_yml(database_yml: Union[Text, Path]):
+    DATABASE_YML['main'] = database_yml
+
 def get_database_yml(database_yml: Union[Text, Path] = None) -> Path:
     """Find location of pyannote.database configuration file
 
@@ -49,6 +54,10 @@ def get_database_yml(database_yml: Union[Text, Path] = None) -> Path:
     ------
     FileNotFoundError when the configuration file could not be found.
     """
+    # If set_database_yml has been used
+    print(DATABASE_YML)
+    if DATABASE_YML['main'] != None:
+        return DATABASE_YML['main']
 
     # when database_yml is provided, use it
     if database_yml is not None:

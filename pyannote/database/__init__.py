@@ -31,8 +31,9 @@
 
 import sys
 from pkg_resources import iter_entry_points
+from pathlib import Path
 
-from typing import Optional, Dict, Set, Text
+from typing import Optional, Dict, Set, Text, Union
 
 from .database import Database
 from .database import PyannoteDatabaseException
@@ -48,6 +49,8 @@ from .util import get_unique_identifier
 from .util import get_label_identifier
 
 from ._version import get_versions
+
+from .config import _set_yml
 
 DATABASES = dict()
 TASKS: Dict[Text, Set[Text]] = dict()
@@ -167,6 +170,14 @@ def get_protocol(name, preprocessors: Optional[Preprocessors] = None) -> Protoco
 def get_tasks():
     """List of tasks"""
     return sorted(TASKS)
+
+def set_database_yml(database_yml: Union[Text, Path]) -> None:
+    """
+    Programmatically set the database yml location
+    """
+
+    _set_yml(Path(database_yml).expanduser())
+    DATABASES, TASKS = add_custom_protocols()
 
 
 __all__ = [
