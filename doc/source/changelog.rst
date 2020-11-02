@@ -2,6 +2,13 @@
 Changelog
 #########
 
+Version 4.0.2 (2020-10-02)
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  - feat: automagically crop "annotated" to file "duration" when available
+  - fix: fix a bug in SpeakerDiarizationProtocols
+  - improve: avoid loading ProtocolFile (lazy) keys in "get_unique_identifier"
+
 Version 4.0.1 (2020-06-26)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
