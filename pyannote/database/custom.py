@@ -430,7 +430,12 @@ def create_protocol(
                     database_yml=database_yml,
                 )
 
-    return type(protocol, (base_class,), methods)
+    #  making custom protocol pickable by adding it to pyannote.database.custom module
+    custom_protocol_class_name = f"{database}__{task}__{protocol}"
+    CustomProtocolClass = type(custom_protocol_class_name, (base_class,), methods)
+    globals()[custom_protocol_class_name] = CustomProtocolClass
+
+    return CustomProtocolClass
 
 
 def add_custom_protocols():
