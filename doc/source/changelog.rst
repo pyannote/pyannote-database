@@ -2,6 +2,11 @@
 Changelog
 #########
 
+Version 4.0.3 (2020-10-11)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  - fix: make custom protocols pickable
+
 Version 4.0.2 (2020-10-02)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
