@@ -2,8 +2,13 @@
 Changelog
 #########
 
+Version 4.0.4 (2020-12-14)
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  - fix: fix ProtocolFile.__iter__ (dictionary changed size during iteration)
+
 Version 4.0.3 (2020-10-11)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   - fix: make custom protocols pickable
 
