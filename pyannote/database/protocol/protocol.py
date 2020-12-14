@@ -158,14 +158,14 @@ class ProtocolFile(collections.abc.MutableMapping):
             for key in self._store:
                 yield key
 
-            for key in self.lazy:
+            lazy_keys = list(self.lazy)
+            for key in lazy_keys:
                 if key in self._store:
                     continue
                 yield key
 
     def __len__(self):
         with self.lock_:
-
             return len(set(self._store) | set(self.lazy))
 
     def files(self) -> Iterator["ProtocolFile"]:
