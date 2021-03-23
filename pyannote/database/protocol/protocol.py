@@ -155,7 +155,8 @@ class ProtocolFile(collections.abc.MutableMapping):
     def __iter__(self):
         with self.lock_:
 
-            for key in self._store:
+            store_keys = list(self._store)
+            for key in store_keys:
                 yield key
 
             lazy_keys = list(self.lazy)
