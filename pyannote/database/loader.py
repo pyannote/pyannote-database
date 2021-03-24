@@ -114,7 +114,7 @@ class RTTMLoader:
 
         self.path = path
 
-        _, placeholders, _, _ = zip(*string.Formatter().parse(path))
+        _, placeholders, _, _ = zip(*string.Formatter().parse(str(path)))
         self.placeholders_ = set(placeholders) - set([None])
 
         if not self.placeholders_:
@@ -149,7 +149,7 @@ class UEMLoader:
 
         self.path = path
 
-        _, placeholders, _, _ = zip(*string.Formatter().parse(path))
+        _, placeholders, _, _ = zip(*string.Formatter().parse(str(path)))
         self.placeholders_ = set(placeholders) - set([None])
 
         if not self.placeholders_:
