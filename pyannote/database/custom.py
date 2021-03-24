@@ -42,6 +42,7 @@ Protocols:
 """
 
 from pathlib import Path
+import string
 
 from . import protocol as protocol_module
 from .database import Database
@@ -189,8 +190,24 @@ def gather_loaders(
         if key == "uri" or key == "trial":
             continue
 
-        if value.startswith("_"):
-            lazy_loader[key] = Template(value[1:], database_yml)
+        # check whether value (path) contains placeholders such as {uri} or {subset}
+        _, placeholders, _, _ = zip(*string.Formatter().parse(value))
+        is_template = len(set(placeholders) - set([None])) > 0
+
+        if is_template:
+
+            # make sure old database.yml specifications still work but warn the user
+            # that they can now get rid of this "_" prefix
+            if value.startswith("_"):
+                msg = (
+                    "Since version 4.1, pyannote.database is smart enough to know "
+                    "when paths defined in 'database.yml' contains placeholders. "
+                    "Remove the underscore (_) prefix to get rid of this warning."
+                )
+                warnings.warn(msg)
+                value = value[1:]
+
+            lazy_loader[key] = Template(value, database_yml)
 
         else:
 

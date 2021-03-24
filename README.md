@@ -117,7 +117,7 @@ The above `MyDatabase.Protocol.MyProtocol` protocol is not very useful as it onl
           train:
               uri: lists/train.lst
               speaker: rttms/train.rttm
-              transcription: _ctms/{uri}.ctm
+              transcription: ctms/{uri}.ctm
   ```
 
 and the following directory structure:
@@ -157,7 +157,7 @@ and used to populate `speaker` and `transcription` keys. In pseudo-code:
   # instantiate loader registered with `.rttm` suffix
   speaker = RTTMLoader('rttms/train.rttm')
 
-  # entries with underscore (`_`) prefix serve as path templates
+  # entries with {placeholders} serve as path templates
   transcription_template = 'ctms/{uri}.ctm'
 
   for resource in protocol.train():
