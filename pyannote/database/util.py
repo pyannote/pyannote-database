@@ -322,60 +322,6 @@ def load_rttm(file_rttm):
     return annotations
 
 
-class RTTMLoader(object):
-    """RTTM loader for use as pyannote.database preprocessor
-
-    Parameters
-    ----------
-    train : `Path`, optional
-        Path to RTTM file for training set
-    development : `Path`, optional
-        Path to RTTM file for development set
-    test : `Path`, optional
-        Path to RTTM file for test set
-    """
-
-    def __init__(self, train=None, development=None, test=None):
-        super().__init__()
-        # preload everything in memory
-        self.hypotheses_ = {}
-        if train is not None:
-            self.hypotheses_["train"] = load_rttm(train)
-        if development is not None:
-            self.hypotheses_["development"] = load_rttm(development)
-        if test is not None:
-            self.hypotheses_["test"] = load_rttm(test)
-
-    def __call__(self, current_file):
-        """Return RTTM content for current file
-
-        Parameter
-        ---------
-        current_file : `dict`
-            Current file as provided by a `pyannote.database.Protocol`
-
-        Returns
-        -------
-        annotation : `pyannote.core.Annotation`
-            Annotation
-        """
-
-        uri = current_file["uri"]
-        found = []
-        for subset, hypotheses in self.hypotheses_.items():
-            if uri in hypotheses:
-                found.append(hypotheses[uri])
-
-        if len(found) == 1:
-            return found[0]
-        elif len(found) == 0:
-            msg = f'Could not find any hypothesis for "{uri}".'
-            raise ValueError(msg)
-        else:
-            msg = f'Found {len(found)} hypotheses for "{uri}".'
-            raise ValueError(msg)
-
-
 def load_mdtm(file_mdtm):
     """Load MDTM file
 
