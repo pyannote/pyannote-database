@@ -117,19 +117,20 @@ class RTTMLoader:
         _, placeholders, _, _ = zip(*string.Formatter().parse(str(path)))
         self.placeholders_ = set(placeholders) - set([None])
 
-        if not self.placeholders_:
-            self.loaded_ = load_rttm(path)
+        self.loaded_ = dict() if self.placeholders_ else load_rttm(path)
 
     def __call__(self, file: ProtocolFile) -> Annotation:
 
         uri = file["uri"]
 
-        if uri in self.loaded_:
-            return self.loaded_[uri]
+        if uri not in self.loaded_:
+            sub_file = {key: file[key] for key in self.placeholders_}
+            loaded = load_rttm(self.path.format(**sub_file))
+            if "uri" in self.placeholders_:
+                return loaded[uri]
+            self.loaded_.update(loaded)
 
-        sub_file = {key: file[key] for key in self.placeholders_}
-
-        return load_rttm(self.path.format(**sub_file))[uri]
+        return self.loaded_[uri]
 
 
 class UEMLoader:
@@ -152,19 +153,20 @@ class UEMLoader:
         _, placeholders, _, _ = zip(*string.Formatter().parse(str(path)))
         self.placeholders_ = set(placeholders) - set([None])
 
-        if not self.placeholders_:
-            self.loaded_ = load_uem(path)
+        self.loaded_ = dict() if self.placeholders_ else load_uem(path)
 
     def __call__(self, file: ProtocolFile) -> Timeline:
 
         uri = file["uri"]
 
-        if uri in self.loaded_:
-            return self.loaded_[uri]
+        if uri not in self.loaded_:
+            sub_file = {key: file[key] for key in self.placeholders_}
+            loaded = load_uem(self.path.format(**sub_file))
+            if "uri" in self.placeholders_:
+                return loaded[uri]
+            self.loaded_.update(loaded)
 
-        sub_file = {key: file[key] for key in self.placeholders_}
-
-        return load_uem(self.path.format(**sub_file))[uri]
+        return self.loaded_[uri]
 
 
 class CTMLoader:
