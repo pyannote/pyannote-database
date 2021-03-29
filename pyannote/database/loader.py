@@ -126,6 +126,8 @@ class RTTMLoader:
         if uri not in self.loaded_:
             sub_file = {key: file[key] for key in self.placeholders_}
             loaded = load_rttm(self.path.format(**sub_file))
+            if uri not in loaded:
+                loaded[uri] = Annotation(uri=uri)
             if "uri" in self.placeholders_:
                 return loaded[uri]
             self.loaded_.update(loaded)
@@ -162,6 +164,8 @@ class UEMLoader:
         if uri not in self.loaded_:
             sub_file = {key: file[key] for key in self.placeholders_}
             loaded = load_uem(self.path.format(**sub_file))
+            if uri not in loaded:
+                loaded[uri] = Timeline(uri=uri)
             if "uri" in self.placeholders_:
                 return loaded[uri]
             self.loaded_.update(loaded)
