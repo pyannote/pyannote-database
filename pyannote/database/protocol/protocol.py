@@ -106,6 +106,17 @@ class ProtocolFile(collections.abc.MutableMapping):
         # and therefore should be taken from precomputed
         self.evaluating_ = collections.Counter()
 
+    # since RLock is not pickable, remove it before pickling...
+    def __getstate__(self):
+        d = dict(self.__dict__)
+        del d["lock_"]
+        return d
+
+    # ... and add it back when unpickling
+    def __setstate__(self, d):
+        self.__dict__.update(d)
+        self.lock_ = threading.RLock()
+
     def __abs__(self):
         with self.lock_:
             return dict(self._store)
