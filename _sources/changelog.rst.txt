@@ -2,6 +2,13 @@
 Changelog
 #########
 
+Version 4.1 (2021-04-07)
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+  - feat: make {RTTM|UEM}Loader usable as preprocessors
+  - improve: remove the need for underscore prefix in database.yml
+  - fix: fix ProtocolFile.__iter__ (dictionary changed size during iteration)
+
 Version 4.0.4 (2020-12-14)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
