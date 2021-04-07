@@ -3,7 +3,7 @@
 
 # The MIT License (MIT)
 
-# Copyright (c) 2020 CNRS
+# Copyright (c) 2020-2021 CNRS
 
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -29,12 +29,16 @@
 
 """Data loaders"""
 
+from typing import Text
+from pathlib import Path
+import string
+from pyannote.database.util import load_rttm, load_uem
 import pandas as pd
 from pyannote.core import Segment, Timeline, Annotation
 from pyannote.database import ProtocolFile
-from pathlib import Path
 from typing import Union, Any
 import warnings
+
 
 try:
     from spacy.tokens import Token
@@ -96,90 +100,77 @@ def load_trial(file_trial):
 class RTTMLoader:
     """RTTM loader
 
-    Parameter
-    ---------
-    rttm : Path
-        Path to RTTM file.
+    Can be used as a preprocessor.
+
+    Parameters
+    ----------
+    path : str
+        Path to RTTM file with optional ProtocolFile key placeholders
+        (e.g. "/path/to/{database}/{subset}/{uri}.rttm")
     """
 
-    def __init__(self, rttm: Path):
-        self.rttm = rttm
+    def __init__(self, path: Text = None):
+        super().__init__()
 
-        names = [
-            "NA1",
-            "uri",
-            "NA2",
-            "start",
-            "duration",
-            "NA3",
-            "NA4",
-            "speaker",
-            "NA5",
-            "NA6",
-        ]
-        dtype = {"uri": str, "start": float, "duration": float, "speaker": str}
-        self.data_ = pd.read_csv(
-            rttm,
-            names=names,
-            dtype=dtype,
-            delim_whitespace=True,
-            keep_default_na=False,
-        ).groupby("uri")
+        self.path = path
 
-    def __call__(self, current_file: ProtocolFile) -> Annotation:
-        uri = current_file["uri"]
-        annotation = Annotation(uri=uri)
+        _, placeholders, _, _ = zip(*string.Formatter().parse(str(path)))
+        self.placeholders_ = set(placeholders) - set([None])
 
-        try:
-            turns = self.data_.get_group(uri).iterrows()
-        except KeyError:
-            turns = []
+        self.loaded_ = dict() if self.placeholders_ else load_rttm(path)
 
-        for i, turn in turns:
-            segment = Segment(turn.start, turn.start + turn.duration)
-            if not segment:
-                msg = f"Found empty segment in {self.rttm} for file {uri} around t={turn.start:.3f}s"
-                raise ValueError(msg)
-            annotation[segment, i] = turn.speaker
+    def __call__(self, file: ProtocolFile) -> Annotation:
 
-        return annotation
+        uri = file["uri"]
+
+        if uri not in self.loaded_:
+            sub_file = {key: file[key] for key in self.placeholders_}
+            loaded = load_rttm(self.path.format(**sub_file))
+            if uri not in loaded:
+                loaded[uri] = Annotation(uri=uri)
+            if "uri" in self.placeholders_:
+                return loaded[uri]
+            self.loaded_.update(loaded)
+
+        return self.loaded_[uri]
 
 
 class UEMLoader:
     """UEM loader
 
-    Parameter
-    ---------
-    uem : Path
-        Path to UEM file.
+    Can be used as a preprocessor.
+
+    Parameters
+    ----------
+    path : str
+        Path to UEM file with optional ProtocolFile key placeholders
+        (e.g. "/path/to/{database}/{subset}/{uri}.uem")
     """
 
-    def __init__(self, uem: Path):
-        self.uem = uem
+    def __init__(self, path: Text = None):
+        super().__init__()
 
-        names = ["uri", "NA1", "start", "end"]
-        dtype = {"uri": str, "start": float, "end": float}
-        self.data_ = pd.read_csv(
-            uem, names=names, dtype=dtype, delim_whitespace=True
-        ).groupby("uri")
+        self.path = path
 
-    def __call__(self, current_file: ProtocolFile) -> Timeline:
-        uri = current_file["uri"]
+        _, placeholders, _, _ = zip(*string.Formatter().parse(str(path)))
+        self.placeholders_ = set(placeholders) - set([None])
 
-        try:
-            regions = self.data_.get_group(uri).iterrows()
-        except KeyError:
-            regions = []
+        self.loaded_ = dict() if self.placeholders_ else load_uem(path)
 
-        segments = []
-        for i, region in regions:
-            segment = Segment(region.start, region.end)
-            if not segment:
-                msg = f"Found empty segment in {self.uem} for file {uri} around t={region.start:.3f}s"
-                raise ValueError(msg)
-            segments.append(segment)
+    def __call__(self, file: ProtocolFile) -> Timeline:
 
-        return Timeline(segments=segments, uri=uri)
+        uri = file["uri"]
+
+        if uri not in self.loaded_:
+            sub_file = {key: file[key] for key in self.placeholders_}
+            loaded = load_uem(self.path.format(**sub_file))
+            if uri not in loaded:
+                loaded[uri] = Timeline(uri=uri)
+            if "uri" in self.placeholders_:
+                return loaded[uri]
+            self.loaded_.update(loaded)
+
+        return self.loaded_[uri]
 
 
 class CTMLoader:
