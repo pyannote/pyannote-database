@@ -2,6 +2,11 @@
 Changelog
 #########
 
+Version 4.1.1 (2021-08-4)
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  - fix: fix support for meta verification protocol
+
 Version 4.1 (2021-04-07)
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
