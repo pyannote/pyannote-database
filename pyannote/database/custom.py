@@ -407,7 +407,15 @@ def create_protocol(
     methods = dict()
     for subset, subset_entries in protocol_entries.items():
 
-        if subset not in ["files", "train", "development", "test"]:
+        if subset not in [
+            "files",
+            "train",
+            "development",
+            "test",
+            "train_trial",
+            "development_trial",
+            "test_trial",
+        ]:
             msg = (
                 f"Ignoring '{database}.{task}.{protocol}.{subset}' found in {database_yml} "
                 f"because '{subset}' entries are not supported yet."
