@@ -1,3 +1,0 @@
-Sphinx==2.2.2
-ipython==7.16.3
-sphinx_rtd_theme==0.4.3
