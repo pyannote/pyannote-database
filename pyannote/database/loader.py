@@ -3,7 +3,7 @@
 
 # The MIT License (MIT)
 
-# Copyright (c) 2020-2021 CNRS
+# Copyright (c) 2020-2022 CNRS
 
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -112,25 +112,32 @@ class RTTMLoader:
     def __init__(self, path: Text = None):
         super().__init__()
 
-        self.path = path
+        self.path = str(path)
 
-        _, placeholders, _, _ = zip(*string.Formatter().parse(str(path)))
+        _, placeholders, _, _ = zip(*string.Formatter().parse(self.path))
         self.placeholders_ = set(placeholders) - set([None])
-
-        self.loaded_ = dict() if self.placeholders_ else load_rttm(path)
+        self.loaded_ = dict() if self.placeholders_ else load_rttm(self.path)
 
     def __call__(self, file: ProtocolFile) -> Annotation:
-
+        
         uri = file["uri"]
 
-        if uri not in self.loaded_:
-            sub_file = {key: file[key] for key in self.placeholders_}
-            loaded = load_rttm(self.path.format(**sub_file))
-            if uri not in loaded:
-                loaded[uri] = Annotation(uri=uri)
-            if "uri" in self.placeholders_:
-                return loaded[uri]
-            self.loaded_.update(loaded)
+        if uri in self.loaded_:
+            return self.loaded_[uri]
+
+        sub_file = {key: file[key] for key in self.placeholders_}
+        loaded = load_rttm(self.path.format(**sub_file))
+        if uri not in loaded:
+            loaded[uri] = Annotation(uri=uri)
+
+        # do not cache annotations when there is one RTTM file per "uri"
+        # since loading it should be quite fast
+        if "uri" in self.placeholders_:
+            return loaded[uri]
+
+        # when there is more than one file in loaded RTTM, cache them all
+        # so that loading future "uri" will be instantaneous
+        self.loaded_.update(loaded)
 
         return self.loaded_[uri]
 
@@ -150,25 +157,32 @@ class UEMLoader:
     def __init__(self, path: Text = None):
         super().__init__()
 
-        self.path = path
+        self.path = str(path)
 
-        _, placeholders, _, _ = zip(*string.Formatter().parse(str(path)))
+        _, placeholders, _, _ = zip(*string.Formatter().parse(self.path))
         self.placeholders_ = set(placeholders) - set([None])
-
-        self.loaded_ = dict() if self.placeholders_ else load_uem(path)
+        self.loaded_ = dict() if self.placeholders_ else load_uem(self.path)
 
     def __call__(self, file: ProtocolFile) -> Timeline:
 
         uri = file["uri"]
 
-        if uri not in self.loaded_:
-            sub_file = {key: file[key] for key in self.placeholders_}
-            loaded = load_uem(self.path.format(**sub_file))
-            if uri not in loaded:
-                loaded[uri] = Timeline(uri=uri)
-            if "uri" in self.placeholders_:
-                return loaded[uri]
-            self.loaded_.update(loaded)
+        if uri in self.loaded_:
+            return self.loaded_[uri]
+
+        sub_file = {key: file[key] for key in self.placeholders_}
+        loaded = load_uem(self.path.format(**sub_file))
+        if uri not in loaded:
+            loaded[uri] = Timeline(uri=uri)
+        
+        # do not cache timelines when there is one UEM file per "uri"
+        # since loading it should be quite fast
+        if "uri" in self.placeholders_:
+            return loaded[uri]
+
+        # when there is more than one file in loaded UEM, cache them all
+        # so that loading future "uri" will be instantaneous
+        self.loaded_.update(loaded)
 
         return self.loaded_[uri]
 
