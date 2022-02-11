@@ -46,7 +46,7 @@ setup(
             ".rttm = pyannote.database.loader:RTTMLoader",
             ".uem = pyannote.database.loader:UEMLoader",
             ".ctm = pyannote.database.loader:CTMLoader",
-            ".map = pyannote.database.loader:MAPLoader"
+            ".map = pyannote.database.loader:MAPLoader",
         ],
     },
     # versioneer
@@ -69,4 +69,13 @@ setup(
         "Programming Language :: Python :: 3.8",
         "Topic :: Scientific/Engineering",
     ],
+    extras_require={
+        "testing": ["pytest", "flake8==3.7.9"],
+        "doc": [
+            "matplotlib >= 2.0.0",
+            "Sphinx == 2.2.2",
+            "ipython == 7.16.3",
+            "sphinx_rtd_theme == 0.4.3",
+        ],
+    },
 )
