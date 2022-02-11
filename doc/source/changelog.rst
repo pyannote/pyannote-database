@@ -2,6 +2,11 @@
 Changelog
 #########
 
+Version 4.1.2 (2022-02-11)
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  - fix: fix corner case with missing uris in RTTM and UEM files
+
 Version 4.1.1 (2021-08-4)
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
