@@ -32,7 +32,7 @@
 from typing import Text
 from pathlib import Path
 import string
-from pyannote.database.util import load_rttm, load_uem
+from pyannote.database.util import load_rttm, load_uem, load_lab
 import pandas as pd
 from pyannote.core import Segment, Timeline, Annotation
 from pyannote.database import ProtocolFile
@@ -185,6 +185,47 @@ class UEMLoader:
         self.loaded_.update(loaded)
 
         return self.loaded_[uri]
+
+
+class LabLoader:
+    """LAB loader
+
+    Parameters
+    ----------
+    path : str
+        Path to LAB file with ProtocolFile
+        (e.g. "/path/to/{uri}.lab")
+
+        each .lab file contains the segments for a single audio file, in the following format:
+        start end label
+
+        ex.
+        0.0 12.3456 sing
+        12.3456 15.0 nosing
+        ...
+    """
+
+    def __init__(self, path: Text = None):
+        super().__init__()
+
+        self.path = str(path)
+        self.data_ = load_lab(self.path)
+        
+    def __call__(self, file: ProtocolFile) -> Annotation:
+        """
+        excluded_labels : array 
+            this param can be setted in get_protocol preprocessing to avoid to add all the labels to the annotations
+            this can be useful when the task to solve is VoiceActivityDetection
+        """
+
+        excluded_labels = [] if "excluded_labels" in file.keys() else file["excluded_labels"]
+
+        annotation = Annotation()
+        for _, part in self.data_.iterrows():
+            if part.label not in excluded_labels:
+                annotation[Segment(part.start, part.end)] = part.label
+
+        return annotation
 
 
 class CTMLoader:

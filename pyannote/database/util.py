@@ -382,6 +382,25 @@ def load_uem(file_uem):
 
     return timelines
 
+def load_lab(path):
+    """Load LAB file
+
+    Parameter
+    ---------
+    file_lab : `str`
+        Path to LAB file.
+
+    Returns
+    -------
+    data : `pd.DataFrame`
+    """
+
+    names = ["start", "end", "label"]
+    dtype = {"start": float, "end": float, "label": str}
+    data = pd.read_csv(path, names=names, dtype=dtype, delim_whitespace=True)
+
+    return data
+
 
 def load_lst(file_lst):
     """Load LST file
