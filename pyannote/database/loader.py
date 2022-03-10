@@ -218,7 +218,7 @@ class LabLoader:
             this can be useful when the task to solve is VoiceActivityDetection
         """
 
-        excluded_labels = [] if "excluded_labels" in file.keys() else file["excluded_labels"]
+        excluded_labels = file["excluded_labels"] if "excluded_labels" in file.keys() else []
 
         annotation = Annotation()
         for _, part in self.data_.iterrows():
