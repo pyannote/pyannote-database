@@ -187,7 +187,7 @@ class UEMLoader:
         return self.loaded_[uri]
 
 
-class LabLoader:
+class LABLoader:
     """LAB loader
 
     Parameters
