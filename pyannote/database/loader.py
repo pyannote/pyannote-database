@@ -193,7 +193,7 @@ class LABLoader:
     Parameters
     ----------
     path : str
-        Path to LAB file with ProtocolFile
+        Path to LAB file with mandatory {uri} placeholder.
         (e.g. "/path/to/{uri}.lab")
 
         each .lab file contains the segments for a single audio file, in the following format:
