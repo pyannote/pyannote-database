@@ -209,23 +209,31 @@ class LABLoader:
         super().__init__()
 
         self.path = str(path)
-        self.data_ = load_lab(self.path)
+        
+        _, placeholders, _, _ = zip(*string.Formatter().parse(self.path))
+        self.placeholders_ = set(placeholders) - set([None])
+        self.loaded_ = dict()
         
     def __call__(self, file: ProtocolFile) -> Annotation:
-        """
-        excluded_labels : array 
-            this param can be setted in get_protocol preprocessing to avoid to add all the labels to the annotations
-            this can be useful when the task to solve is VoiceActivityDetection
-        """
 
-        excluded_labels = file["excluded_labels"] if "excluded_labels" in file.keys() else []
+        uri = file["uri"]
 
-        annotation = Annotation()
-        for _, part in self.data_.iterrows():
-            if part.label not in excluded_labels:
-                annotation[Segment(part.start, part.end)] = part.label
+        if uri in self.loaded_:
+            return self.loaded_[uri]
 
-        return annotation
+        sub_file = {key: file[key] for key in self.placeholders_}
+        loaded = load_lab(self.path.format(**sub_file), uri)
+        
+        # do not cache timelines when there is one LAB file per "uri"
+        # since loading it should be quite fast
+        if "uri" in self.placeholders_:
+            return loaded
+
+        # when there is more than one file in loaded LAB, cache them all
+        # so that loading future "uri" will be instantaneous
+        self.loaded_[uri] = loaded
+
+        return self.loaded_[uri]
 
 
 class CTMLoader:

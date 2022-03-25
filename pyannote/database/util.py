@@ -382,24 +382,30 @@ def load_uem(file_uem):
 
     return timelines
 
-def load_lab(path):
+def load_lab(path, uri: str = None) -> Annotation:
     """Load LAB file
 
     Parameter
     ---------
     file_lab : `str`
-        Path to LAB file.
+        Path to LAB file
+        (e.g. "/path/to/{uri}.lab")
 
     Returns
     -------
-    data : `pd.DataFrame`
+    data : `pyannote.core.Annotation`
     """
-
+    
     names = ["start", "end", "label"]
     dtype = {"start": float, "end": float, "label": str}
     data = pd.read_csv(path, names=names, dtype=dtype, delim_whitespace=True)
 
-    return data
+    annotation = Annotation(uri=uri)
+    for i, turn in data.iterrows():
+        segment = Segment(turn.start, turn.end)
+        annotation[segment, i] = turn.label
+
+    return annotation
 
 
 def load_lst(file_lst):
