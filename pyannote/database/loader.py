@@ -32,7 +32,7 @@
 from typing import Text
 from pathlib import Path
 import string
-from pyannote.database.util import load_rttm, load_uem
+from pyannote.database.util import load_rttm, load_uem, load_lab
 import pandas as pd
 from pyannote.core import Segment, Timeline, Annotation
 from pyannote.database import ProtocolFile
@@ -185,6 +185,42 @@ class UEMLoader:
         self.loaded_.update(loaded)
 
         return self.loaded_[uri]
+
+
+class LABLoader:
+    """LAB loader
+
+    Parameters
+    ----------
+    path : str
+        Path to LAB file with mandatory {uri} placeholder.
+        (e.g. "/path/to/{uri}.lab")
+
+        each .lab file contains the segments for a single audio file, in the following format:
+        start end label
+
+        ex.
+        0.0 12.3456 sing
+        12.3456 15.0 nosing
+        ...
+    """
+
+    def __init__(self, path: Text = None):
+        super().__init__()
+
+        self.path = str(path)
+        
+        _, placeholders, _, _ = zip(*string.Formatter().parse(self.path))
+        self.placeholders_ = set(placeholders) - set([None])
+        if "uri" not in self.placeholders_:
+            raise ValueError("`path` must contain the {uri} placeholder.")
+        
+    def __call__(self, file: ProtocolFile) -> Annotation:
+
+        uri = file["uri"]
+
+        sub_file = {key: file[key] for key in self.placeholders_}
+        return load_lab(self.path.format(**sub_file), uri=uri)
 
 
 class CTMLoader:
