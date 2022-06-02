@@ -231,12 +231,6 @@ class LABLoader:
         if "uri" in self.placeholders_:
             return loaded
 
-        # when there is more than one file in loaded LAB, cache them all
-        # so that loading future "uri" will be instantaneous
-        self.loaded_[uri] = loaded
-
-        return self.loaded_[uri]
-
 
 class CTMLoader:
     """CTM loader
