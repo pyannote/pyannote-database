@@ -220,9 +220,6 @@ class LABLoader:
 
         uri = file["uri"]
 
-        if uri in self.loaded_:
-            return self.loaded_[uri]
-
         sub_file = {key: file[key] for key in self.placeholders_}
         loaded = load_lab(self.path.format(**sub_file), uri)
         
