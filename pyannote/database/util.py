@@ -389,7 +389,6 @@ def load_lab(path, uri: str = None) -> Annotation:
     ---------
     file_lab : `str`
         Path to LAB file
-        (e.g. "/path/to/{uri}.lab")
 
     Returns
     -------
