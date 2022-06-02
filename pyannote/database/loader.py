@@ -220,7 +220,7 @@ class LABLoader:
         uri = file["uri"]
 
         sub_file = {key: file[key] for key in self.placeholders_}
-        return load_lab(self.path.format(**sub_file), uri)
+        return load_lab(self.path.format(**sub_file), uri=uri)
 
 
 class CTMLoader:
