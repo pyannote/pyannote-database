@@ -223,10 +223,7 @@ class LABLoader:
         sub_file = {key: file[key] for key in self.placeholders_}
         loaded = load_lab(self.path.format(**sub_file), uri)
         
-        # do not cache timelines when there is one LAB file per "uri"
-        # since loading it should be quite fast
-        if "uri" in self.placeholders_:
-            return loaded
+        return loaded
 
 
 class CTMLoader:
