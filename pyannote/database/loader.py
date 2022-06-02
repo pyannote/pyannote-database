@@ -214,7 +214,6 @@ class LABLoader:
         self.placeholders_ = set(placeholders) - set([None])
         if "uri" not in self.placeholders_:
             raise ValueError("`path` must contain the {uri} placeholder.")
-        self.loaded_ = dict()
         
     def __call__(self, file: ProtocolFile) -> Annotation:
 
