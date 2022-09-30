@@ -38,6 +38,7 @@ from pyannote.database import get_database
 from pyannote.database import get_protocol
 from pyannote.database.protocol import CollectionProtocol
 from pyannote.database.protocol import SpeakerDiarizationProtocol
+from pyannote.core import Annotation
 
 app = typer.Typer()
 
@@ -155,7 +156,7 @@ def info(protocol: str):
             num_files += 1
 
             if not skip_annotation:
-                annotation = file["annotation"]
+                annotation = file["annotation"] or Annotation(uri=file["uri"])
                 speakers.update(annotation.labels())
                 speech += annotation.get_timeline().support().duration()
 
