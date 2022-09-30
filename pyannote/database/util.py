@@ -327,6 +327,38 @@ def load_rttm(file_rttm, keep_type="SPEAKER"):
     return annotations
 
 
+def load_stm(file_stm):
+    """Load STM file (speaker-info only)
+    
+    Parameter
+    ---------
+    file_stm : str
+        Path to STM file
+
+    Returns
+    -------
+    annotations : `dict`
+        Speaker diarization as a {uri: pyannote.core.Annotation} dictionary.
+    """
+
+    dtype = {"uri": str, "speaker": str, "start": float, "end": float}
+    data = pd.read_csv(
+        file_stm, 
+        delim_whitespace=True, 
+        usecols=[0, 2, 3, 4], 
+        dtype=dtype,
+        names=list(dtype))
+
+    annotations = dict()
+    for uri, turns in data.groupby("uri"):
+        annotation = Annotation(uri=uri)
+        for i, turn in turns.iterrows():
+            segment = Segment(turn.start, turn.end)
+            annotation[segment, i] = turn.speaker
+        annotations[uri] = annotation
+
+    return annotations
+
 def load_mdtm(file_mdtm):
     """Load MDTM file
 

@@ -47,7 +47,8 @@ setup(
             ".uem = pyannote.database.loader:UEMLoader",
             ".ctm = pyannote.database.loader:CTMLoader",
             ".map = pyannote.database.loader:MAPLoader",
-            ".lab = pyannote.database.loader:LABLoader"
+            ".lab = pyannote.database.loader:LABLoader",
+            ".stm = pyannote.database.loader:STMLoader",
         ],
     },
     # versioneer
