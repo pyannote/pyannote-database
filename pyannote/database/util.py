@@ -276,13 +276,16 @@ def get_label_identifier(label, current_file):
     return database + "|" + label
 
 
-def load_rttm(file_rttm):
+def load_rttm(file_rttm, keep_type="SPEAKER"):
     """Load RTTM file
 
     Parameter
     ---------
     file_rttm : `str`
         Path to RTTM file.
+    keep_type : str, optional
+        Only keep lines with this type (field #1 in RTTM specs).
+        Defaults to "SPEAKER".
 
     Returns
     -------
@@ -291,7 +294,7 @@ def load_rttm(file_rttm):
     """
 
     names = [
-        "NA1",
+        "type",
         "uri",
         "NA2",
         "start",
@@ -308,13 +311,15 @@ def load_rttm(file_rttm):
         names=names,
         dtype=dtype,
         delim_whitespace=True,
-        keep_default_na=False,
+        keep_default_na=True,
     )
 
     annotations = dict()
     for uri, turns in data.groupby("uri"):
         annotation = Annotation(uri=uri)
         for i, turn in turns.iterrows():
+            if turn.type != keep_type:
+                continue
             segment = Segment(turn.start, turn.start + turn.duration)
             annotation[segment, i] = turn.speaker
         annotations[uri] = annotation
