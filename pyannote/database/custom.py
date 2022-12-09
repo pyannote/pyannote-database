@@ -61,6 +61,7 @@ from .util import get_annotated
 
 from .loader import load_lst, load_trial
 
+# All "Loader" classes types (eg RTTMLoader, UEMLoader, ...) retrieved from the entry point.
 LOADERS = {
     ep.name: ep
     for ep in pkg_resources.iter_entry_points(group="pyannote.database.loader")
@@ -69,6 +70,9 @@ LOADERS = {
 
 def Template(template: Text, database_yml: Path) -> Callable[[ProtocolFile], Any]:
     """
+    Returns a function that takes as input a ProtocolFile and outputs some data about it.
+    The output data type is determined by the template extension (which will determine
+    what type of Loader should be used, see pyannote.database.loader).
 
     Parameters
     ----------
@@ -79,7 +83,8 @@ def Template(template: Text, database_yml: Path) -> Callable[[ProtocolFile], Any
 
     Returns
     -------
-    load : callable
+    load : Callable[[ProtocolFile], Any]
+        Method that takes a ProtocolFile and outputs some data about it.
     """
 
     path = Path(template)
@@ -104,7 +109,9 @@ def Template(template: Text, database_yml: Path) -> Callable[[ProtocolFile], Any
 
 
 def resolve_path(path: Path, database_yml: Path) -> Path:
-    """Resolve path
+    """Resolve 'path'. 
+    Used as is if 'path' is absolute.
+    Else, try to resolve path relative to database_yml's folder.
 
     Parameters
     ----------
@@ -173,15 +180,23 @@ def meta_subset_iter(
 
 
 def gather_loaders(
-    entries: Dict = None, database_yml: Path = None,
-):
-    """
+    entries: Dict, database_yml: Path,
+) -> dict:
+    """Loads all Loaders for data type specified in 'entries' into a dict. 
+
     Parameters
     ----------
-    entries : dict
-        Subset entries.
-    database_yml : `Path`
+    entries : Dict, optional
+        Subset entries (eg 'uri', 'annotated', 'annotation', ...)
+    database_yml : Path, optional
         Path to the 'database.yml' file
+
+    Returns
+    -------
+    dict
+        A dictionary mapping each key of entry (except 'uri' and 'trial')
+        to a function that given a ProtocolFile returns the data type
+        related to this entry.
     """
     lazy_loader = dict()
 

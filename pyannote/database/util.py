@@ -48,7 +48,7 @@ class PyannoteDatabaseException(Exception):
 
 
 class FileFinder:
-    """Database file finder
+    """Database file finder. Retrieve content files from URIs.
 
     Parameters
     ----------
