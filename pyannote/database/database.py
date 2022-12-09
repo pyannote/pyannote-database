@@ -28,9 +28,12 @@
 
 
 from typing import Optional
-from .util import PyannoteDatabaseException
 from .protocol.protocol import Preprocessors
 import warnings
+
+# note: moved here to prevent circular import
+class PyannoteDatabaseException(Exception):
+    pass
 
 
 class Database:

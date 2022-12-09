@@ -29,10 +29,12 @@
 
 """pyannote.database"""
 
+import os
+from pathlib import Path
 import sys
 from pkg_resources import iter_entry_points
 
-from typing import Optional, Dict, Set, Text
+from typing import List, Optional, Dict, Set, Text, Union
 
 from .database import Database
 from .database import PyannoteDatabaseException
@@ -42,41 +44,57 @@ from .protocol.protocol import ProtocolFile
 from .protocol.protocol import Subset
 from .protocol.protocol import Preprocessors
 
-from .util import FileFinder
+from .singleton import CFG
+from .filefinder import FileFinder
 from .util import get_annotated
 from .util import get_unique_identifier
 from .util import get_label_identifier
 
 from ._version import get_versions
 
-DATABASES = dict()
-TASKS: Dict[Text, Set[Text]] = dict()
 
-from .custom import add_custom_protocols
+# from .custom import add_custom_protocols
 
 __version__ = get_versions()["version"]
 del get_versions
 
 
 # load databases from entry points
-for o in iter_entry_points(group="pyannote.database.databases", name=None):
+# TODO : deprecate and delete, or make it work with PyannoteDbConfig
+# for o in iter_entry_points(group="pyannote.database.databases", name=None):
 
-    database_name = o.name
+#     database_name = o.name
 
-    DatabaseClass = o.load()
-    DATABASES[database_name] = DatabaseClass
+#     DatabaseClass = o.load()
+#     DATABASES[database_name] = DatabaseClass
 
-    database = DatabaseClass()
+#     database = DatabaseClass()
 
-    for task in database.get_tasks():
-        if task not in TASKS:
-            TASKS[task] = set()
-        TASKS[task].add(database_name)
+#     for task in database.get_tasks():
+#         if task not in TASKS:
+#             TASKS[task] = set()
+#         TASKS[task].add(database_name)
 
-    setattr(sys.modules[__name__], database_name, DatabaseClass)
+#     setattr(sys.modules[__name__], database_name, DatabaseClass)
 
 # parse pyannote.database configuration file, looking for custom protocols
-DATABASES, TASKS = add_custom_protocols()
+# DATABASES, TASKS = add_custom_protocols()
+
+
+def env_config_paths() -> List[Path]:
+    valid_paths = []
+
+    env_config_paths = os.environ.get("PYANNOTE_DATABASE_CONFIG")
+    splitted = env_config_paths.split(":")
+    for path in splitted:
+        path = Path(path).expanduser()
+        if path.is_file():
+            valid_paths.append(path)
+    return valid_paths
+
+
+# load all databases contained in the PYANNOTE_DATABASE_CONFIG env variable
+CFG.load_databases(*env_config_paths())
 
 
 def get_databases(task=None):
@@ -96,9 +114,9 @@ def get_databases(task=None):
     """
 
     if task is None:
-        return sorted(DATABASES)
+        return sorted(CFG.databases)
 
-    return sorted(TASKS.get(task, []))
+    return sorted(CFG.tasks.get(task, []))
 
 
 def get_database(database_name, **kwargs):
@@ -116,7 +134,7 @@ def get_database(database_name, **kwargs):
     """
 
     try:
-        database = DATABASES[database_name]
+        database = CFG.databases[database_name]
 
     except KeyError:
 
@@ -166,7 +184,7 @@ def get_protocol(name, preprocessors: Optional[Preprocessors] = None) -> Protoco
 
 def get_tasks():
     """List of tasks"""
-    return sorted(TASKS)
+    return sorted(CFG.tasks)
 
 
 __all__ = [

@@ -119,7 +119,7 @@ class RTTMLoader:
         self.loaded_ = dict() if self.placeholders_ else load_rttm(self.path)
 
     def __call__(self, file: ProtocolFile) -> Annotation:
-        
+
         uri = file["uri"]
 
         if uri in self.loaded_:
@@ -164,7 +164,7 @@ class STMLoader:
         self.loaded_ = dict() if self.placeholders_ else load_stm(self.path)
 
     def __call__(self, file: ProtocolFile) -> Annotation:
-        
+
         uri = file["uri"]
 
         if uri in self.loaded_:
@@ -219,7 +219,7 @@ class UEMLoader:
         loaded = load_uem(self.path.format(**sub_file))
         if uri not in loaded:
             loaded[uri] = Timeline(uri=uri)
-        
+
         # do not cache timelines when there is one UEM file per "uri"
         # since loading it should be quite fast
         if "uri" in self.placeholders_:
@@ -254,12 +254,12 @@ class LABLoader:
         super().__init__()
 
         self.path = str(path)
-        
+
         _, placeholders, _, _ = zip(*string.Formatter().parse(self.path))
         self.placeholders_ = set(placeholders) - set([None])
         if "uri" not in self.placeholders_:
             raise ValueError("`path` must contain the {uri} placeholder.")
-        
+
     def __call__(self, file: ProtocolFile) -> Annotation:
 
         uri = file["uri"]

@@ -44,15 +44,17 @@ Protocols:
 from pathlib import Path
 import string
 
+
 from . import protocol as protocol_module
-from .database import Database
+
+# from .database import Database
 from pyannote.database import ProtocolFile
 import yaml
 import warnings
 from typing import Text, Dict, Callable, Any, Union
 import functools
 
-from . import DATABASES, TASKS
+# from . import DATABASES, TASKS
 from .protocol.protocol import Subset
 
 import pkg_resources
@@ -109,7 +111,7 @@ def Template(template: Text, database_yml: Path) -> Callable[[ProtocolFile], Any
 
 
 def resolve_path(path: Path, database_yml: Path) -> Path:
-    """Resolve 'path'. 
+    """Resolve 'path'.
     Used as is if 'path' is absolute.
     Else, try to resolve path relative to database_yml's folder.
 
@@ -180,9 +182,10 @@ def meta_subset_iter(
 
 
 def gather_loaders(
-    entries: Dict, database_yml: Path,
+    entries: Dict,
+    database_yml: Path,
 ) -> dict:
-    """Loads all Loaders for data type specified in 'entries' into a dict. 
+    """Loads all Loaders for data type specified in 'entries' into a dict.
 
     Parameters
     ----------
@@ -478,52 +481,52 @@ def create_protocol(
     return CustomProtocolClass
 
 
-def add_custom_protocols():
-    """Register databases, tasks, and protocols defined in configuration file"""
+# def add_custom_protocols():
+#     """Register databases, tasks, and protocols defined in configuration file"""
 
-    from .config import get_database_yml
+#     from .config import get_database_yml
 
-    try:
-        database_yml = get_database_yml()
-        with open(database_yml, "r") as fp:
-            config = yaml.load(fp, Loader=yaml.SafeLoader)
+#     try:
+#         database_yml = get_database_yml()
+#         with open(database_yml, "r") as fp:
+#             config = yaml.load(fp, Loader=yaml.SafeLoader)
 
-    except FileNotFoundError:
-        config = dict()
+#     except FileNotFoundError:
+#         config = dict()
 
-    databases = config.get("Protocols", dict())
+#     databases = config.get("Protocols", dict())
 
-    # make sure meta-protocols are processed last (relies on the fact that
-    # dicts are iterated in insertion order since Python 3.6)
-    x = databases.pop("X", None)
-    if x is not None:
-        databases["X"] = x
+#     # make sure meta-protocols are processed last (relies on the fact that
+#     # dicts are iterated in insertion order since Python 3.6)
+#     x = databases.pop("X", None)
+#     if x is not None:
+#         databases["X"] = x
 
-    protocols = dict()
+#     protocols = dict()
 
-    for database, database_entries in databases.items():
-        database = str(database)
-        protocols[database] = []
-        for task, task_entries in database_entries.items():
+#     for database, database_entries in databases.items():
+#         database = str(database)
+#         protocols[database] = []
+#         for task, task_entries in database_entries.items():
 
-            for protocol, protocol_entries in task_entries.items():
-                protocol = str(protocol)
-                CustomProtocol = create_protocol(
-                    database, task, protocol, protocol_entries, database_yml
-                )
-                if CustomProtocol is None:
-                    continue
+#             for protocol, protocol_entries in task_entries.items():
+#                 protocol = str(protocol)
+#                 CustomProtocol = create_protocol(
+#                     database, task, protocol, protocol_entries, database_yml
+#                 )
+#                 if CustomProtocol is None:
+#                     continue
 
-                protocols[database].append((task, protocol, CustomProtocol))
+#                 protocols[database].append((task, protocol, CustomProtocol))
 
-                # update TASKS dictionary
-                if task not in TASKS:
-                    TASKS[task] = set()
-                TASKS[task].add(database)
+#                 # update TASKS dictionary
+#                 if task not in TASKS:
+#                     TASKS[task] = set()
+#                 TASKS[task].add(database)
 
-        # create database class on-the-fly
-        DATABASES[database] = type(
-            database, (Database,), {"__init__": get_init(protocols[database])}
-        )
+#         # create database class on-the-fly
+#         DATABASES[database] = type(
+#             database, (Database,), {"__init__": get_init(protocols[database])}
+#         )
 
-    return DATABASES, TASKS
+#     return DATABASES, TASKS
