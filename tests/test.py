@@ -34,9 +34,7 @@ assert isinstance(collection, CollectionProtocol)
 protocol = get_protocol("MyDatabase.Protocol.MyProtocol")
 assert isinstance(protocol, Protocol)
 
-speaker_diarization = get_protocol(
-    "MyDatabase.SpeakerDiarization.MySpeakerDiarization"
-)
+speaker_diarization = get_protocol("MyDatabase.SpeakerDiarization.MySpeakerDiarization")
 assert isinstance(speaker_diarization, SpeakerDiarizationProtocol)
 
 speaker_verification = get_protocol(

@@ -92,7 +92,11 @@ def protocol(
         case_sensitive=False,
     ),
     task: Task = typer.Option(
-        "Any", "--task", "-t", help="Filter protocols by TASK.", case_sensitive=False,
+        "Any",
+        "--task",
+        "-t",
+        help="Filter protocols by TASK.",
+        case_sensitive=False,
     ),
 ):
     """Print list of protocols"""
