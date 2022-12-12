@@ -163,6 +163,7 @@ class PyannoteDbConfig:
             )
 
         # process sources
+        # TODO: decide how to handle source overriding
         for db_name, value in config.get("Databases", dict()).items():
             if not isinstance(value, list):
                 value = [value]
@@ -177,6 +178,9 @@ class PyannoteDbConfig:
 
     def _reload_meta_protocols(self):
         """Reloads all meta protocols from all database.yml files loaded."""
+
+        # TODO: decide how to handle X protocol overriding.
+
         self.databases.pop("X", None)
 
         for db_yml, config in self.configs.items():
