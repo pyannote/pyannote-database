@@ -89,10 +89,10 @@ class PyannoteDbConfig:
             if not isinstance(value, list):
                 value = [value]
 
-            path_list: List[Path] = list()
+            path_list: List[str] = list()
             for p in value:
                 path = Path(p)
                 if not path.is_absolute():
                     path = database_yml.parent / path
-                path_list.append(path)
+                path_list.append(str(path))
             self.sources[str(db_name)] = path_list
