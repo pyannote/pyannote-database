@@ -84,7 +84,7 @@ del get_versions
 def env_config_paths() -> List[Path]:
     valid_paths = []
 
-    env_config_paths = os.environ.get("PYANNOTE_DATABASE_CONFIG")
+    env_config_paths = os.environ.get("PYANNOTE_DATABASE_CONFIG", "")
     splitted = env_config_paths.split(":")
     for path in splitted:
         path = Path(path).expanduser()
@@ -96,6 +96,9 @@ def env_config_paths() -> List[Path]:
 # load all databases contained in the PYANNOTE_DATABASE_CONFIG env variable
 CFG.load_databases(*env_config_paths())
 
+
+def load_database_yml(*paths:list):
+    CFG.load_databases(*paths)
 
 def get_databases(task=None):
     """Get list of databases
