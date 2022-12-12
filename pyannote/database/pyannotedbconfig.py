@@ -31,7 +31,8 @@ class PyannoteDbConfig:
                 config = yaml.load(fp, Loader=yaml.SafeLoader)
 
             self.configs[fullpath] = config
-            self._process_config(fullpath, config)
+        
+        self._reload_meta_protocols()
 
     def _process_database(
         self, db_name, db_entries: dict, database_yml: Union[Text, Path] = None
@@ -96,3 +97,14 @@ class PyannoteDbConfig:
                     path = database_yml.parent / path
                 path_list.append(str(path))
             self.sources[str(db_name)] = path_list
+
+
+    def _reload_meta_protocols(self):
+        """Reloads all meta protocols from all database.yml files loaded.
+        """
+
+        for db_yml, config in self.configs.items():
+            databases = config.get("Protocols", dict())
+            if "X" in databases:
+                self._process_database("X", databases["X"], None)
+                
