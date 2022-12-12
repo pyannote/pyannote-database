@@ -48,7 +48,7 @@ import string
 from . import protocol as protocol_module
 
 # from .database import Database
-from pyannote.database import ProtocolFile
+from pyannote.database.protocol.protocol import ProtocolFile
 import yaml
 import warnings
 from typing import Text, Dict, Callable, Any, Union

@@ -1,6 +1,6 @@
 from pathlib import Path
 from typing import Text
-from pyannote.database import ProtocolFile
+from pyannote.database.protocol.protocol import ProtocolFile
 from .singleton import CFG
 
 

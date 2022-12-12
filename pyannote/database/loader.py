@@ -35,7 +35,7 @@ import string
 from pyannote.database.util import load_rttm, load_uem, load_lab, load_stm
 import pandas as pd
 from pyannote.core import Segment, Timeline, Annotation
-from pyannote.database import ProtocolFile
+from pyannote.database.protocol.protocol import ProtocolFile
 from typing import Union, Any
 import warnings
 
