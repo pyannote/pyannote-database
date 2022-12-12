@@ -36,6 +36,8 @@ from pkg_resources import iter_entry_points
 
 from typing import List, Optional, Dict, Set, Text, Union
 
+from pyannote.database.pyannotedbconfig import OverrideType
+
 from .database import Database
 from .database import PyannoteDatabaseException
 
@@ -97,8 +99,9 @@ def env_config_paths() -> List[Path]:
 CFG.load_databases(*env_config_paths())
 
 
-def load_database_yml(*paths:list):
-    CFG.load_databases(*paths)
+def load_database_yml(*paths: list, allow_override=OverrideType.WARN_OVERRIDES):
+    CFG.load_databases(*paths, allow_override=allow_override)
+
 
 def get_databases(task=None):
     """Get list of databases

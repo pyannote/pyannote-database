@@ -376,6 +376,10 @@ def get_init(protocols):
     return init
 
 
+def get_custom_protocol_class_name(database: Text, task: Text, protocol: Text):
+    return f"{database}__{task}__{protocol}"
+
+
 def create_protocol(
     database: Text,
     task: Text,
@@ -474,7 +478,9 @@ def create_protocol(
                 )
 
     #  making custom protocol pickable by adding it to pyannote.database.custom module
-    custom_protocol_class_name = f"{database}__{task}__{protocol}"
+    custom_protocol_class_name = get_custom_protocol_class_name(
+        database, task, protocol
+    )
     CustomProtocolClass = type(custom_protocol_class_name, (base_class,), methods)
     globals()[custom_protocol_class_name] = CustomProtocolClass
 
