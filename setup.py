@@ -41,9 +41,7 @@ setup(
         "typing_extensions >= 3.7.4;python_version < '3.8'",
     ],
     entry_points={
-        "console_scripts": [
-            "pyannote-database=pyannote.database.cli:main",
-        ],
+        "console_scripts": ["pyannote-database=pyannote.database.cli:main",],
         "pyannote.database.loader": [
             ".rttm = pyannote.database.loader:RTTMLoader",
             ".uem = pyannote.database.loader:UEMLoader",
