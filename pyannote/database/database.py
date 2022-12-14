@@ -31,10 +31,6 @@ from typing import Optional
 from .protocol.protocol import Preprocessors
 import warnings
 
-# note: moved here to prevent circular import
-class PyannoteDatabaseException(Exception):
-    pass
-
 
 class Database:
     """Base database
@@ -68,7 +64,7 @@ class Database:
             tasks = self.protocols_
         except AttributeError:
             message = "This database does not implement any protocol."
-            raise PyannoteDatabaseException(message)
+            raise AttributeError(message)
         return tasks
 
     def get_tasks(self):

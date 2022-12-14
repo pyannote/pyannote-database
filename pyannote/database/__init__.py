@@ -39,7 +39,6 @@ from typing import List, Optional, Dict, Set, Text, Union
 from pyannote.database.pyannotedbconfig import OverrideType
 
 from .database import Database
-from .database import PyannoteDatabaseException
 
 from .protocol.protocol import Protocol
 from .protocol.protocol import ProtocolFile
@@ -54,8 +53,6 @@ from .util import get_label_identifier
 
 from ._version import get_versions
 
-
-# from .custom import add_custom_protocols
 
 __version__ = get_versions()["version"]
 del get_versions
@@ -195,7 +192,6 @@ def get_tasks():
 
 __all__ = [
     "Database",
-    "PyannoteDatabaseException",
     "get_databases",
     "get_database",
     "get_tasks",
