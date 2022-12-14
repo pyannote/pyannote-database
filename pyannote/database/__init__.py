@@ -57,8 +57,8 @@ __version__ = get_versions()["version"]
 del get_versions
 
 
+# TODO : deprecate and delete, or make it work with Registry
 # load databases from entry points
-# TODO : deprecate and delete, or make it work with PyannoteDbConfig
 # for o in iter_entry_points(group="pyannote.database.databases", name=None):
 
 #     database_name = o.name
