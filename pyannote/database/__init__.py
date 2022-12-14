@@ -36,7 +36,7 @@ from pkg_resources import iter_entry_points
 
 from typing import List, Optional, Dict, Set, Text, Union
 
-from pyannote.database.pyannotedbconfig import OverrideType
+from pyannote.database.registry import registry, OverrideType
 
 from .database import Database
 
@@ -45,8 +45,7 @@ from .protocol.protocol import ProtocolFile
 from .protocol.protocol import Subset
 from .protocol.protocol import Preprocessors
 
-from .singleton import CFG
-from .filefinder import FileFinder
+from .file_finder import FileFinder
 from .util import get_annotated
 from .util import get_unique_identifier
 from .util import get_label_identifier
@@ -93,11 +92,11 @@ def env_config_paths() -> List[Path]:
 
 
 # load all databases contained in the PYANNOTE_DATABASE_CONFIG env variable
-CFG.load_databases(*env_config_paths())
+registry.load_databases(*env_config_paths())
 
 
 def load_database_yml(*paths: list, allow_override=OverrideType.WARN_OVERRIDES):
-    CFG.load_databases(*paths, allow_override=allow_override)
+    registry.load_databases(*paths, allow_override=allow_override)
 
 
 def get_databases(task=None):
@@ -117,9 +116,9 @@ def get_databases(task=None):
     """
 
     if task is None:
-        return sorted(CFG.databases)
+        return sorted(registry.databases)
 
-    return sorted(CFG.tasks.get(task, []))
+    return sorted(registry.tasks.get(task, []))
 
 
 def get_database(database_name, **kwargs):
@@ -137,7 +136,7 @@ def get_database(database_name, **kwargs):
     """
 
     try:
-        database = CFG.databases[database_name]
+        database = registry.databases[database_name]
 
     except KeyError:
 
@@ -187,7 +186,7 @@ def get_protocol(name, preprocessors: Optional[Preprocessors] = None) -> Protoco
 
 def get_tasks():
     """List of tasks"""
-    return sorted(CFG.tasks)
+    return sorted(registry.tasks)
 
 
 __all__ = [

@@ -1,7 +1,7 @@
 from pathlib import Path
 from typing import Text
 from pyannote.database.protocol.protocol import ProtocolFile
-from .singleton import CFG
+from .registry import registry
 
 
 class FileFinder:
@@ -64,7 +64,7 @@ class FileFinder:
         database = current_file["database"]
 
         # read
-        path_templates = CFG.sources[database]
+        path_templates = registry.sources[database]
         if isinstance(path_templates, Text):
             path_templates = [path_templates]
 

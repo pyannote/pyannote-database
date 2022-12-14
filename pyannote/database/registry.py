@@ -13,7 +13,7 @@ class OverrideType(Enum):
     IGNORE_OVERRIDES = 2  # never replace existing
 
 
-class PyannoteDbConfig:
+class Registry:
     """Stores the data from one (or multiple !) database.yml files."""
 
     def __init__(self) -> None:
@@ -64,7 +64,7 @@ class PyannoteDbConfig:
         database_yml: Union[Text, Path] = None,
         allow_override: OverrideType = OverrideType.WARN_OVERRIDES,
     ):
-        """Loads all protocols from this database to this PyannoteDbConfig.
+        """Loads all protocols from this database to this Registry.
 
         Parameters
         ----------
@@ -187,3 +187,8 @@ class PyannoteDbConfig:
             databases = config.get("Protocols", dict())
             if "X" in databases:
                 self._process_database("X", databases["X"], None)
+
+
+
+# registry singleton
+registry = Registry()
