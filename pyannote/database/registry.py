@@ -1,9 +1,10 @@
 from enum import Enum
+import os
 from pathlib import Path
-from typing import Dict, List, Set, Text, Tuple, Type, Union
+from typing import Dict, List, Optional, Set, Text, Tuple, Type, Union
+
 from .custom import create_protocol, get_init, get_custom_protocol_class_name
 from .database import Database
-from .config import get_database_yml
 import yaml
 
 
@@ -178,6 +179,77 @@ class Registry:
 
 # registry singleton
 registry = Registry()
+
+
+
+def get_database_yml(database_yml: Union[Text, Path] = None) -> Path:
+    """Find location of pyannote.database configuration file
+
+    Parameter
+    ---------
+    database_yml : Path, optional
+        Force using this file.
+
+    Returns
+    -------
+    path : Path
+        Path to 'database.yml'
+
+    Raises
+    ------
+    FileNotFoundError when the configuration file could not be found.
+    """
+
+    # when database_yml is provided, use it
+    if database_yml is not None:
+        database_yml = Path(database_yml).expanduser()
+        # does the provided file exist?
+        if not database_yml.is_file():
+            msg = f"File '{database_yml}' does not exist."
+            raise FileNotFoundError(msg)
+
+        return database_yml
+
+    # is there a file named "database.yml" in current working directory?
+    if (Path.cwd() / "database.yml").is_file():
+        database_yml = Path.cwd() / "database.yml"
+
+    # does PYANNOTE_DATABASE_CONFIG environment variable links to an existing file?
+    elif os.environ.get("PYANNOTE_DATABASE_CONFIG") is not None:
+        database_yml = Path(os.environ.get("PYANNOTE_DATABASE_CONFIG")).expanduser()
+        if not database_yml.is_file():
+            msg = (
+                f'"PYANNOTE_DATABASE_CONFIG" links to a file that does not'
+                f'exist: "{database_yml}".'
+            )
+            raise FileNotFoundError(msg)
+
+    # does default "~/.pyannote/database.yml" file exist?
+    else:
+        database_yml = Path("~/.pyannote/database.yml").expanduser()
+
+        # if it does not, let the user know that nothing worked and in which
+        # locations "database.yml" was looked for.
+        if not database_yml.is_file():
+            msg = (
+                f'"pyannote.database" relies on a YAML configuration file but '
+                f"could not find any. Here are the locations that were "
+                f'looked for: {Path.cwd() / "database.yml"}, {database_yml}'
+            )
+            if os.environ.get("PYANNOTE_DATABASE_CONFIG") is not None:
+                database_yml = Path(
+                    os.environ.get("PYANNOTE_DATABASE_CONFIG")
+                ).expanduser()
+                msg += (
+                    f", and {database_yml} (given by "
+                    f"PYANNOTE_DATABASE_CONFIG environment variable)."
+                )
+            else:
+                msg += "."
+            raise FileNotFoundError(msg)
+
+    return database_yml
+
 
 
 def _merge_protocols_inplace(new_protocols: Dict[Tuple[Text, Text], Type], old_protocols: Dict[Tuple[Text, Text], Type], allow_override:OverrideType, db_name, database_yml:str):
