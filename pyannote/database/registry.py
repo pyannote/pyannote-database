@@ -9,8 +9,9 @@ import yaml
 
 class OverrideType(Enum):
     OVERRIDE = 0  # replace existing
-    WARN_OVERRIDES = 1  # warn when trying to replace existing
-    IGNORE_OVERRIDES = 2  # never replace existing
+    INFO_OVERRIDE = 1  # inform when replacing existing data, do it, and continue.
+    WARN_KEEP = 2  # warn when trying to replace existing data. Dont override it.
+    KEEP = 3  # never replace existing data
 
 
 class Registry:
@@ -32,7 +33,7 @@ class Registry:
     def load_databases(
         self,
         *paths: Union[Text, Path],
-        allow_override: OverrideType = OverrideType.WARN_OVERRIDES,
+        allow_override: OverrideType = OverrideType.WARN_KEEP,
     ):
         """Load all database yaml files passed as parameter into this config.
 
@@ -62,7 +63,7 @@ class Registry:
         db_name,
         db_entries: dict,
         database_yml: Union[Text, Path] = None,
-        allow_override: OverrideType = OverrideType.WARN_OVERRIDES,
+        allow_override: OverrideType = OverrideType.WARN_KEEP,
     ):
         """Loads all protocols from this database to this Registry.
 
@@ -97,25 +98,10 @@ class Registry:
                     self.tasks[task_name] = set()
                 self.tasks[task_name].add(db_name)
 
-        # Merge old protocols dict with the new one (according to current override rules)
+        # If needed, merge old protocols dict with the new one (according to current override rules)
         if db_name in self.databases:
-            for p_id, p in self.databases[db_name]._protocols.items():
-                # if this protocol already existed (=conflict/override)
-                if p_id in protocols:
-                    if allow_override == OverrideType.OVERRIDE:
-                        pass  # keep the new value
-                    elif allow_override == OverrideType.WARN_OVERRIDES:
-                        t_name, p_name = p_id
-                        realname = get_custom_protocol_class_name(
-                            db_name, t_name, p_name
-                        )
-                        raise Warning(
-                            f"Couldn't override already loaded task {realname}. Allow or ignore overrides to get rid of this message."
-                        )
-                    elif allow_override == OverrideType.IGNORE_OVERRIDES:
-                        protocols[p_id] = p  # put back the old value
-                else:
-                    protocols[p_id] = p
+            old_protocols = self.databases[db_name]._protocols
+            _merge_protocols_inplace(protocols, old_protocols, allow_override, db_name, database_yml)
 
         # create database class on-the-fly
         protocol_list = [
@@ -131,7 +117,7 @@ class Registry:
         self,
         database_yml: Union[Text, Path],
         config: dict = None,
-        allow_override: OverrideType = OverrideType.WARN_OVERRIDES,
+        allow_override: OverrideType = OverrideType.WARN_KEEP,
     ):
         """Register all protocols (but meta protocols) and all file sources defined in configuration file.
 
@@ -192,3 +178,55 @@ class Registry:
 
 # registry singleton
 registry = Registry()
+
+
+def _merge_protocols_inplace(new_protocols: Dict[Tuple[Text, Text], Type], old_protocols: Dict[Tuple[Text, Text], Type], allow_override:OverrideType, db_name, database_yml:str):
+    """Merge new and old protocols inplace into the passed new_protocol.
+
+    Parameters
+    ----------
+    new_protocols : Dict[Tuple[Text, Text], Type]
+        New protocol dict
+        Maps (task,protocol) tuples to custom protocol classes
+    old_protocols : Dict[Tuple[Text, Text], Type]
+        Old protocols dict
+        Maps (task,protocol) tuples to custom protocol classes.
+    allow_override : OverrideType
+        How to handle override
+    db_name : _type_
+        Name of the database (for logging/warning purposes)
+    database_yml : str
+        Path of the database.yml file (for logging/warning purposes)
+
+    Raises
+    ------
+    Warning
+        Raised if OverrideType is WARN_KEEP and a protocol is defined both in new_protocols and new_protocols
+    """
+
+    # for all previously defined protocol (in old_protocols)
+    for p_id, old_p in old_protocols.items():
+        # if this protocol is redefined
+        if p_id in new_protocols:
+            t_name, p_name = p_id
+            realname = get_custom_protocol_class_name(
+                db_name, t_name, p_name
+            )
+
+            # Either overriding the protocol is allowed (OVERRIDE or INFO_OVERRIDES) ...
+            if allow_override == OverrideType.OVERRIDE or allow_override == OverrideType.INFO_OVERRIDE:
+                if allow_override == OverrideType.INFO_OVERRIDE:
+                    print(f"Overriding protocol {realname}, the new definition is from {database_yml}.")
+                continue    # keep the protocol in new_protocol
+            # ... or it isnt : (KEEP or WARN_OVERRIDES)
+            else:
+                if allow_override == OverrideType.WARN_KEEP:
+                    raise Warning(
+                        f"Couldn't override already loaded protocol {realname} in {database_yml}. Allow or ignore overrides to get rid of this message."
+                    )
+                # keep the previously defined protocol : replace the new protocol with the old one
+                new_protocols[p_id] = old_p
+
+        # no conflit : keep the previously defined protocol
+        else:
+            new_protocols[p_id] = old_p
