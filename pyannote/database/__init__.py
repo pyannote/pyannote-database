@@ -37,7 +37,7 @@ from pkg_resources import iter_entry_points
 
 from typing import List, Optional, Dict, Set, Text, Union
 
-from .registry import registry, env_config_paths
+from .registry import registry, OverrideType
 
 from .database import Database
 
@@ -78,10 +78,6 @@ del get_versions
 
 # parse pyannote.database configuration file, looking for custom protocols
 # DATABASES, TASKS = add_custom_protocols()
-
-
-# load all databases contained in the PYANNOTE_DATABASE_CONFIG env variable
-registry.load_databases(*env_config_paths())
 
 
 
@@ -148,6 +144,7 @@ def get_tasks():
 
 __all__ = [
     "registry",
+    "OverrideType",
     "Database",
     "get_databases",
     "get_database",

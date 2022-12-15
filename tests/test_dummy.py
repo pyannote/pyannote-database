@@ -1,6 +1,6 @@
 import pytest
 
-from pyannote.database import get_databases
+from pyannote.database import registry
 
 def test_dummy():
-    assert isinstance(get_databases(), list)
+    assert isinstance(registry.get_databases(), list)

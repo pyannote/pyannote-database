@@ -30,6 +30,7 @@ from enum import Enum
 import os
 from pathlib import Path
 from typing import Dict, List, Optional, Set, Text, Tuple, Type, Union
+import warnings
 
 from pyannote.database.protocol.protocol import Preprocessors, Protocol
 from .custom import create_protocol, get_init, get_custom_protocol_class_name
@@ -39,7 +40,7 @@ import yaml
 
 class OverrideType(Enum):
     OVERRIDE = 0  # replace existing
-    INFO_OVERRIDE = 1  # inform when replacing existing data, do it, and continue.
+    WARN_OVERRIDE = 1  # warn when replacing existing data, do it, and continue.
     WARN_KEEP = 2  # warn when trying to replace existing data. Dont override it.
     KEEP = 3  # never replace existing data
 
@@ -296,24 +297,18 @@ class Registry:
         for db_yml, config in self.configs.items():
             databases = config.get("Protocols", dict())
             if "X" in databases:
-                self._process_database("X", databases["X"], None)
+                self._process_database("X", databases["X"], db_yml, allow_override=OverrideType.WARN_OVERRIDE)
 
 
 
-# registry singleton
-registry = Registry()
-
-
-
-
-def env_config_paths() -> List[Path]:
+def _env_config_paths() -> List[Path]:
     """Retrieve yaml database files to be loaded from the PYANNOTE_DATABASE_CONFIG environment variable.
     In case it contains multiple files, the paths must be separated by semicolons (;) in the environment variable.
 
     Returns
     -------
     List[Path]
-        List of all yaml database file paths to load
+        List of all yaml database file paths found in $PYANNOTE_DATABASE_CONFIG
     """
 
     valid_paths = []
@@ -326,6 +321,29 @@ def env_config_paths() -> List[Path]:
             valid_paths.append(path)
     return valid_paths
 
+def _find_default_ymls() -> List[Path]:
+    """Retrieve all possible yaml databases at startup.
+    The order is '~/.pyannote/database.yml' -> './database.yml" -> $PYANNOTE_DATABASE_CONFIG.
+
+    Returns
+    -------
+    List[Path]
+        List of all yaml database file path to load at startup
+    """
+
+    valid_paths: List[Path] = []
+
+    home_db_yml = Path("~/.pyannote/database.yml").expanduser()
+    if home_db_yml.is_file():
+        valid_paths.append(home_db_yml)
+    
+    cwd_db_yml = Path.cwd() / "database.yml"
+    if cwd_db_yml.is_file():
+        valid_paths.append(home_db_yml)
+    
+    valid_paths += _env_config_paths()
+
+    return valid_paths
 
 def get_database_yml(database_yml: Union[Text, Path] = None) -> Path:
     """Find location of pyannote.database configuration file
@@ -396,9 +414,10 @@ def get_database_yml(database_yml: Union[Text, Path] = None) -> Path:
     return database_yml
 
 
-
 def _merge_protocols_inplace(new_protocols: Dict[Tuple[Text, Text], Type], old_protocols: Dict[Tuple[Text, Text], Type], allow_override:OverrideType, db_name, database_yml:str):
     """Merge new and old protocols inplace into the passed new_protocol.
+    Warning, merging order might be counterintuitive : "KEEP" strategy keeps element from the OLD protocol
+    and MODIFIES the new protocol.
 
     Parameters
     ----------
@@ -414,11 +433,6 @@ def _merge_protocols_inplace(new_protocols: Dict[Tuple[Text, Text], Type], old_p
         Name of the database (for logging/warning purposes)
     database_yml : str
         Path of the database.yml file (for logging/warning purposes)
-
-    Raises
-    ------
-    Warning
-        Raised if OverrideType is WARN_KEEP and a protocol is defined both in new_protocols and new_protocols
     """
 
     # for all previously defined protocol (in old_protocols)
@@ -430,16 +444,17 @@ def _merge_protocols_inplace(new_protocols: Dict[Tuple[Text, Text], Type], old_p
                 db_name, t_name, p_name
             )
 
-            # Either overriding the protocol is allowed (OVERRIDE or INFO_OVERRIDES) ...
-            if allow_override == OverrideType.OVERRIDE or allow_override == OverrideType.INFO_OVERRIDE:
-                if allow_override == OverrideType.INFO_OVERRIDE:
-                    print(f"Overriding protocol {realname}, the new definition is from {database_yml}.")
-                continue    # keep the protocol in new_protocol
+            # Either overriding the protocol is allowed (OVERRIDE or WARN_OVERRIDES) ...
+            if allow_override == OverrideType.OVERRIDE or allow_override == OverrideType.WARN_OVERRIDE:
+                if allow_override == OverrideType.WARN_OVERRIDE:
+                    warnings.warn(f"Overriding protocol {realname}, the new definition is from {database_yml}.")
+                # do nothing : keep the protocol in new_protocol
+                continue
             # ... or it isnt : (KEEP or WARN_OVERRIDES)
             else:
                 if allow_override == OverrideType.WARN_KEEP:
-                    raise Warning(
-                        f"Couldn't override already loaded protocol {realname} in {database_yml}. Allow or ignore overrides to get rid of this message."
+                    warnings.warn(
+                        f"Couldn't override already loaded protocol {realname}, redefined in {database_yml}. Allow or ignore overrides to get rid of this message."
                     )
                 # keep the previously defined protocol : replace the new protocol with the old one
                 new_protocols[p_id] = old_p
@@ -447,3 +462,12 @@ def _merge_protocols_inplace(new_protocols: Dict[Tuple[Text, Text], Type], old_p
         # no conflit : keep the previously defined protocol
         else:
             new_protocols[p_id] = old_p
+
+
+
+
+# initialize the registry singleton
+registry = Registry()
+
+# load all database yaml files found at startup
+registry.load_databases(*_find_default_ymls(), allow_override=OverrideType.WARN_OVERRIDE)
