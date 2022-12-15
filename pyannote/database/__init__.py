@@ -32,11 +32,12 @@
 import os
 from pathlib import Path
 import sys
+import warnings
 from pkg_resources import iter_entry_points
 
 from typing import List, Optional, Dict, Set, Text, Union
 
-from pyannote.database.registry import registry, OverrideType
+from .registry import registry, env_config_paths
 
 from .database import Database
 
@@ -79,24 +80,9 @@ del get_versions
 # DATABASES, TASKS = add_custom_protocols()
 
 
-def env_config_paths() -> List[Path]:
-    valid_paths = []
-
-    env_config_paths = os.environ.get("PYANNOTE_DATABASE_CONFIG", "")
-    splitted = env_config_paths.split(":")
-    for path in splitted:
-        path = Path(path).expanduser()
-        if path.is_file():
-            valid_paths.append(path)
-    return valid_paths
-
-
 # load all databases contained in the PYANNOTE_DATABASE_CONFIG env variable
 registry.load_databases(*env_config_paths())
 
-
-def load_database_yml(*paths: list, allow_override=OverrideType.WARN_OVERRIDES):
-    registry.load_databases(*paths, allow_override=allow_override)
 
 
 def get_databases(task=None):
@@ -114,11 +100,8 @@ def get_databases(task=None):
         List of database, sorted in alphabetical order
 
     """
-
-    if task is None:
-        return sorted(registry.databases)
-
-    return sorted(registry.tasks.get(task, []))
+    warnings.warn("get_databases is deprecated, use registry.get_databases instead.", DeprecationWarning)
+    return registry.get_databases(task)
 
 
 def get_database(database_name, **kwargs):
@@ -134,29 +117,8 @@ def get_database(database_name, **kwargs):
     database : Database
         Database instance
     """
-
-    try:
-        database = registry.databases[database_name]
-
-    except KeyError:
-
-        if database_name == "X":
-            msg = (
-                "Could not find any meta-protocol. Please refer to "
-                "pyannote.database documentation to learn how to define them: "
-                "https://github.com/pyannote/pyannote-database"
-            )
-        else:
-            msg = (
-                'Could not find any protocol for "{name}" database. Please '
-                "refer to pyannote.database documentation to learn how to "
-                "define them: https://github.com/pyannote/pyannote-database"
-            )
-            msg = msg.format(name=database_name)
-        raise ValueError(msg)
-
-    return database(**kwargs)
-
+    warnings.warn("get_database is deprecated, use registry.get_database instead.", DeprecationWarning)
+    return registry.get_database(database, **kwargs)
 
 def get_protocol(name, preprocessors: Optional[Preprocessors] = None) -> Protocol:
     """Get protocol by full name
@@ -174,22 +136,18 @@ def get_protocol(name, preprocessors: Optional[Preprocessors] = None) -> Protoco
     protocol : Protocol
         Protocol instance
     """
-
-    database_name, task_name, protocol_name = name.split(".")
-    database = get_database(database_name)
-    protocol = database.get_protocol(
-        task_name, protocol_name, preprocessors=preprocessors
-    )
-    protocol.name = name
-    return protocol
+    warnings.warn("get_protocol is deprecated, use registry.get_protocol instead.", DeprecationWarning)
+    return registry.get_protocol(name, preprocessors)
 
 
 def get_tasks():
     """List of tasks"""
-    return sorted(registry.tasks)
+    warnings.warn("get_tasks is deprecated, use registry.get_tasks instead.", DeprecationWarning)
+    return registry.get_tasks()
 
 
 __all__ = [
+    "registry",
     "Database",
     "get_databases",
     "get_database",

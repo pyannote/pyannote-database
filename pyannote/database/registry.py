@@ -31,6 +31,7 @@ import os
 from pathlib import Path
 from typing import Dict, List, Optional, Set, Text, Tuple, Type, Union
 
+from pyannote.database.protocol.protocol import Preprocessors, Protocol
 from .custom import create_protocol, get_init, get_custom_protocol_class_name
 from .database import Database
 import yaml
@@ -86,6 +87,100 @@ class Registry:
             self._process_config(fullpath, allow_override=allow_override)
 
         self._reload_meta_protocols()
+
+    def get_databases(self, task=None) -> List[Text]:
+        """Get list of databases
+
+        Parameters
+        ----------
+        task : str, optional
+            Only returns databases providing protocols for this task.
+            Defaults to returning every database.
+
+        Returns
+        -------
+        databases : list
+            List of database, sorted in alphabetical order
+
+        """
+
+        if task is None:
+            return sorted(self.databases)
+
+        return sorted(self.tasks.get(task, []))
+
+    def get_database(self, database_name, **kwargs) -> Database:
+        """Get database by name
+
+        Parameters
+        ----------
+        database_name : str
+            Database name.
+
+        Returns
+        -------
+        database : Database
+            Database instance
+        """
+
+        try:
+            database = self.databases[database_name]
+
+        except KeyError:
+
+            if database_name == "X":
+                msg = (
+                    "Could not find any meta-protocol. Please refer to "
+                    "pyannote.database documentation to learn how to define them: "
+                    "https://github.com/pyannote/pyannote-database"
+                )
+            else:
+                msg = (
+                    'Could not find any protocol for "{name}" database. Please '
+                    "refer to pyannote.database documentation to learn how to "
+                    "define them: https://github.com/pyannote/pyannote-database"
+                )
+                msg = msg.format(name=database_name)
+            raise ValueError(msg)
+
+        return database(**kwargs)
+
+    def get_protocol(self, name, preprocessors: Optional[Preprocessors] = None) -> Protocol:
+        """Get protocol by full name
+
+        name : str
+            Protocol full name (e.g. "Etape.SpeakerDiarization.TV")
+        preprocessors : dict or (key, preprocessor) iterable
+            When provided, each protocol item (dictionary) are preprocessed, such
+            that item[key] = preprocessor(item). In case 'preprocessor' is not
+            callable, it should be a string containing placeholder for item keys
+            (e.g. {'audio': '/path/to/{uri}.wav'})
+
+        Returns
+        -------
+        protocol : Protocol
+            Protocol instance
+        """
+
+        database_name, task_name, protocol_name = name.split(".")
+        database = self.get_database(database_name)
+        protocol = database.get_protocol(
+            task_name, protocol_name, preprocessors=preprocessors
+        )
+        protocol.name = name
+        return protocol
+
+
+    def get_tasks(self) -> List[Text]:
+        """Get the list of tasks
+
+        Returns
+        -------
+        List[Text]
+            List of all task names.
+        """
+        return sorted(self.tasks)
+
 
     def _process_database(
         self,
@@ -208,6 +303,28 @@ class Registry:
 # registry singleton
 registry = Registry()
 
+
+
+
+def env_config_paths() -> List[Path]:
+    """Retrieve yaml database files to be loaded from the PYANNOTE_DATABASE_CONFIG environment variable.
+    In case it contains multiple files, the paths must be separated by semicolons (;) in the environment variable.
+
+    Returns
+    -------
+    List[Path]
+        List of all yaml database file paths to load
+    """
+
+    valid_paths = []
+
+    env_config_paths = os.environ.get("PYANNOTE_DATABASE_CONFIG", "")
+    splitted = env_config_paths.split(";")
+    for path in splitted:
+        path = Path(path).expanduser()
+        if path.is_file():
+            valid_paths.append(path)
+    return valid_paths
 
 
 def get_database_yml(database_yml: Union[Text, Path] = None) -> Path:
