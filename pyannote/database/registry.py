@@ -3,7 +3,8 @@
 
 # The MIT License (MIT)
 
-# Copyright (c) 2022 CNRS
+# Copyright (c) 2022- CNRS
+# Copyright (c) 2022- Université Paul Sabatier
 
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -24,6 +25,7 @@
 # SOFTWARE.
 
 # AUTHORS
+# Alexis PLAQUET 
 # Hervé BREDIN - http://herve.niderb.fr
 
 from enum import Enum
