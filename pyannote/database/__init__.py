@@ -3,7 +3,7 @@
 
 # The MIT License (MIT)
 
-# Copyright (c) 2016-2020 CNRS
+# Copyright (c) 2016- CNRS
 
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -25,17 +25,13 @@
 
 # AUTHORS
 # Hervé BREDIN - http://herve.niderb.fr
-
+# Alexis PLAQUET
 
 """pyannote.database"""
 
-import os
-from pathlib import Path
-import sys
 import warnings
-from pkg_resources import iter_entry_points
 
-from typing import List, Optional, Dict, Set, Text, Union
+from typing import Optional
 
 from .registry import registry, OverrideType
 
@@ -58,29 +54,6 @@ __version__ = get_versions()["version"]
 del get_versions
 
 
-# TODO : deprecate and delete, or make it work with Registry
-# load databases from entry points
-# for o in iter_entry_points(group="pyannote.database.databases", name=None):
-
-#     database_name = o.name
-
-#     DatabaseClass = o.load()
-#     DATABASES[database_name] = DatabaseClass
-
-#     database = DatabaseClass()
-
-#     for task in database.get_tasks():
-#         if task not in TASKS:
-#             TASKS[task] = set()
-#         TASKS[task].add(database_name)
-
-#     setattr(sys.modules[__name__], database_name, DatabaseClass)
-
-# parse pyannote.database configuration file, looking for custom protocols
-# DATABASES, TASKS = add_custom_protocols()
-
-
-
 def get_databases(task=None):
     """Get list of databases
 
@@ -97,7 +70,7 @@ def get_databases(task=None):
 
     """
     warnings.warn("get_databases is deprecated, use registry.get_databases instead.", DeprecationWarning)
-    return registry.get_databases(task)
+    return registry.get_databases(task=task)
 
 
 def get_database(database_name, **kwargs):
@@ -116,6 +89,7 @@ def get_database(database_name, **kwargs):
     warnings.warn("get_database is deprecated, use registry.get_database instead.", DeprecationWarning)
     return registry.get_database(database, **kwargs)
 
+
 def get_protocol(name, preprocessors: Optional[Preprocessors] = None) -> Protocol:
     """Get protocol by full name
 
@@ -133,7 +107,7 @@ def get_protocol(name, preprocessors: Optional[Preprocessors] = None) -> Protoco
         Protocol instance
     """
     warnings.warn("get_protocol is deprecated, use registry.get_protocol instead.", DeprecationWarning)
-    return registry.get_protocol(name, preprocessors)
+    return registry.get_protocol(name, preprocessors=preprocessors)
 
 
 def get_tasks():

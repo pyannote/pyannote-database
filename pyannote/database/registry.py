@@ -37,6 +37,9 @@ from .custom import create_protocol, get_init, get_custom_protocol_class_name
 from .database import Database
 import yaml
 
+# import sys
+# from pkg_resources import iter_entry_points
+
 
 class OverrideType(Enum):
     OVERRIDE = 0  # replace existing
@@ -52,7 +55,7 @@ class Registry:
         # Mapping of database.yml paths to their config in a dictionary
         self.configs: Dict[Path, Dict] = dict()
 
-        # Content of the "Database" root item (=where to find file content)
+        # Content of the "Database" root item (= where to find file content)
         self.sources: Dict[Text, List[Text]] = dict()
 
         # Mapping of database names to a type that inherits from Database
@@ -60,6 +63,31 @@ class Registry:
 
         # Mapping of tasks name to the set of databases that support this task
         self.tasks: Dict[Text, Set[Text]] = dict()
+
+        # self.load_entry_points()
+
+    # def load_entry_points(self):
+
+    #     # load databases from entry points
+    #     for o in iter_entry_points(group="pyannote.database.databases", name=None):
+
+    #         database_name = o.name
+
+    #         DatabaseClass = o.load()
+    #         self.databases[database_name] = DatabaseClass
+
+    #         database = DatabaseClass()
+
+    #         for task in database.get_tasks():
+    #             if task not in self.tasks:
+    #                 self.tasks[task] = set()
+    #             self.tasks[task].add(database_name)
+
+    #         setattr(sys.modules[__name__], database_name, DatabaseClass)
+
+    #     # TODO: update self.configs
+    #     # TODO: update self.sources
+
 
     def load_databases(
         self,
@@ -88,6 +116,7 @@ class Registry:
             self._process_config(fullpath, allow_override=allow_override)
 
         self._reload_meta_protocols()
+
 
     def get_databases(self, task=None) -> List[Text]:
         """Get list of databases
