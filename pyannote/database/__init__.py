@@ -87,7 +87,7 @@ def get_database(database_name, **kwargs):
         Database instance
     """
     warnings.warn("get_database is deprecated, use registry.get_database instead.", DeprecationWarning)
-    return registry.get_database(database, **kwargs)
+    return registry.get_database(database_name, **kwargs)
 
 
 def get_protocol(name, preprocessors: Optional[Preprocessors] = None) -> Protocol:
