@@ -121,25 +121,63 @@ class Registry:
 
         # Mapping of database.yml paths to their config in a dictionary
         # Example after loading both database.yml:
-        #   {"/path/to/first/database.yml": ????,
-        #    "/path/to/second/database.yml": ???}
-
+        #   {"/path/to/first/database.yml": {
+        #           "Databases":{
+        #               "DatabaseA": ["relative/path/A/trn/{uri}.wav", "relative/path/A/dev/{uri}.wav", relative/path/A/tst/{uri}.wav]
+        #               "DatabaseB": "/absolute/path/B/{uri}.wav" 
+        #           },
+        #           "Protocols":{
+        #               "DatabaseA":{
+        #                   "SpeakerDiarization": {
+        #                       "ProtocolA": {
+        #                           "train": {"uri": "relative/path/A/trn.lst"},
+        #                           "development": {"uri": "relative/path/A/dev.lst"},
+        #                           "test": {"uri"; "relative/path/A/tst.lst"}
+        #                       }
+        #                   }
+        #               },
+        #               "DatabaseB":{"SpeakerDiarization":{"Protocol": {...}}},
+        #               "X":{"SpeakerDiarization":{"A_and_B":{...}}}
+        #           }
+        #       },
+        #    "/path/to/second/database.yml": {
+        #           "Databases":{
+        #               "DatabaseC": /absolute/path/C/{uri}.wav
+        #               "DatabaseB": "/absolute/path/B/{uri}.wav" 
+        #           },
+        #           "Protocols":{
+        #               "DatabaseB":{"SpeakerDiarization": {"Protocol": {...}}},
+        #               "DatabaseC":{...}
+        #           }
+        #       }
+        #   }
         self.configs: Dict[Path, Dict] = dict()
 
 
         # Content of the "Database" root item (= where to find file content)
         # Example after loading both database.yml:
-        #   {???: ???}
+        #   {
+        #   "DatabaseA": [
+        #       "/path/to/first/relative/path/A/trn/{uri}.wav",
+        #       "/path/to/first/relative/path/A/dev/{uri}.wav",
+        #       /path/to/first/relative/path/A/tst/{uri}.wav
+        #       ],
+        #   "DatabaseB": ["/absolute/path/B/{uri}.wav"],
+        #   "DatabaseC": ["/absolute/path/C/{uri}.wav"]
+        #   }
         self.sources: Dict[Text, List[Text]] = dict()
 
         # Mapping of database names to a type that inherits from Database
-        self.databases: Dict[Text, Type] = dict()
         # Example after loading both database.yml:
-        #   {???: ???}
+        #   {"DatabaseA": pyannote.database.registry.DatabaseA,
+        #   "DatabaseB": pyannote.database.registry.DatabaseB,
+        #   "DatabaseC": pyannote.database.registry.DatabaseC,
+        #   "X": pyannote.database.registry.X}
+        self.databases: Dict[Text, Type] = dict()
 
         # Mapping of tasks name to the set of databases that support this task
         # Example after loading both database.yml:
-        #   {???: ???}
+        #   {"SpeakerDiarization", {"DatabaseA", "DatabaseB", "DatabaseC", "X"}}
         self.tasks: Dict[Text, Set[Text]] = dict()
 
         # self.load_entry_points()
