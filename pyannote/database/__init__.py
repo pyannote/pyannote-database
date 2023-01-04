@@ -54,77 +54,11 @@ __version__ = get_versions()["version"]
 del get_versions
 
 
-def get_databases(task=None):
-    """Get list of databases
-
-    Parameters
-    ----------
-    task : str, optional
-        Only returns databases providing protocols for this task.
-        Defaults to returning every database.
-
-    Returns
-    -------
-    databases : list
-        List of database, sorted in alphabetical order
-
-    """
-    warnings.warn("get_databases is deprecated, use registry.get_databases instead.", DeprecationWarning)
-    return registry.get_databases(task=task)
-
-
-def get_database(database_name, **kwargs):
-    """Get database by name
-
-    Parameters
-    ----------
-    name : str
-        Database name.
-
-    Returns
-    -------
-    database : Database
-        Database instance
-    """
-    warnings.warn("get_database is deprecated, use registry.get_database instead.", DeprecationWarning)
-    return registry.get_database(database_name, **kwargs)
-
-
-def get_protocol(name, preprocessors: Optional[Preprocessors] = None) -> Protocol:
-    """Get protocol by full name
-
-    name : str
-        Protocol full name (e.g. "Etape.SpeakerDiarization.TV")
-    preprocessors : dict or (key, preprocessor) iterable
-        When provided, each protocol item (dictionary) are preprocessed, such
-        that item[key] = preprocessor(item). In case 'preprocessor' is not
-        callable, it should be a string containing placeholder for item keys
-        (e.g. {'audio': '/path/to/{uri}.wav'})
-
-    Returns
-    -------
-    protocol : Protocol
-        Protocol instance
-    """
-    warnings.warn("get_protocol is deprecated, use registry.get_protocol instead.", DeprecationWarning)
-    return registry.get_protocol(name, preprocessors=preprocessors)
-
-
-def get_tasks():
-    """List of tasks"""
-    warnings.warn("get_tasks is deprecated, use registry.get_tasks instead.", DeprecationWarning)
-    return registry.get_tasks()
-
-
 __all__ = [
     "registry",
     "OverrideType",
     "Database",
-    "get_databases",
-    "get_database",
-    "get_tasks",
     "Protocol",
-    "get_protocol",
     "ProtocolFile",
     "Subset",
     "FileFinder",

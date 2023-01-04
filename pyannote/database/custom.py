@@ -171,10 +171,10 @@ def meta_subset_iter(
     """
 
     # this is imported here to avoid circular imports
-    from . import get_protocol
+    from . import registry
 
     for protocol, subsets in subset_entries.items():
-        partial_protocol = get_protocol(protocol)
+        partial_protocol = registry.get_protocol(protocol)
         for subset in subsets:
             method_name = f"{subset}_iter"
             for file in getattr(partial_protocol, method_name)():

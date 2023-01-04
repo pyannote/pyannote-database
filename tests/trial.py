@@ -1,6 +1,6 @@
-from pyannote.database import get_protocol
+from pyannote.database import registry
 
-protocol = get_protocol('MyDatabase.SpeakerVerification.MySpeakerVerification')
+protocol = registry.get_protocol('MyDatabase.SpeakerVerification.MySpeakerVerification')
 for elt in protocol.train_trial():
     print(elt)
     print(elt['file1']['try_with'])
