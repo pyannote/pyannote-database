@@ -40,9 +40,6 @@ from .custom import create_protocol, get_init, get_custom_protocol_class_name
 from .database import Database
 import yaml
 
-# import sys
-# from pkg_resources import iter_entry_points
-
 
 class OverrideType(Enum):
     OVERRIDE = 0  # replace existing
@@ -179,30 +176,6 @@ class Registry:
         # Example after loading both database.yml:
         #   {"SpeakerDiarization", {"DatabaseA", "DatabaseB", "DatabaseC", "X"}}
         self.tasks: Dict[Text, Set[Text]] = dict()
-
-        # self.load_entry_points()
-
-    # def load_entry_points(self):
-
-    #     # load databases from entry points
-    #     for o in iter_entry_points(group="pyannote.database.databases", name=None):
-
-    #         database_name = o.name
-
-    #         DatabaseClass = o.load()
-    #         self.databases[database_name] = DatabaseClass
-
-    #         database = DatabaseClass()
-
-    #         for task in database.get_tasks():
-    #             if task not in self.tasks:
-    #                 self.tasks[task] = set()
-    #             self.tasks[task].add(database_name)
-
-    #         setattr(sys.modules[__name__], database_name, DatabaseClass)
-
-    #     # TODO: update self.configs
-    #     # TODO: update self.sources
 
 
     def load_databases(
