@@ -29,7 +29,6 @@
 
 """pyannote.database"""
 
-import warnings
 
 from typing import Optional
 
