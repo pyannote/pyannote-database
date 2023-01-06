@@ -47,7 +47,6 @@ import string
 
 from . import protocol as protocol_module
 
-# from .database import Database
 from pyannote.database.protocol.protocol import ProtocolFile
 import yaml
 import warnings
