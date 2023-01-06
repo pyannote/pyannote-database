@@ -53,7 +53,6 @@ import warnings
 from typing import Text, Dict, Callable, Any, Union
 import functools
 
-# from . import DATABASES, TASKS
 from .protocol.protocol import Subset
 
 import pkg_resources
