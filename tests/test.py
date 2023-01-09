@@ -6,12 +6,6 @@ from pyannote.database.protocol import SpeakerVerificationProtocol
 
 assert "MyDatabase" in registry.get_databases()
 
-tasks = registry.get_tasks()
-assert "Collection" in tasks
-assert "Protocol" in tasks
-assert "SpeakerDiarization" in tasks
-assert "SpeakerVerification" in tasks
-
 database = registry.get_database("MyDatabase")
 tasks = database.get_tasks()
 assert "Collection" in tasks

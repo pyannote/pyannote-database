@@ -172,11 +172,6 @@ class Registry:
         #   "X": pyannote.database.registry.X}
         self.databases: Dict[Text, Type] = dict()
 
-        # Mapping of tasks name to the set of databases that support this task
-        # Example after loading both database.yml:
-        #   {"SpeakerDiarization", {"DatabaseA", "DatabaseB", "DatabaseC", "X"}}
-        self.tasks: Dict[Text, Set[Text]] = dict()
-
 
     def load_databases(
         self,
@@ -207,7 +202,7 @@ class Registry:
         self._reload_meta_protocols()
 
 
-    def get_databases(self, task=None) -> List[Text]:
+    def get_databases(self) -> List[Text]:
         """Get list of databases
 
         Parameters
@@ -223,10 +218,7 @@ class Registry:
 
         """
 
-        if task is None:
-            return sorted(self.databases)
-
-        return sorted(self.tasks.get(task, []))
+        return sorted(self.databases)
 
     def get_database(self, database_name, **kwargs) -> Database:
         """Get database by name
@@ -290,17 +282,6 @@ class Registry:
         return protocol
 
 
-    def get_tasks(self) -> List[Text]:
-        """Get the list of tasks
-
-        Returns
-        -------
-        List[Text]
-            List of all task names.
-        """
-        return sorted(self.tasks)
-
-
     def _process_database(
         self,
         db_name,
@@ -335,11 +316,6 @@ class Registry:
                     continue
 
                 protocols[(task_name, protocol)] = CustomProtocol
-
-                # update TASKS dictionary
-                if task_name not in self.tasks:
-                    self.tasks[task_name] = set()
-                self.tasks[task_name].add(db_name)
 
         # If needed, merge old protocols dict with the new one (according to current override rules)
         if db_name in self.databases:

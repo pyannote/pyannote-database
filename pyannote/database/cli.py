@@ -69,7 +69,7 @@ def task(
     """Print list of tasks"""
 
     if database == "":
-        tasks = registry.get_tasks()
+        tasks = []
     else:
         db: Database = registry.get_database(database)
         tasks = db.get_tasks()
