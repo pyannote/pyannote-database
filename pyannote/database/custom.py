@@ -47,14 +47,12 @@ import string
 
 from . import protocol as protocol_module
 
-# from .database import Database
 from pyannote.database.protocol.protocol import ProtocolFile
 import yaml
 import warnings
 from typing import Text, Dict, Callable, Any, Union
 import functools
 
-# from . import DATABASES, TASKS
 from .protocol.protocol import Subset
 
 import pkg_resources
