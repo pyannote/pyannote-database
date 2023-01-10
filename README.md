@@ -6,27 +6,28 @@ Reproducible experimental protocols for multimedia (audio, video, text) database
 $ pip install pyannote.database
 ```
 
-- [Definitions](#definitions)
-- [Configuration file](#configuration-file)
-- [Data loaders](#data-loaders)
-- [Preprocessors](#preprocessors)
-- [`FileFinder`](#filefinder)
-- [Tasks](#tasks)
-  - [Collections](#collections)
-  - [Speaker diarization](#speaker-diarization)
-  - [Speaker verification](#speaker-verification)
-- [Meta-protocols](#meta-protocols)
-- [Plugins](#plugins)
-- [API](#api)
-  - [Databases and tasks](#databases-and-tasks)
-  - [Custom data loaders](#custom-data-loaders)
-    - [Defining custom data loaders](#defining-custom-data-loaders)
-    - [Registering custom data loaders](#registering-custom-data-loaders)
-    - [Testing custom data loaders](#testing-custom-data-loaders)
-  - [Protocols](#protocols)
-    - [Collections](#collections-1)
-    - [Speaker diarization](#speaker-diarization-1)
-    - [Speaker verification](#speaker-verification-1)
+- [pyannote-database](#pyannote-database)
+  - [Definitions](#definitions)
+  - [Configuration file](#configuration-file)
+  - [Data loaders](#data-loaders)
+  - [Preprocessors](#preprocessors)
+  - [`FileFinder`](#filefinder)
+  - [Tasks](#tasks)
+    - [Collections](#collections)
+    - [Speaker diarization](#speaker-diarization)
+    - [Speaker verification](#speaker-verification)
+  - [Meta-protocols](#meta-protocols)
+  - [Plugins](#plugins)
+  - [API](#api)
+    - [Databases and tasks](#databases-and-tasks)
+    - [Custom data loaders](#custom-data-loaders)
+      - [Defining custom data loaders](#defining-custom-data-loaders)
+      - [Registering custom data loaders](#registering-custom-data-loaders)
+      - [Testing custom data loaders](#testing-custom-data-loaders)
+    - [Protocols](#protocols)
+      - [Collections](#collections-1)
+      - [Speaker diarization](#speaker-diarization-1)
+      - [Speaker verification](#speaker-verification-1)
 
 ## Definitions
 
@@ -44,7 +45,7 @@ An **experimental protocol** (`pyannote.database.Protocol`) usually defines thre
 
 ## Configuration file
 
-Experimental protocols are defined via a YAML configuration file:
+Experimental protocols are defined via YAML configuration files:
 
   ```yaml
   Protocols:
@@ -68,22 +69,35 @@ files in the _train_ subset:
   filename2
   ```
 
-`pyannote.database` will look for the configuration file at the following locations, sorted by priority:
+If available, `pyannote.database` will load the configuration files at the following locations, in this order:
 
-  1. `database.yml` in current working directory
-  2. path provided by the `PYANNOTE_DATABASE_CONFIG` environment variable
-  3. `~/.pyannote/database.yml`
+  1. `~/.pyannote/database.yml`
+  2. `database.yml` in current working directory
+  3. path provided by the `PYANNOTE_DATABASE_CONFIG` environment variable, list of paths separated by `;` are supported (e.g. `/foo/1.yml;~/bar/2.yml;3.yml`)
 
 The newly defined `MyDatabase.Protocol.MyProtocol` can then be used in Python:
 
   ```python
-  from pyannote.database import get_protocol
-  protocol = get_protocol('MyDatabase.Protocol.MyProtocol')
+  from pyannote.database import registry
+  protocol = registry.get_protocol('MyDatabase.Protocol.MyProtocol')
   for resource in protocol.train():
       print(resource["uri"])
   filename1
   filename2
   ```
+
+It's also possible to load configuration files at runtime:
+
+```python
+registry.load_databases("file1.yml", "/foo/file2.yml")
+```
+
+The load method takes an optional `allow_override: pyannote.database.OverrideType` positional argument. When a new configuration file is loaded, its definitions are merged with the previously loaded files. In case there are two protocol defined with the same exact name, you can decide how should it be loaded:
+ - `OverrideType.OVERRIDE` to use the redefined protocol and get rid of the previously defined one
+ - `OverrideType.KEEP` to ignore redefined protocols and keep protocols that are already loaded
+ - `OverrideType.WARN_OVERRIDE` or `OverrideType.WARN_KEEP` to do either of these option while adding a warning
+ - `OverrideType.ERROR` to raise an `Exception` when you are trying to override a protocol
+By default, the registry will use `WARN_OVERRIDE` behaviour, both for `load_databases` and for configuration files loaded at startup.
 
 Paths defined in the configuration file can be absolute or relative the directory containing the configuration file. For instance, the following file organization should work just fine:
 
@@ -137,8 +151,8 @@ and the following directory structure:
 Now, resources have both `'speaker'` and `'transcription'` keys:
 
   ```python
-  from pyannote.database import get_protocol
-  protocol = get_protocol('MyDatabase.Protocol.MyProtocol')
+  from pyannote.database import registry
+  protocol = registry.get_protocol('MyDatabase.Protocol.MyProtocol')
   for resource in protocol.train():
       assert "speaker" in resource
       assert isinstance(resource["speaker"], pyannote.core.Annotation)
@@ -196,7 +210,7 @@ def compute_dummy(resource: ProtocolFile):
     print(f"Computing 'dummy' key")
     return len(resource["uri"])
 preprocessors = {"dummy": compute_dummy}
-protocol = get_protocol('Etape.SpeakerDiarization.TV', preprocessors=preprocessors)
+protocol = registry.get_protocol('Etape.SpeakerDiarization.TV', preprocessors=preprocessors)
 resource = next(protocol.train())
 resource["dummy"]
 Computing 'dummy' key
@@ -219,7 +233,7 @@ Say audio files are available at the following paths:
           └── filename5.mp3
   ```
 
-The `FileFinder` preprocessor relies on a `Databases:` section that should be added to the `database.yml` configuration file and indicates where to look for media files (using resource key placeholders):
+The `FileFinder` preprocessor relies on a `Databases:` section that should be added to the `database.yml` configuration files and indicates where to look for media files (using resource key placeholders):
 
   ```yaml
   Databases:
@@ -240,7 +254,7 @@ Note that any pattern supported by `pathlib.Path.glob` is supported (but avoid `
   ```python
   from pyannote.database import FileFinder
   preprocessors = {"audio": FileFinder()}
-  protocol = get_protocol('MyDatabase.', preprocessors=preprocessors)
+  protocol = registry.get_protocol('MyDatabase.', preprocessors=preprocessors)
   for resource in protocol.train():
       print(resource["audio"])
   /path/to/audio/filename1.wav
@@ -276,8 +290,8 @@ files in the collection:
 It can the be used in Python like this:
 
   ```python
-  from pyannote.database import get_protocol
-  collection = get_protocol('MyDatabase.Collection.MyCollection')
+  from pyannote.database import registry
+  collection = registry.get_protocol('MyDatabase.Collection.MyCollection')
   for file in collection.files():
      print(file["uri"])
   filename1
@@ -337,8 +351,8 @@ It is recommended to provide the `annotated` key even if it covers the whole fil
 It can then be used in Python like this:
 
   ```python
-  from pyannote.database import get_protocol
-  protocol = get_protocol('MyDatabase.SpeakerDiarization.MyProtocol')
+  from pyannote.database import registry
+  protocol = registry.get_protocol('MyDatabase.SpeakerDiarization.MyProtocol')
   for file in protocol.train():
      print(file["uri"])
      assert "annotation" in file
@@ -395,8 +409,8 @@ In the example below, it means that the same speaker uttered files `filename1` a
 It can then be used in Python like this:
 
   ```python
-  from pyannote.database import get_protocol
-  protocol = get_protocol('MyDatabase.SpeakerVerification.MyProtocol')
+  from pyannote.database import registry
+  protocol = registry.get_protocol('MyDatabase.SpeakerVerification.MyProtocol')
   for trial in protocol.train_trial():
      print(f"{trial['reference']} {trial['file1']['uri']} {trial['file2']['uri']}")
   1 filename1 filename2
@@ -432,8 +446,8 @@ The new `X.Protocol.MyMetaProtocol` combines the `train` and `development` subse
 This new "meta-protocol" can be used like any other protocol of the (fake) `X` database:
 
   ```python
-  from pyannote.database import get_protocol
-  protocol = get_protocol('X.Protocol.MyMetaProtocol')
+  from pyannote.database import registry
+  protocol = registry.get_protocol('X.Protocol.MyMetaProtocol')
   for resource in protocol.train():
       pass
   ```
@@ -448,19 +462,23 @@ A bunch of `pyannote.database` plugins are already available (search for `pyanno
 
 ### Databases and tasks
 
+Everything about databases is stored in the `registry`.
+
+```python
+  from pyannote.database import registry
+```
+
 Available databases can be discovered using `get_databases`:
 
   ```python
-  from pyannote.database import get_databases
-  get_databases()
+  registry.get_databases()
   ["MyDatabase"]
   ```
 
 Any database can then be instantiated as follows:
 
   ```python
-  from pyannote.database import get_database
-  database = get_database("MyDatabase")
+  database = registry.get_database("MyDatabase")
   ```
 
 Some databases (especially multimodal ones) may be used for several tasks.
@@ -471,19 +489,6 @@ One can get a list of tasks using `get_tasks` method:
   ["SpeakerDiarization"]
   ```
 
-One can also get the overall list of tasks, as well as the list of databases
-that implement at least one protocol for a specific task.
-
-  ```python
-  from pyannote.database import get_tasks
-  get_tasks()
-  ["SpeakerDiarization"]
-  get_databases(task="SpeakerDiarization")
-  ["MyDatabase"]
-  ```
-
-This might come handy in case you want to automatically benchmark a particular
-approach on every database for a given task.
 
 ### Custom data loaders
 
@@ -581,12 +586,11 @@ Protocols:
 
 ```python
 # tell pyannote.database about the configuration file
->>> import os
->>> os.environ['PYANNOTE_DATABASE_CONFIG'] = 'demo/database.yml'
+>>> from pyannote.database import registry
+>>> registry.load_databases('demo/database.yml')
 
 # load custom protocol
->>> from pyannote.database import get_protocol
->>> protocol = get_protocol('MyDatabase.SpeakerDiarization.MyProtocol')
+>>> protocol = registry.get_protocol('MyDatabase.SpeakerDiarization.MyProtocol')
 
 # get first file of training set
 >>> first_file = next(protocol.train())

@@ -207,8 +207,8 @@ class SpeakerDiarizationProtocol(Protocol):
 
     It can then be used in Python like this:
 
-        >>> from pyannote.database import get_protocol
-        >>> protocol = get_protocol('MyDatabase.SpeakerDiarization.MyProtocol')
+        >>> from pyannote.database import registry
+        >>> protocol = registry.get_protocol('MyDatabase.SpeakerDiarization.MyProtocol')
         >>> for file in protocol.train():
         ...    print(file["uri"])
         filename1

@@ -378,7 +378,7 @@ class LabelMapper(object):
     >>> mapping = {'Hadrien': 'MAL', 'Marvin': 'MAL',
     ...            'Wassim': 'CHI', 'Herve': 'GOD'}
     >>> preprocessors = {'annotation': LabelMapper(mapping=mapping)}
-    >>> protocol = get_protocol('AMI.SpeakerDiarization.MixHeadset',
+    >>> protocol = registry.get_protocol('AMI.SpeakerDiarization.MixHeadset',
                                 preprocessors=preprocessors)
 
     """

@@ -292,8 +292,8 @@ class Protocol:
 
     It can then be used in Python like this:
 
-        >>> from pyannote.database import get_protocol
-        >>> protocol = get_protocol('MyDatabase.Protocol.MyProtocol')
+        >>> from pyannote.database import registry
+        >>> protocol = registry.get_protocol('MyDatabase.Protocol.MyProtocol')
         >>> for file in protocol.train():
         ...    print(file["uri"])
         filename1
