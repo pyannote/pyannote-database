@@ -46,6 +46,7 @@ class OverrideType(Enum):
     WARN_OVERRIDE = 1  # warn when replacing existing data, do it, and continue.
     WARN_KEEP = 2  # warn when trying to replace existing data. Dont override it.
     KEEP = 3  # never replace existing data
+    ERROR = 4 # dont replace existing data : raise a RuntimeError
 
 
 # To ease the understanding of future me, all comments inside Registry codebase
@@ -466,9 +467,7 @@ def _merge_protocols_inplace(new_protocols: Dict[Tuple[Text, Text], Type], old_p
         # if this protocol is redefined
         if p_id in new_protocols:
             t_name, p_name = p_id
-            realname = get_custom_protocol_class_name(
-                db_name, t_name, p_name
-            )
+            realname = f"{db_name}.{t_name}.{p_name}"
 
             # Either overriding the protocol is allowed (OVERRIDE or WARN_OVERRIDES) ...
             if allow_override == OverrideType.OVERRIDE or allow_override == OverrideType.WARN_OVERRIDE:
@@ -482,6 +481,8 @@ def _merge_protocols_inplace(new_protocols: Dict[Tuple[Text, Text], Type], old_p
                     warnings.warn(
                         f"Couldn't override already loaded protocol {realname}, redefined in {database_yml}. Allow or ignore overrides to get rid of this message."
                     )
+                elif allow_override == OverrideType.ERROR:
+                    raise RuntimeError(f"Cannot override already defined protocol {realname}, trying to redefine it in {database_yml} !")
                 # keep the previously defined protocol : replace the new protocol with the old one
                 new_protocols[p_id] = old_p
 
@@ -496,4 +497,4 @@ def _merge_protocols_inplace(new_protocols: Dict[Tuple[Text, Text], Type], old_p
 registry = Registry()
 
 # load all database yaml files found at startup
-registry.load_databases(*_find_default_ymls(), allow_override=OverrideType.WARN_OVERRIDE)
+registry.load_databases(*_find_default_ymls(), allow_override=OverrideType.WARN_KEEP)
