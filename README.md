@@ -96,8 +96,9 @@ The load method takes an optional `allow_override: pyannote.database.OverrideTyp
  - `OverrideType.OVERRIDE` to use the redefined protocol and get rid of the previously defined one
  - `OverrideType.KEEP` to ignore redefined protocols and keep protocols that are already loaded
  - `OverrideType.WARN_OVERRIDE` or `OverrideType.WARN_KEEP` to do either of these option while adding a warning
- - `OverrideType.ERROR` to raise an `Exception` when you are trying to override a protocol
-By default, the registry will use `WARN_OVERRIDE` behaviour, both for `load_databases` and for configuration files loaded at startup.
+ - `OverrideType.ERROR` to raise a `RuntimeException` when you are trying to override a protocol
+
+By default, the registry will use `WARN_OVERRIDE` behaviour, both for `load_databases` and for configuration files loaded at startup. Which means only the most recently loaded declaration of a protocol will be kept (but you will be warned if protocols get redefined). 
 
 Paths defined in the configuration file can be absolute or relative the directory containing the configuration file. For instance, the following file organization should work just fine:
 
