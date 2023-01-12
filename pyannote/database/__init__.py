@@ -31,6 +31,7 @@
 
 
 from typing import Optional
+import warnings
 
 from .registry import registry, OverrideType
 
@@ -53,8 +54,29 @@ __version__ = get_versions()["version"]
 del get_versions
 
 
+def get_protocol(name, preprocessors: Optional[Preprocessors] = None) -> Protocol:
+    """Get protocol by full name
+
+    name : str
+        Protocol full name (e.g. "Etape.SpeakerDiarization.TV")
+    preprocessors : dict or (key, preprocessor) iterable
+        When provided, each protocol item (dictionary) are preprocessed, such
+        that item[key] = preprocessor(item). In case 'preprocessor' is not
+        callable, it should be a string containing placeholder for item keys
+        (e.g. {'audio': '/path/to/{uri}.wav'})
+
+    Returns
+    -------
+    protocol : Protocol
+        Protocol instance
+    """
+    warnings.warn("get_protocol is deprecated, use registry.get_protocol instead.", DeprecationWarning)
+    return registry.get_protocol(name, preprocessors=preprocessors)
+
+
 __all__ = [
     "registry",
+    "get_protocol",
     "OverrideType",
     "Database",
     "Protocol",
