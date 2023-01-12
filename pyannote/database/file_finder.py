@@ -1,7 +1,8 @@
 from pathlib import Path
 from typing import Text
 from pyannote.database.protocol.protocol import ProtocolFile
-from .registry import registry
+from .registry import registry as global_registry
+from .registry import Registry
 
 
 class FileFinder:
@@ -9,12 +10,9 @@ class FileFinder:
 
     Parameters
     ----------
-    database_yml : str, optional
-        Path to database configuration file in YAML format (see below).
-        When not provided, pyannote.database will first use file 'database.yml'
-        in current working directory if it exists. If it does not exist, it will
-        use the path provided by the PYANNOTE_DATABASE_CONFIG environment
-        variable. If empty or not set, defaults to '~/.pyannote/database.yml'.
+    registry : str, optional
+        Registry to use to get where to find the database files.
+        If not set, defaults to pyannote.database's global registry.
 
     Configuration file
     ------------------
@@ -37,9 +35,9 @@ class FileFinder:
     pathlib.Path.glob
     """
 
-    def __init__(self):
-
+    def __init__(self, registry: Registry = None):
         super().__init__()
+        self.registry = registry if registry is not None else global_registry
 
     def __call__(self, current_file: ProtocolFile) -> Path:
         """Look for current file
@@ -64,7 +62,7 @@ class FileFinder:
         database = current_file["database"]
 
         # read
-        path_templates = registry.sources[database]
+        path_templates = self.registry.sources[database]
         if isinstance(path_templates, Text):
             path_templates = [path_templates]
 
