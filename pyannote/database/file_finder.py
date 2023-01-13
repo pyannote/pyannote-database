@@ -1,3 +1,33 @@
+#!/usr/bin/env python
+# encoding: utf-8
+
+# The MIT License (MIT)
+
+# Copyright (c) 2016- CNRS
+
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+
+# The above copyright notice and this permission notice shall be included in
+# all copies or substantial portions of the Software.
+
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
+# AUTHORS
+# Hervé BREDIN - http://herve.niderb.fr
+# Alexis PLAQUET
+
+import warnings
 from pathlib import Path
 from typing import Text
 from pyannote.database.protocol.protocol import ProtocolFile
@@ -6,38 +36,29 @@ from .registry import Registry
 
 
 class FileFinder:
-    """Database file finder. Retrieve content files from URIs.
+    """Database file finder. 
+    
+    Retrieve media files by URI.
 
     Parameters
     ----------
-    registry : str, optional
-        Registry to use to get where to find the database files.
-        If not set, defaults to pyannote.database's global registry.
-
-    Configuration file
-    ------------------
-    Here are a few examples of what is expected in the configuration file.
-
-    # support for multiple databases
-    database1: /path/to/database1/{uri}.wav
-    database2: /path/to/database2/{uri}.wav
-
-    # files are spread over multiple directory
-    database3:
-      - /path/to/database3/1/{uri}.wav
-      - /path/to/database3/2/{uri}.wav
-
-    # supports * (and **) globbing
-    database4: /path/to/database4/*/{uri}.wav
-
-    See also
-    --------
-    pathlib.Path.glob
+    registry : Registry, optional
+        Database registry. Defaults to `pyannote.database.registry`.
     """
 
-    def __init__(self, registry: Registry = None):
+    def __init__(
+        self, 
+        registry: Registry = None,
+        database_yml: Text = None):
         super().__init__()
-        self.registry = registry if registry is not None else global_registry
+        if registry is None:
+            if database_yml is None:
+                registry = global_registry
+            else:
+                warnings.warn("Passing `database.yml` to `FileFinder` is deprecated in favor of `registry`.")
+                registry = Registry()
+                registry.load_database(database_yml)
+        self.registry = registry
 
     def __call__(self, current_file: ProtocolFile) -> Path:
         """Look for current file
@@ -61,7 +82,6 @@ class FileFinder:
         uri = current_file["uri"]
         database = current_file["database"]
 
-        # read
         path_templates = self.registry.sources[database]
         if isinstance(path_templates, Text):
             path_templates = [path_templates]
@@ -100,7 +120,7 @@ class FileFinder:
             return found[0]
 
         if len(found) == 0:
-            msg = f'Could not find file "{uri}" in the following location(s):'
+            msg = f'Could not find file "{uri}" in any of the following location(s):'
             for path in searched:
                 msg += f"\n - {path}"
             raise FileNotFoundError(msg)
