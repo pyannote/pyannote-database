@@ -462,7 +462,7 @@ def _merge_protocols_inplace(
 
             # keep the new protocol
             elif mode == LoadingMode.OVERRIDE:
-                warnings.warn(f"Replacing exisintg {realname} protocol by the one defined in '{database_yml}'.")
+                warnings.warn(f"Replacing existing {realname} protocol by the one defined in '{database_yml}'.")
                 pass
             
             # keep the old protocol
