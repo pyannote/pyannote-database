@@ -412,7 +412,7 @@ def _find_default_ymls() -> List[Path]:
     
     cwd_db_yml = Path.cwd() / "database.yml"
     if cwd_db_yml.is_file():
-        paths.append(home_db_yml)
+        paths.append(cwd_db_yml)
     
     paths += _env_config_paths()
 
