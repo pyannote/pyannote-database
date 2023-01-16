@@ -33,7 +33,7 @@
 from typing import Optional
 import warnings
 
-from .registry import registry, OverrideType
+from .registry import registry, LoadingMode
 
 from .database import Database
 
@@ -70,14 +70,16 @@ def get_protocol(name, preprocessors: Optional[Preprocessors] = None) -> Protoco
     protocol : Protocol
         Protocol instance
     """
-    warnings.warn("get_protocol is deprecated, use registry.get_protocol instead.", DeprecationWarning)
+    warnings.warn(
+        "`get_protocol` has been deprecated in favor of `pyannote.database.registry.get_protocol`.", 
+        DeprecationWarning)
     return registry.get_protocol(name, preprocessors=preprocessors)
 
 
 __all__ = [
     "registry",
     "get_protocol",
-    "OverrideType",
+    "LoadingMode",
     "Database",
     "Protocol",
     "ProtocolFile",

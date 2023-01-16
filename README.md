@@ -69,16 +69,30 @@ files in the _train_ subset:
   filename2
   ```
 
-If available, `pyannote.database` will load the configuration files at the following locations, in this order:
+Since version `5.0`, configuration files must be loaded into the `registry` like that: 
+
+```python
+from pyannote.database import registry
+registry.load_database("/path/to/database.yml")
+```
+
+`registry.load_database` takes an optional `mode` keyword argument that controls what to do when loading a protocol whose name (e.g. `MyDatabase.Protocol.MyProtocol`) is already used by another protocol:
+ - `LoadingMode.OVERRIDE` to override existing protocol by the new one (default behavior);
+ - `LoadingMode.KEEP` to keep existing protocol;
+ - `LoadingMode.ERROR` to raise a `RuntimeException` when such a conflict occurs.
+
+For backward compatibility with `4.x` branch, the following configuration files are loaded automatically when importing `pyannote.database`, in that order:
 
   1. `~/.pyannote/database.yml`
   2. `database.yml` in current working directory
-  3. path provided by the `PYANNOTE_DATABASE_CONFIG` environment variable, list of paths separated by `;` are supported (e.g. `/foo/1.yml;~/bar/2.yml;3.yml`)
+  3. list of `;`-separated path(s) in the `PYANNOTE_DATABASE_CONFIG` environment variable (e.g. `/absolute/path.yml;relative/path.yml`)
 
-The newly defined `MyDatabase.Protocol.MyProtocol` can then be used in Python:
+Once loaded in the registry, protocols can be used in Python like this:
 
   ```python
   from pyannote.database import registry
+  registry.load_database("/path/to/database.yml")
+
   protocol = registry.get_protocol('MyDatabase.Protocol.MyProtocol')
   for resource in protocol.train():
       print(resource["uri"])
@@ -86,21 +100,8 @@ The newly defined `MyDatabase.Protocol.MyProtocol` can then be used in Python:
   filename2
   ```
 
-It's also possible to load configuration files at runtime:
-
-```python
-registry.load_databases("file1.yml", "/foo/file2.yml")
-```
-
-The load method takes an optional `allow_override: pyannote.database.OverrideType` positional argument. When a new configuration file is loaded, its definitions are merged with the previously loaded files. In case there are two protocol defined with the same exact name, you can decide how should it be loaded:
- - `OverrideType.OVERRIDE` to use the redefined protocol and get rid of the previously defined one
- - `OverrideType.KEEP` to ignore redefined protocols and keep protocols that are already loaded
- - `OverrideType.WARN_OVERRIDE` or `OverrideType.WARN_KEEP` to do either of these option while adding a warning
- - `OverrideType.ERROR` to raise a `RuntimeException` when you are trying to override a protocol
-
-By default, the registry will use `WARN_OVERRIDE` behaviour, both for `load_databases` and for configuration files loaded at startup. Which means only the most recently loaded declaration of a protocol will be kept (but you will be warned if protocols get redefined). 
-
-Paths defined in the configuration file can be absolute or relative the directory containing the configuration file. For instance, the following file organization should work just fine:
+Paths defined in the configuration file can be absolute or relative to the directory containing the configuration file. 
+For instance, the following file organization should work just fine:
 
   ```text
   .
@@ -154,6 +155,7 @@ Now, resources have both `'speaker'` and `'transcription'` keys:
   ```python
   from pyannote.database import registry
   protocol = registry.get_protocol('MyDatabase.Protocol.MyProtocol')
+
   for resource in protocol.train():
       assert "speaker" in resource
       assert isinstance(resource["speaker"], pyannote.core.Annotation)
@@ -207,11 +209,14 @@ For instance, in the code above, the value returned by `resource['speaker']` is 
 Similarly, resources can be augmented (or modified) on-the-fly with the `preprocessors` options for `get_protocol`. In the example below, a `dummy` key is added that simply returns the length of the `uri` string:
 
 ```python
+
 def compute_dummy(resource: ProtocolFile):
     print(f"Computing 'dummy' key")
     return len(resource["uri"])
-preprocessors = {"dummy": compute_dummy}
-protocol = registry.get_protocol('Etape.SpeakerDiarization.TV', preprocessors=preprocessors)
+
+from pyannote.database import registry
+protocol = registry.get_protocol('Etape.SpeakerDiarization.TV', 
+                                 preprocessors={"dummy": compute_dummy})
 resource = next(protocol.train())
 resource["dummy"]
 Computing 'dummy' key
@@ -253,9 +258,10 @@ Protocols:
 Note that any pattern supported by `pathlib.Path.glob` is supported (but avoid `**` as much as possible).  Paths can also be relative to the location of `database.yml`. It will then do its best to locate the file at runtime:
 
   ```python
+  from pyannote.database import registry
   from pyannote.database import FileFinder
-  preprocessors = {"audio": FileFinder()}
-  protocol = registry.get_protocol('MyDatabase.', preprocessors=preprocessors)
+  protocol = registry.get_protocol('MyDatabase.SpeakerDiarization.MyProtocol', 
+                                   preprocessors={"audio": FileFinder()})
   for resource in protocol.train():
       print(resource["audio"])
   /path/to/audio/filename1.wav
@@ -293,6 +299,7 @@ It can the be used in Python like this:
   ```python
   from pyannote.database import registry
   collection = registry.get_protocol('MyDatabase.Collection.MyCollection')
+
   for file in collection.files():
      print(file["uri"])
   filename1
@@ -354,6 +361,7 @@ It can then be used in Python like this:
   ```python
   from pyannote.database import registry
   protocol = registry.get_protocol('MyDatabase.SpeakerDiarization.MyProtocol')
+
   for file in protocol.train():
      print(file["uri"])
      assert "annotation" in file
@@ -412,6 +420,7 @@ It can then be used in Python like this:
   ```python
   from pyannote.database import registry
   protocol = registry.get_protocol('MyDatabase.SpeakerVerification.MyProtocol')
+
   for trial in protocol.train_trial():
      print(f"{trial['reference']} {trial['file1']['uri']} {trial['file2']['uri']}")
   1 filename1 filename2
@@ -449,6 +458,7 @@ This new "meta-protocol" can be used like any other protocol of the (fake) `X` d
   ```python
   from pyannote.database import registry
   protocol = registry.get_protocol('X.Protocol.MyMetaProtocol')
+  
   for resource in protocol.train():
       pass
   ```
@@ -468,13 +478,6 @@ Everything about databases is stored in the `registry`.
 ```python
   from pyannote.database import registry
 ```
-
-Available databases can be discovered using `get_databases`:
-
-  ```python
-  registry.get_databases()
-  ["MyDatabase"]
-  ```
 
 Any database can then be instantiated as follows:
 
@@ -588,7 +591,7 @@ Protocols:
 ```python
 # tell pyannote.database about the configuration file
 >>> from pyannote.database import registry
->>> registry.load_databases('demo/database.yml')
+>>> registry.load_database('demo/database.yml')
 
 # load custom protocol
 >>> protocol = registry.get_protocol('MyDatabase.SpeakerDiarization.MyProtocol')

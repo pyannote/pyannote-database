@@ -28,6 +28,7 @@
 # Pavel KORSHUNOV - https://www.idiap.ch/~pkorshunov/
 # Paul LERNER
 # Vincent BRIGNATZ
+# Alexis PLAQUET
 
 """Custom protocols
 
@@ -69,22 +70,26 @@ LOADERS = {
 
 
 def Template(template: Text, database_yml: Path) -> Callable[[ProtocolFile], Any]:
-    """
-    Returns a function that takes as input a ProtocolFile and outputs some data about it.
-    The output data type is determined by the template extension (which will determine
-    what type of Loader should be used, see pyannote.database.loader).
+    """Get data loader based on template
 
     Parameters
     ----------
     template : str
-        Path format template (e.g. "/path/to/{uri}.csv")
+        Path format template (e.g. "/path/to/{uri}.csv").
+        Extension (here ".csv") determined which data loader to use.
     database_yml : Path
-        Path to database.yml configuration file.
+        Path to YAML configuration file, to which `template` is relative.
+        Defaults to assume that `template` is absolute or relative to 
+        current working directory.
 
     Returns
     -------
-    load : Callable[[ProtocolFile], Any]
-        Method that takes a ProtocolFile and outputs some data about it.
+    data_loader : Callable[[ProtocolFile], Any]
+        Callable that takes a ProtocolFile and returns some data.
+
+    See also
+    --------
+    pyannote.database.loader
     """
 
     path = Path(template)
@@ -109,17 +114,15 @@ def Template(template: Text, database_yml: Path) -> Callable[[ProtocolFile], Any
 
 
 def resolve_path(path: Path, database_yml: Path) -> Path:
-    """Resolve 'path'.
-    Used as is if 'path' is absolute.
-    Else, try to resolve path relative to database_yml's folder.
+    """Resolve path
 
     Parameters
     ----------
     path : `Path`
-        Path. Can be either absolute, relative to current working directory, or
-        relative to `config.yml`.
+        Path. Can be either absolute, relative to current working directory, 
+        or relative to `database_yml` parent directory.
     database_yml : `Path`
-        Path to pyannote.database configuration file in YAML format.
+        Path to YAML configuration file. 
 
     Returns
     -------

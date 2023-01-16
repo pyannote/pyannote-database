@@ -3,7 +3,7 @@
 
 # The MIT License (MIT)
 
-# Copyright (c) 2020 CNRS
+# Copyright (c) 2020- CNRS
 
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -25,6 +25,7 @@
 
 # AUTHORS
 # Hervé BREDIN - http://herve.niderb.fr
+# Alexis PLAQUET
 
 
 import typer
@@ -51,7 +52,7 @@ class Task(str, Enum):
 @app.command("database")
 def database():
     """Print list of databases"""
-    for database in registry.get_databases():
+    for database in registry.databases:
         typer.echo(f"{database}")
 
 
@@ -95,7 +96,7 @@ def protocol(
     """Print list of protocols"""
 
     if database == "":
-        databases = registry.get_databases()
+        databases = list(registry.databases)
     else:
         databases = [database]
 
