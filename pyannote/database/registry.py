@@ -429,7 +429,7 @@ def _merge_protocols_inplace(
     Warning, merging order might be counterintuitive : "KEEP" strategy keeps element from the OLD protocol
     and MODIFIES the new protocol.
 
-    TODO: make in intuitive :)
+    TODO: make it intuitive :)
 
     Parameters
     ----------
