@@ -32,7 +32,6 @@ import warnings
 import pandas as pd
 from pyannote.core import Segment, Timeline, Annotation
 from .protocol.protocol import ProtocolFile
-from .config import get_database_yml
 
 from typing import Text
 from typing import Union
@@ -41,136 +40,6 @@ from typing import List
 
 DatabaseName = Text
 PathTemplate = Text
-
-
-class PyannoteDatabaseException(Exception):
-    pass
-
-
-class FileFinder:
-    """Database file finder
-
-    Parameters
-    ----------
-    database_yml : str, optional
-        Path to database configuration file in YAML format (see below).
-        When not provided, pyannote.database will first use file 'database.yml'
-        in current working directory if it exists. If it does not exist, it will
-        use the path provided by the PYANNOTE_DATABASE_CONFIG environment
-        variable. If empty or not set, defaults to '~/.pyannote/database.yml'.
-
-    Configuration file
-    ------------------
-    Here are a few examples of what is expected in the configuration file.
-
-    # support for multiple databases
-    database1: /path/to/database1/{uri}.wav
-    database2: /path/to/database2/{uri}.wav
-
-    # files are spread over multiple directory
-    database3:
-      - /path/to/database3/1/{uri}.wav
-      - /path/to/database3/2/{uri}.wav
-
-    # supports * (and **) globbing
-    database4: /path/to/database4/*/{uri}.wav
-
-    See also
-    --------
-    pathlib.Path.glob
-    """
-
-    def __init__(self, database_yml: Text = None):
-
-        super().__init__()
-
-        self.database_yml = get_database_yml(database_yml=database_yml)
-
-        with open(self.database_yml, "r") as fp:
-            config = yaml.load(fp, Loader=yaml.SafeLoader)
-
-        self.config_: Dict[DatabaseName, Union[PathTemplate, List[PathTemplate]]] = {
-            str(database): path
-            for database, path in config.get("Databases", dict()).items()
-        }
-
-    def __call__(self, current_file: ProtocolFile) -> Path:
-        """Look for current file
-
-        Parameter
-        ---------
-        current_file : ProtocolFile
-            Protocol file.
-
-        Returns
-        -------
-        path : Path
-            Path to file.
-
-        Raises
-        ------
-        FileNotFoundError when the file could not be found or when more than one
-        matching file were found.
-        """
-
-        uri = current_file["uri"]
-        database = current_file["database"]
-
-        # read
-        path_templates = self.config_[database]
-        if isinstance(path_templates, Text):
-            path_templates = [path_templates]
-
-        searched = []
-        found = []
-
-        for path_template in path_templates:
-
-            path = Path(path_template.format(uri=uri, database=database))
-            if not path.is_absolute():
-                path = self.database_yml.parent / path
-            searched.append(path)
-
-            # paths with "*" or "**" patterns are split into two parts,
-            # - the root part (from the root up to the first occurrence of *)
-            # - the pattern part (from the first occurrence of * to the end)
-            #   which is looked for (inside root) using Path.glob
-            # Example with path = '/path/to/**/*/file.wav'
-            #   root = '/path/to'
-            #   pattern = '**/*/file.wav'
-
-            if "*" in str(path):
-                parts = path.parent.parts
-                for p, part in enumerate(parts):
-                    if "*" in part:
-                        break
-
-                root = path.parents[len(parts) - p]
-                pattern = str(path.relative_to(root))
-                found_ = root.glob(pattern)
-                found.extend(found_)
-
-            # a path without "*" patterns is supposed to be an actual file
-            elif path.is_file():
-                found.append(path)
-
-        if len(found) == 1:
-            return found[0]
-
-        if len(found) == 0:
-            msg = f'Could not find file "{uri}" in the following location(s):'
-            for path in searched:
-                msg += f"\n - {path}"
-            raise FileNotFoundError(msg)
-
-        if len(found) > 1:
-            msg = (
-                f'Looked for file "{uri}" and found more than one '
-                f"({len(found)}) matching locations: "
-            )
-            for path in found:
-                msg += f"\n - {path}"
-            raise FileNotFoundError(msg)
 
 
 def get_unique_identifier(item):
@@ -197,7 +66,7 @@ def get_unique_identifier(item):
     database = item.get("database", None)
     if database is not None:
         IDENTIFIER += f"{database}/"
-    IDENTIFIER += item['uri']
+    IDENTIFIER += item["uri"]
     channel = item.get("channel", None)
     if channel is not None:
         IDENTIFIER += f"_{channel:d}"
@@ -209,17 +78,17 @@ def get_unique_identifier(item):
 def get_annotated(current_file):
     """Get part of the file that is annotated.
 
-    Parameters
-    ----------
-    current_file : `dict`
-        File generated by a `pyannote.database` protocol.
+        Parameters
+        ----------
+        current_file : `dict`
+            File generated by a `pyannote.database` protocol.
 
-    Returns
-    -------
-    annotated : `pyannote.core.Timeline`
-        Part of the file that is annotated. Defaults to
-        `current_file["annotated"]`. When it does not exist, try to use the
-        full audio extent. When that fails, use "annotation" extent.
+        Returns
+        -------
+        annotated : `pyannote.core.Timeline`
+            Part of the file that is annotated. Defaults to
+            `current_file["annotated"]`. When it does not exist, try to use the
+            full audio extent. When that fails, use "annotation" extent.
     """
 
     # if protocol provides 'annotated' key, use it
@@ -329,7 +198,7 @@ def load_rttm(file_rttm, keep_type="SPEAKER"):
 
 def load_stm(file_stm):
     """Load STM file (speaker-info only)
-    
+
     Parameter
     ---------
     file_stm : str
@@ -343,11 +212,12 @@ def load_stm(file_stm):
 
     dtype = {"uri": str, "speaker": str, "start": float, "end": float}
     data = pd.read_csv(
-        file_stm, 
-        delim_whitespace=True, 
-        usecols=[0, 2, 3, 4], 
+        file_stm,
+        delim_whitespace=True,
+        usecols=[0, 2, 3, 4],
         dtype=dtype,
-        names=list(dtype))
+        names=list(dtype),
+    )
 
     annotations = dict()
     for uri, turns in data.groupby("uri"):
@@ -358,6 +228,7 @@ def load_stm(file_stm):
         annotations[uri] = annotation
 
     return annotations
+
 
 def load_mdtm(file_mdtm):
     """Load MDTM file
@@ -419,6 +290,7 @@ def load_uem(file_uem):
 
     return timelines
 
+
 def load_lab(path, uri: str = None) -> Annotation:
     """Load LAB file
 
@@ -431,7 +303,7 @@ def load_lab(path, uri: str = None) -> Annotation:
     -------
     data : `pyannote.core.Annotation`
     """
-    
+
     names = ["start", "end", "label"]
     dtype = {"start": float, "end": float, "label": str}
     data = pd.read_csv(path, names=names, dtype=dtype, delim_whitespace=True)
@@ -506,7 +378,7 @@ class LabelMapper(object):
     >>> mapping = {'Hadrien': 'MAL', 'Marvin': 'MAL',
     ...            'Wassim': 'CHI', 'Herve': 'GOD'}
     >>> preprocessors = {'annotation': LabelMapper(mapping=mapping)}
-    >>> protocol = get_protocol('AMI.SpeakerDiarization.MixHeadset',
+    >>> protocol = registry.get_protocol('AMI.SpeakerDiarization.MixHeadset',
                                 preprocessors=preprocessors)
 
     """

@@ -28,6 +28,7 @@
 # Pavel KORSHUNOV - https://www.idiap.ch/~pkorshunov/
 # Paul LERNER
 # Vincent BRIGNATZ
+# Alexis PLAQUET
 
 """Custom protocols
 
@@ -44,15 +45,15 @@ Protocols:
 from pathlib import Path
 import string
 
+
 from . import protocol as protocol_module
-from .database import Database
-from pyannote.database import ProtocolFile
+
+from pyannote.database.protocol.protocol import ProtocolFile
 import yaml
 import warnings
 from typing import Text, Dict, Callable, Any, Union
 import functools
 
-from . import DATABASES, TASKS
 from .protocol.protocol import Subset
 
 import pkg_resources
@@ -61,6 +62,7 @@ from .util import get_annotated
 
 from .loader import load_lst, load_trial
 
+# All "Loader" classes types (eg RTTMLoader, UEMLoader, ...) retrieved from the entry point.
 LOADERS = {
     ep.name: ep
     for ep in pkg_resources.iter_entry_points(group="pyannote.database.loader")
@@ -68,18 +70,26 @@ LOADERS = {
 
 
 def Template(template: Text, database_yml: Path) -> Callable[[ProtocolFile], Any]:
-    """
+    """Get data loader based on template
 
     Parameters
     ----------
     template : str
-        Path format template (e.g. "/path/to/{uri}.csv")
+        Path format template (e.g. "/path/to/{uri}.csv").
+        Extension (here ".csv") determined which data loader to use.
     database_yml : Path
-        Path to database.yml configuration file.
+        Path to YAML configuration file, to which `template` is relative.
+        Defaults to assume that `template` is absolute or relative to 
+        current working directory.
 
     Returns
     -------
-    load : callable
+    data_loader : Callable[[ProtocolFile], Any]
+        Callable that takes a ProtocolFile and returns some data.
+
+    See also
+    --------
+    pyannote.database.loader
     """
 
     path = Path(template)
@@ -109,10 +119,10 @@ def resolve_path(path: Path, database_yml: Path) -> Path:
     Parameters
     ----------
     path : `Path`
-        Path. Can be either absolute, relative to current working directory, or
-        relative to `config.yml`.
+        Path. Can be either absolute, relative to current working directory, 
+        or relative to `database_yml` parent directory.
     database_yml : `Path`
-        Path to pyannote.database configuration file in YAML format.
+        Path to YAML configuration file. 
 
     Returns
     -------
@@ -162,10 +172,10 @@ def meta_subset_iter(
     """
 
     # this is imported here to avoid circular imports
-    from . import get_protocol
+    from . import registry
 
     for protocol, subsets in subset_entries.items():
-        partial_protocol = get_protocol(protocol)
+        partial_protocol = registry.get_protocol(protocol)
         for subset in subsets:
             method_name = f"{subset}_iter"
             for file in getattr(partial_protocol, method_name)():
@@ -173,15 +183,24 @@ def meta_subset_iter(
 
 
 def gather_loaders(
-    entries: Dict = None, database_yml: Path = None,
-):
-    """
+    entries: Dict,
+    database_yml: Path,
+) -> dict:
+    """Loads all Loaders for data type specified in 'entries' into a dict.
+
     Parameters
     ----------
-    entries : dict
-        Subset entries.
-    database_yml : `Path`
+    entries : Dict, optional
+        Subset entries (eg 'uri', 'annotated', 'annotation', ...)
+    database_yml : Path, optional
         Path to the 'database.yml' file
+
+    Returns
+    -------
+    dict
+        A dictionary mapping each key of entry (except 'uri' and 'trial')
+        to a function that given a ProtocolFile returns the data type
+        related to this entry.
     """
     lazy_loader = dict()
 
@@ -358,6 +377,10 @@ def get_init(protocols):
     return init
 
 
+def get_custom_protocol_class_name(database: Text, task: Text, protocol: Text):
+    return f"{database}__{task}__{protocol}"
+
+
 def create_protocol(
     database: Text,
     task: Text,
@@ -456,59 +479,10 @@ def create_protocol(
                 )
 
     #  making custom protocol pickable by adding it to pyannote.database.custom module
-    custom_protocol_class_name = f"{database}__{task}__{protocol}"
+    custom_protocol_class_name = get_custom_protocol_class_name(
+        database, task, protocol
+    )
     CustomProtocolClass = type(custom_protocol_class_name, (base_class,), methods)
     globals()[custom_protocol_class_name] = CustomProtocolClass
 
     return CustomProtocolClass
-
-
-def add_custom_protocols():
-    """Register databases, tasks, and protocols defined in configuration file"""
-
-    from .config import get_database_yml
-
-    try:
-        database_yml = get_database_yml()
-        with open(database_yml, "r") as fp:
-            config = yaml.load(fp, Loader=yaml.SafeLoader)
-
-    except FileNotFoundError:
-        config = dict()
-
-    databases = config.get("Protocols", dict())
-
-    # make sure meta-protocols are processed last (relies on the fact that
-    # dicts are iterated in insertion order since Python 3.6)
-    x = databases.pop("X", None)
-    if x is not None:
-        databases["X"] = x
-
-    protocols = dict()
-
-    for database, database_entries in databases.items():
-        database = str(database)
-        protocols[database] = []
-        for task, task_entries in database_entries.items():
-
-            for protocol, protocol_entries in task_entries.items():
-                protocol = str(protocol)
-                CustomProtocol = create_protocol(
-                    database, task, protocol, protocol_entries, database_yml
-                )
-                if CustomProtocol is None:
-                    continue
-
-                protocols[database].append((task, protocol, CustomProtocol))
-
-                # update TASKS dictionary
-                if task not in TASKS:
-                    TASKS[task] = set()
-                TASKS[task].add(database)
-
-        # create database class on-the-fly
-        DATABASES[database] = type(
-            database, (Database,), {"__init__": get_init(protocols[database])}
-        )
-
-    return DATABASES, TASKS

@@ -2,6 +2,18 @@
 Changelog
 #########
 
+Version 5.0 (2023-xx-xx)
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+  - feat(registry): add pyannote.database.registry to load multiple YAML configuration file
+  - BREAKING: turn pyannote.database.get_{database|protocol|protocols} function into registry methods
+  - BREAKING: remove support for database plugins (via "pyannote.database.database" entrypoint)
+  - feat(protocol): make ProtocolFile pickable
+  - feat(loader): add LAB file support
+  - feat(loader): add STM file support
+  - feat(loader): add option to filter RTTM lines by "type"
+  - fix(cli): fix corner case when annotation key is missing
+
 Version 4.1.3 (2022-02-11)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
