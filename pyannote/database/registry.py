@@ -187,13 +187,80 @@ class Registry:
         >>> registry.load_database("/path/to/database.yml")
         """
 
-        # TODO: turn relative path to absolute
-        path = Path(path).expanduser()
-        with open(path, "r") as fp:
-            config = yaml.load(fp, Loader=yaml.SafeLoader)
-        self.configs[path] = config
-        self._process_config(path, mode=mode)
+        self._load_database_helper(path, mode=mode, loading=set())
         self._reload_meta_protocols()
+
+    def _load_database_helper(
+        self,
+        database_yml: Union[Text, Path],
+        mode: LoadingMode = LoadingMode.KEEP,
+        loading: set[Path] = set(),
+    ):
+        """Helper function for recursive loading
+
+        Parameters
+        ----------
+        database_yml : Union[Text, Path]
+            Path to the database.yml
+        mode : LoadingMode, optional
+            Controls how to handle conflicts in protocol names.
+            Defaults to overriding the existing protocol.
+        """
+
+        # make path absolute
+        database_yml = Path(database_yml).expanduser().resolve()
+
+        # stop here if configuration file is already being loaded 
+        # (possibly because of circular requirements)
+        if database_yml in loading:
+            return
+
+        # mark it as currently being loaded (to avoid future circular requirements)
+        loading.add(database_yml)
+
+        # load configuration
+        with open(database_yml, "r") as f:
+            config = yaml.load(f, Loader=yaml.SafeLoader)
+        
+        # load every requirement
+        requirements = config.pop('Requirements', list())
+        if not isinstance(requirements, list):
+            requirements = [requirements]      
+        for requirement_yaml in requirements:
+            self._load_database_helper(requirement_yaml, mode=mode, loading=loading)
+
+        # process "Protocols" section
+        protocols = config.get("Protocols", dict())
+
+        # make sure meta-protocols are processed last (relies on the fact that
+        # dicts are iterated in insertion order since Python 3.6)
+        x = protocols.pop("X", None)
+        if x is not None:
+            protocols["X"] = x
+
+        # load protocols of each database
+        for db_name, db_entries in protocols.items():
+            self._load_protocols(
+                db_name, db_entries, database_yml, mode=mode
+            )
+
+        # process "Databases" section
+        databases = config.get("Databases", dict())
+        for db_name, value in databases.items():
+            if not isinstance(value, list):
+                value = [value]
+
+            path_list: List[str] = list()
+            for p in value:
+                path = Path(p)
+                if not path.is_absolute():
+                    path = database_yml.parent / path
+                path_list.append(str(path))
+            self.sources[str(db_name)] = path_list
+
+        # save configuration for later reloading of meta-protocols
+        self.configs[database_yml] = config
+
 
     def get_database(self, database_name, **kwargs) -> Database:
         """Get database by name
@@ -258,7 +325,7 @@ class Registry:
         protocol.name = name
         return protocol
 
-    def _process_database(
+    def _load_protocols(
         self,
         db_name,
         db_entries: dict,
@@ -308,55 +375,6 @@ class Registry:
             {"__init__": get_init(protocol_list), "_protocols": protocols},
         )
 
-    def _process_config(
-        self,
-        database_yml: Union[Text, Path],
-        config: dict = None,
-        mode: LoadingMode = LoadingMode.KEEP,
-    ):
-        """Register all protocols (but meta protocols) and all file sources defined in configuration file.
-
-        Parameters
-        ----------
-        database_yml : Union[Text, Path]
-            Path to the database.yml
-        config : dict, optional
-            Dictionary containing all data parsed from the database.yml file.
-            Loads the config from self.configs if left to None, by default None
-        """
-
-        database_yml = Path(database_yml)
-        if config is None:
-            config = self.configs[database_yml]
-
-        databases = config.get("Protocols", dict())
-
-        # make sure meta-protocols are processed last (relies on the fact that
-        # dicts are iterated in insertion order since Python 3.6)
-        x = databases.pop("X", None)
-        if x is not None:
-            databases["X"] = x
-            # TODO: add postprocessing reloading X protocol
-
-        for db_name, db_entries in databases.items():
-            self._process_database(
-                db_name, db_entries, database_yml, mode=mode
-            )
-
-        # process sources
-        # TODO: decide how to handle source overriding
-        for db_name, value in config.get("Databases", dict()).items():
-            if not isinstance(value, list):
-                value = [value]
-
-            path_list: List[str] = list()
-            for p in value:
-                path = Path(p)
-                if not path.is_absolute():
-                    path = database_yml.parent / path
-                path_list.append(str(path))
-            self.sources[str(db_name)] = path_list
-
     def _reload_meta_protocols(self):
         """Reloads all meta protocols from all database.yml files loaded."""
 
@@ -367,7 +385,7 @@ class Registry:
         for db_yml, config in self.configs.items():
             databases = config.get("Protocols", dict())
             if "X" in databases:
-                self._process_database("X", databases["X"], db_yml, mode=LoadingMode.OVERRIDE)
+                self._load_protocols("X", databases["X"], db_yml, mode=LoadingMode.OVERRIDE)
 
 
 
