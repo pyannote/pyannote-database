@@ -31,7 +31,7 @@
 from enum import Enum
 import os
 from pathlib import Path
-from typing import Dict, List, Optional, Text, Tuple, Type, Union
+from typing import Dict, List, Set, Optional, Text, Tuple, Type, Union
 import warnings
 
 from pyannote.database.protocol.protocol import Preprocessors, Protocol
@@ -194,7 +194,7 @@ class Registry:
         self,
         database_yml: Union[Text, Path],
         mode: LoadingMode = LoadingMode.KEEP,
-        loading: set[Path] = set(),
+        loading: Set[Path] = set(),
     ):
         """Helper function for recursive loading
 
