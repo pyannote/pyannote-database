@@ -16,7 +16,7 @@ $ pip install pyannote.database
     - [Collections](#collections)
     - [Speaker diarization](#speaker-diarization)
     - [Speaker verification](#speaker-verification)
-  - [Meta-protocols](#meta-protocols)
+  - [Meta-protocols and requirements](#meta-protocols-and-requirements)
   - [Plugins](#plugins)
   - [API](#api)
     - [Databases and tasks](#databases-and-tasks)
@@ -429,7 +429,7 @@ It can then be used in Python like this:
 
 Note that speaker verification protocols (`SpeakerVerificationProtocol`) are a subclass of speaker diarization protocols (`SpeakerDiarizationProtocol`). As such, they also define regular `{subset}` methods.
 
-## Meta-protocols
+## Meta-protocols and requirements
 
 `pyannote.database` provides a way to combine several protocols (possibly
 from different databases) into one.
@@ -437,6 +437,10 @@ from different databases) into one.
 This is achieved by defining those "meta-protocols" into the configuration file with the special `X` database:
 
   ```yaml
+  Requirements:
+    - /path/to/my/database/database.yml         # defines MyDatabase protocols
+    - /path/to/my/other/database/database.yml   # defines MyOtherDatabase protocols
+
   Protocols:
     X:
       Protocol:
