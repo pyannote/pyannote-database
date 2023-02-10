@@ -225,8 +225,12 @@ class Registry:
         # load every requirement
         requirements = config.pop('Requirements', list())
         if not isinstance(requirements, list):
-            requirements = [requirements]      
+            requirements = [requirements]
         for requirement_yaml in requirements:
+            requirement_yaml = Path(requirement_yaml)
+            if not requirement_yaml.is_absolute():
+                requirement_yaml = database_yml.parent / requirement_yaml
+
             self._load_database_helper(requirement_yaml, mode=mode, loading=loading)
 
         # process "Protocols" section
