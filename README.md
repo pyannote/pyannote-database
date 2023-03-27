@@ -14,6 +14,7 @@ $ pip install pyannote.database
   - [`FileFinder`](#filefinder)
   - [Tasks](#tasks)
     - [Collections](#collections)
+    - [Segmentation](#segmentation)
     - [Speaker diarization](#speaker-diarization)
     - [Speaker verification](#speaker-verification)
   - [Meta-protocols and requirements](#meta-protocols-and-requirements)
@@ -307,6 +308,73 @@ It can the be used in Python like this:
   filename3
   ```   
 
+### Segmentation
+
+A (temporal) segmentation protocol can be defined using the `Segmentation` task:
+
+  ```yaml
+  Protocols:
+    MyDatabase:
+      Segmentation:
+        MyProtocol:
+          classes: 
+            - speech
+            - noise
+            - music
+          train:
+              uri: /path/to/train.lst
+              annotation: /path/to/train.rttm
+              annotated: /path/to/train.uem
+  ```
+
+where `/path/to/train.lst` contains the list of identifiers of the
+files in the training set:
+
+  ```text
+  # /path/to/train.lst
+  filename1
+  filename2
+  ```
+
+`/path/to/train.rttm` contains the reference segmentation using
+RTTM format:
+
+  ```text
+  # /path/to/reference.rttm
+  SPEAKER filename1 1 3.168 0.800 <NA> <NA> speech <NA> <NA>
+  SPEAKER filename1 1 5.463 0.640 <NA> <NA> speech <NA> <NA>
+  SPEAKER filename1 1 5.496 0.574 <NA> <NA> music <NA> <NA>
+  SPEAKER filename1 1 10.454 0.499 <NA> <NA> music <NA> <NA>
+  SPEAKER filename2 1 2.977 0.391 <NA> <NA> noise <NA> <NA>
+  SPEAKER filename2 1 18.705 0.964 <NA> <NA> noise <NA> <NA>
+  SPEAKER filename2 1 22.269 0.457 <NA> <NA> speech <NA> <NA>
+  SPEAKER filename2 1 28.474 1.526 <NA> <NA> speech <NA> <NA>
+  ```
+
+`/path/to/train.uem` describes the annotated regions using UEM format:
+
+  ```text
+  filename1 NA 0.000 30.000
+  filename2 NA 0.000 30.000
+  filename2 NA 40.000 70.000
+  ```
+
+It is recommended to provide the `annotated` key even if it covers the whole file. Any part of `annotation` that lives outside of the provided `annotated` will  be removed. It is also used by `pyannote.metrics` to remove un-annotated regions from the evaluation, and to prevent `pyannote.audio` from incorrectly considering empty un-annotated regions as negatives.
+
+It can then be used in Python like this:
+
+  ```python
+  from pyannote.database import registry
+  protocol = registry.get_protocol('MyDatabase.Segmentation.MyProtocol')
+
+  for file in protocol.train():
+     print(file["uri"])
+     assert "annotation" in file
+     assert "annotated" in file
+  filename1
+  filename2
+  ```
+
 ### Speaker diarization
 
 A protocol can be defined specifically for speaker diarization using the `SpeakerDiarization` task:
@@ -316,6 +384,7 @@ A protocol can be defined specifically for speaker diarization using the `Speake
     MyDatabase:
       SpeakerDiarization:
         MyProtocol:
+          scope: file
           train:
               uri: /path/to/train.lst
               annotation: /path/to/train.rttm
@@ -369,6 +438,13 @@ It can then be used in Python like this:
   filename1
   filename2
   ```
+
+The `scope` parameters indicates the scope of speaker labels:
+  * `file` indicates that each file has its own set of speaker labels. There is no guarantee that `speaker1` in `filename1` is the same speaker as `speaker1` in `filename2`. 
+  * `database` indicates that all files in the database share the same set of speaker labels. `speaker1` in `database1/filename1` is the same speaker as `speaker1` in `database1/filename2`.
+  * `global` indicates that the set of speaker labels is the same across all databases. `speaker1` in `database1` is the same speaker as `speaker1` in `database2`. 
+
+`scope` is then directly accessible from `file['scope']`.
 
 ### Speaker verification
 

@@ -54,7 +54,9 @@ import warnings
 from typing import Text, Dict, Callable, Any, Union
 import functools
 
-from .protocol.protocol import Subset
+from .protocol.protocol import Subset, Scope
+from .protocol.segmentation import SegmentationProtocol
+from .protocol.speaker_diarization import SpeakerDiarizationProtocol
 
 import pkg_resources
 
@@ -265,6 +267,7 @@ def subset_iter(
     subset: Subset = None,
     entries: Dict = None,
     database_yml: Path = None,
+    **metadata,
 ):
     """
 
@@ -282,6 +285,9 @@ def subset_iter(
         Subset entries.
     database_yml : `Path`
         Path to the 'database.yml' file
+    metadata : dict
+        Additional metadata to be added to each ProtocolFile (such
+        as "scope" or "classes")
     """
 
     if "uri" in entries:
@@ -305,9 +311,8 @@ def subset_iter(
 
     for uri in uris:
         yield ProtocolFile(
-            {"uri": uri, "database": database, "subset": subset}, lazy=lazy_loader
+            {"uri": uri, "database": database, "subset": subset, **metadata}, lazy=lazy_loader
         )
-
 
 def subset_trial(
     self,
@@ -403,15 +408,18 @@ def create_protocol(
 
     """
 
+    
     try:
         base_class = getattr(
             protocol_module, "Protocol" if task == "Protocol" else f"{task}Protocol"
         )
+
     except AttributeError:
         msg = (
             f"Ignoring '{database}.{task}' protocols found in {database_yml} "
             f"because '{task}' tasks are not supported yet."
         )
+        print(msg)
         return None
 
     # Collections do not define subsets, so we artificially create one (called "files")
@@ -426,6 +434,24 @@ def create_protocol(
     #        uri: /path/to/collection.lst
     if task == "Collection":
         protocol_entries = {"files": protocol_entries}
+
+    metadata = dict()
+
+    if issubclass(base_class, SegmentationProtocol):
+        if "classes" in protocol_entries:
+            metadata["classes"] = protocol_entries.pop("classes")
+
+    if issubclass(base_class, SpeakerDiarizationProtocol):
+        if "scope" in protocol_entries:
+            scope = protocol_entries.pop("scope")
+        else:
+            scope = "file"
+            msg = (
+                f"'{database}.{task}.{protocol}' found in {database_yml} does not define "
+                f"the 'scope' of speaker labels (file, database, or global). Setting it to 'file'."
+            )   
+            print(msg)
+        metadata["scope"] = scope
 
     methods = dict()
     for subset, subset_entries in protocol_entries.items():
@@ -458,6 +484,7 @@ def create_protocol(
                 database_yml,
             )
         else:
+
             methods[method_name] = functools.partialmethod(
                 subset_iter,
                 database=database,
@@ -466,7 +493,9 @@ def create_protocol(
                 subset=subset,
                 entries=subset_entries,
                 database_yml=database_yml,
+                **metadata,
             )
+
             if "trial" in subset_entries.keys():
                 methods[f"{subset}_trial"] = functools.partialmethod(
                     subset_trial,

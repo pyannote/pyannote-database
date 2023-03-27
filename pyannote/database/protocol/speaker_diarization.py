@@ -3,7 +3,7 @@
 
 # The MIT License (MIT)
 
-# Copyright (c) 2016-2020 CNRS
+# Copyright (c) 2016- CNRS
 
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -26,102 +26,9 @@
 # AUTHORS
 # Hervé BREDIN - http://herve.niderb.fr
 
+from .segmentation import SegmentationProtocol
 
-from typing import Dict, Optional
-from .protocol import Protocol
-from .protocol import ProtocolFile
-from .protocol import Subset
-from .protocol import Preprocessor
-from .protocol import Preprocessors
-from pyannote.core import Annotation
-from pyannote.core import Timeline
-from pyannote.core import Segment
-import functools
-
-
-def crop_annotated(
-    current_file: ProtocolFile, existing_preprocessor: Optional[Preprocessor] = None
-) -> Timeline:
-    """Preprocessor that crops 'annotated' according to 'duration'
-
-    Returns 'annotated' unchanged if 'duration' is not available
-
-    Parameters
-    ----------
-    current_file : ProtocolFile
-        Protocol file.
-    existing_preprocessor : Preprocessor, optional
-        When provided, this preprocessor must be used to get the initial
-        'annotated' instead of getting it from 'current_file["annotated"]'
-
-    Returns
-    -------
-    cropped_annotated : Timeline
-        "annotated" cropped by "duration".
-    """
-
-    if existing_preprocessor is None:
-        annotated = current_file.get("annotated", None)
-    else:
-        annotated = existing_preprocessor(current_file)
-
-    if annotated is None:
-        return None
-
-    duration = current_file.get("duration", None)
-    if duration is None:
-        return annotated
-
-    # crop 'annotated' to 'duration'
-    duration = Segment(0.0, duration)
-
-    if annotated and not annotated.extent() in duration:
-        return annotated.crop(duration, mode="intersection")
-
-    return annotated
-
-
-def crop_annotation(
-    current_file: ProtocolFile, existing_preprocessor: Optional[Preprocessor] = None
-) -> Annotation:
-    """Preprocessor that crops 'annotation' by 'annotated'
-
-    Returns 'annotation' unchanged if 'annotated' is not available
-
-    Parameters
-    ----------
-    current_file : ProtocolFile
-        Protocol file.
-    existing_preprocessor : Preprocessor, optional
-        When provided, this preprocessor must be used to get the initial
-        'annotation' instead of getting it from 'current_file["annotation"]'
-
-    Returns
-    -------
-    cropped_annotation : Annotation
-        "annotation" cropped by "annotated".
-    """
-
-    if existing_preprocessor is None:
-        annotation = current_file.get("annotation", None)
-    else:
-        annotation = existing_preprocessor(current_file)
-
-    if annotation is None:
-        return None
-
-    annotated = current_file.get("annotated", None)
-    if annotated is None:
-        return annotation
-
-    # crop 'annotation' to 'annotated' extent
-    if annotated and not annotated.covers(annotation.get_timeline()):
-        return annotation.crop(annotated, mode="intersection")
-
-    return annotation
-
-
-class SpeakerDiarizationProtocol(Protocol):
+class SpeakerDiarizationProtocol(SegmentationProtocol):
     """A protocol for speaker diarization experiments
 
     A speaker diarization protocol can be defined programmatically by creating
@@ -215,73 +122,4 @@ class SpeakerDiarizationProtocol(Protocol):
         filename2
     """
 
-    def __init__(self, preprocessors: Optional[Preprocessors] = None):
-
-        if preprocessors is None:
-            preprocessors = dict()
-
-        # wrap exisiting "annotated" preprocessor by crop_annotated so that
-        # "annotated" is automatically cropped by file "duration" when provided
-        preprocessors["annotated"] = functools.partial(
-            crop_annotated, existing_preprocessor=preprocessors.get("annotated", None)
-        )
-
-        # wrap exisiting "annotation" preprocessor by crop_annotation so that
-        # "annotation" is automatically cropped by "annotated" when provided
-        preprocessors["annotation"] = functools.partial(
-            crop_annotation, existing_preprocessor=preprocessors.get("annotation", None)
-        )
-
-        super().__init__(preprocessors=preprocessors)
-
-    def stats(self, subset: Subset = "train") -> Dict:
-        """Obtain global statistics on a given subset
-
-        Parameters
-        ----------
-        subset : {'train', 'development', 'test'}
-
-        Returns
-        -------
-        stats : dict
-            Dictionary with the followings keys:
-            * annotated: float
-            total duration (in seconds) of the parts that were manually annotated
-            * annotation: float
-            total duration (in seconds) of actual (speech) annotations
-            * n_files: int
-            number of files in the subset
-            * labels: dict
-            maps speakers with their total speech duration (in seconds)
-        """
-
-        from ..util import get_annotated
-
-        annotated_duration = 0.0
-        annotation_duration = 0.0
-        n_files = 0
-        labels = {}
-
-        for item in getattr(self, subset)():
-
-            annotated = get_annotated(item)
-            annotated_duration += annotated.duration()
-
-            # increment 'annotation' total duration
-            annotation = item["annotation"]
-            annotation_duration += annotation.get_timeline().duration()
-
-            for label, duration in annotation.chart():
-                if label not in labels:
-                    labels[label] = 0.0
-                labels[label] += duration
-            n_files += 1
-
-        stats = {
-            "annotated": annotated_duration,
-            "annotation": annotation_duration,
-            "n_files": n_files,
-            "labels": labels,
-        }
-
-        return stats
+    pass
