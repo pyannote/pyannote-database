@@ -46,6 +46,7 @@ except ImportError:
 
 Subset = Literal["train", "development", "test"]
 LEGACY_SUBSET_MAPPING = {"train": "trn", "development": "dev", "test": "tst"}
+Scope = Literal["file", "database", "global"]
 
 Preprocessor = Callable[["ProtocolFile"], Any]
 Preprocessors = Dict[Text, Preprocessor]
@@ -105,6 +106,17 @@ class ProtocolFile(collections.abc.MutableMapping):
         # keys with evaluating_ > 0 are currently being evaluated
         # and therefore should be taken from precomputed
         self.evaluating_ = collections.Counter()
+
+    # since RLock is not pickable, remove it before pickling...
+    def __getstate__(self):
+        d = dict(self.__dict__)
+        del d["lock_"]
+        return d
+
+    # ... and add it back when unpickling
+    def __setstate__(self, d):
+        self.__dict__.update(d)
+        self.lock_ = threading.RLock()
 
     def __abs__(self):
         with self.lock_:
@@ -237,7 +249,7 @@ class Protocol:
     a development subset, and a test subset.
 
     An experimental protocol can be defined programmatically by creating a
-    class that inherits from SpeakerDiarizationProtocol and implements at least
+    class that inherits from Protocol and implements at least
     one of `train_iter`, `development_iter` and `test_iter` methods:
 
         >>> class MyProtocol(Protocol):
@@ -281,8 +293,8 @@ class Protocol:
 
     It can then be used in Python like this:
 
-        >>> from pyannote.database import get_protocol
-        >>> protocol = get_protocol('MyDatabase.Protocol.MyProtocol')
+        >>> from pyannote.database import registry
+        >>> protocol = registry.get_protocol('MyDatabase.Protocol.MyProtocol')
         >>> for file in protocol.train():
         ...    print(file["uri"])
         filename1

@@ -122,8 +122,8 @@ class SpeakerVerificationProtocol(SpeakerDiarizationProtocol):
 
     It can then be used in Python like this:
 
-        >>> from pyannote.database import get_protocol
-        >>> protocol = get_protocol('MyDatabase.SpeakerVerification.MyProtocol')
+        >>> from pyannote.database import registry
+        >>> protocol = registry.get_protocol('MyDatabase.SpeakerVerification.MyProtocol')
         >>> for trial in protocol.train_trial():
         ...     print(f"{trial['reference']} {trial['file1']['uri']} {trial['file2']['uri']}")
         1 filename1 filename2

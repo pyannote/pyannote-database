@@ -80,8 +80,8 @@ class CollectionProtocol(Protocol):
 
     It can the be used in Python like this:
 
-        >>> from pyannote.database import get_protocol
-        >>> collection = get_protocol('MyDatabase.Collection.MyCollection')
+        >>> from pyannote.database import registry
+        >>> collection = registry.get_protocol('MyDatabase.Collection.MyCollection')
         >>> for file in collection.files():
         ...    print(file["uri"])
         filename1

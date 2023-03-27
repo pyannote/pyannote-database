@@ -3,7 +3,7 @@
 
 # The MIT License (MIT)
 
-# Copyright (c) 2020 CNRS
+# Copyright (c) 2020- CNRS
 
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -25,6 +25,7 @@
 
 # AUTHORS
 # Hervé BREDIN - http://herve.niderb.fr
+# Alexis PLAQUET
 
 
 import typer
@@ -32,12 +33,10 @@ from enum import Enum
 import math
 from typing import Text
 from pyannote.database import Database
-from pyannote.database import get_databases
-from pyannote.database import get_tasks
-from pyannote.database import get_database
-from pyannote.database import get_protocol
+from pyannote.database import registry
 from pyannote.database.protocol import CollectionProtocol
 from pyannote.database.protocol import SpeakerDiarizationProtocol
+from pyannote.core import Annotation
 
 app = typer.Typer()
 
@@ -53,7 +52,7 @@ class Task(str, Enum):
 @app.command("database")
 def database():
     """Print list of databases"""
-    for database in get_databases():
+    for database in registry.databases:
         typer.echo(f"{database}")
 
 
@@ -71,9 +70,9 @@ def task(
     """Print list of tasks"""
 
     if database == "":
-        tasks = get_tasks()
+        tasks = []
     else:
-        db: Database = get_database(database)
+        db: Database = registry.get_database(database)
         tasks = db.get_tasks()
 
     for task in tasks:
@@ -97,12 +96,12 @@ def protocol(
     """Print list of protocols"""
 
     if database == "":
-        databases = get_databases()
+        databases = list(registry.databases)
     else:
         databases = [database]
 
     for database_name in databases:
-        db: Database = get_database(database_name)
+        db: Database = registry.get_database(database_name)
         tasks = db.get_tasks() if task == "Any" else [task]
         for task_name in tasks:
             try:
@@ -123,7 +122,7 @@ def duration_to_str(seconds: float) -> Text:
 def info(protocol: str):
     """Print protocol detailed information"""
 
-    p = get_protocol(protocol)
+    p = registry.get_protocol(protocol)
 
     if isinstance(p, SpeakerDiarizationProtocol):
         subsets = ["train", "development", "test"]
@@ -155,7 +154,7 @@ def info(protocol: str):
             num_files += 1
 
             if not skip_annotation:
-                annotation = file["annotation"]
+                annotation = file["annotation"] or Annotation(uri=file["uri"])
                 speakers.update(annotation.labels())
                 speech += annotation.get_timeline().support().duration()
 

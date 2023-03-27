@@ -28,7 +28,6 @@
 
 
 from typing import Optional
-from .util import PyannoteDatabaseException
 from .protocol.protocol import Preprocessors
 import warnings
 
@@ -65,7 +64,7 @@ class Database:
             tasks = self.protocols_
         except AttributeError:
             message = "This database does not implement any protocol."
-            raise PyannoteDatabaseException(message)
+            raise AttributeError(message)
         return tasks
 
     def get_tasks(self):

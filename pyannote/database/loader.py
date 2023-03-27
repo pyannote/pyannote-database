@@ -3,7 +3,7 @@
 
 # The MIT License (MIT)
 
-# Copyright (c) 2020-2022 CNRS
+# Copyright (c) 2020- CNRS
 
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -32,10 +32,10 @@
 from typing import Text
 from pathlib import Path
 import string
-from pyannote.database.util import load_rttm, load_uem
+from pyannote.database.util import load_rttm, load_uem, load_lab, load_stm
 import pandas as pd
 from pyannote.core import Segment, Timeline, Annotation
-from pyannote.database import ProtocolFile
+from pyannote.database.protocol.protocol import ProtocolFile
 from typing import Union, Any
 import warnings
 
@@ -119,7 +119,7 @@ class RTTMLoader:
         self.loaded_ = dict() if self.placeholders_ else load_rttm(self.path)
 
     def __call__(self, file: ProtocolFile) -> Annotation:
-        
+
         uri = file["uri"]
 
         if uri in self.loaded_:
@@ -136,6 +136,51 @@ class RTTMLoader:
             return loaded[uri]
 
         # when there is more than one file in loaded RTTM, cache them all
+        # so that loading future "uri" will be instantaneous
+        self.loaded_.update(loaded)
+
+        return self.loaded_[uri]
+
+
+class STMLoader:
+    """STM loader
+
+    Can be used as a preprocessor.
+
+    Parameters
+    ----------
+    path : str
+        Path to STM file with optional ProtocolFile key placeholders
+        (e.g. "/path/to/{database}/{subset}/{uri}.stm")
+    """
+
+    def __init__(self, path: Text = None):
+        super().__init__()
+
+        self.path = str(path)
+
+        _, placeholders, _, _ = zip(*string.Formatter().parse(self.path))
+        self.placeholders_ = set(placeholders) - set([None])
+        self.loaded_ = dict() if self.placeholders_ else load_stm(self.path)
+
+    def __call__(self, file: ProtocolFile) -> Annotation:
+
+        uri = file["uri"]
+
+        if uri in self.loaded_:
+            return self.loaded_[uri]
+
+        sub_file = {key: file[key] for key in self.placeholders_}
+        loaded = load_stm(self.path.format(**sub_file))
+        if uri not in loaded:
+            loaded[uri] = Annotation(uri=uri)
+
+        # do not cache annotations when there is one STM file per "uri"
+        # since loading it should be quite fast
+        if "uri" in self.placeholders_:
+            return loaded[uri]
+
+        # when there is more than one file in loaded STM, cache them all
         # so that loading future "uri" will be instantaneous
         self.loaded_.update(loaded)
 
@@ -174,7 +219,7 @@ class UEMLoader:
         loaded = load_uem(self.path.format(**sub_file))
         if uri not in loaded:
             loaded[uri] = Timeline(uri=uri)
-        
+
         # do not cache timelines when there is one UEM file per "uri"
         # since loading it should be quite fast
         if "uri" in self.placeholders_:
@@ -185,6 +230,42 @@ class UEMLoader:
         self.loaded_.update(loaded)
 
         return self.loaded_[uri]
+
+
+class LABLoader:
+    """LAB loader
+
+    Parameters
+    ----------
+    path : str
+        Path to LAB file with mandatory {uri} placeholder.
+        (e.g. "/path/to/{uri}.lab")
+
+        each .lab file contains the segments for a single audio file, in the following format:
+        start end label
+
+        ex.
+        0.0 12.3456 sing
+        12.3456 15.0 nosing
+        ...
+    """
+
+    def __init__(self, path: Text = None):
+        super().__init__()
+
+        self.path = str(path)
+
+        _, placeholders, _, _ = zip(*string.Formatter().parse(self.path))
+        self.placeholders_ = set(placeholders) - set([None])
+        if "uri" not in self.placeholders_:
+            raise ValueError("`path` must contain the {uri} placeholder.")
+
+    def __call__(self, file: ProtocolFile) -> Annotation:
+
+        uri = file["uri"]
+
+        sub_file = {key: file[key] for key in self.placeholders_}
+        return load_lab(self.path.format(**sub_file), uri=uri)
 
 
 class CTMLoader:
