@@ -2,7 +2,7 @@
 Changelog
 #########
 
-Version 5.0 (2023-xx-xx)
+Version 5.0.0 (2023-03-27)
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
   - feat(registry): add pyannote.database.registry to load multiple YAML configuration file
@@ -10,7 +10,7 @@ Version 5.0 (2023-xx-xx)
   - BREAKING: remove support for database plugins (via "pyannote.database.database" entrypoint)
   - feat(protocol): add generic segmentation protocol with "classes" metadata
   - feat(protocol): add support for label "scope" in speaker diarization protocols
-  - feat(protocol): make ProtocolFile pickable
+  - improve(protocol): make ProtocolFile pickable
   - feat(loader): add support for LAB and STM files
   - feat(loader): add option to filter RTTM lines by "type"
   - fix(cli): fix corner case when annotation key is missing
