@@ -436,12 +436,22 @@ def create_protocol(
         protocol_entries = {"files": protocol_entries}
 
     metadata = dict()
-    # check whether base_class is a subclass of SegmentationProtocol
+
     if issubclass(base_class, SegmentationProtocol):
-        metadata["classes"] = protocol_entries.pop("classes", None)
+        if "classes" in protocol_entries:
+            metadata["classes"] = protocol_entries.pop("classes")
 
     if issubclass(base_class, SpeakerDiarizationProtocol):
-        metadata["scope"] = protocol_entries.pop("scope", "file")
+        if "scope" in protocol_entries:
+            scope = protocol_entries.pop("scope")
+        else:
+            scope = "file"
+            msg = (
+                f"'{database}.{task}.{protocol}' found in {database_yml} does not define "
+                f"the 'scope' of speaker labels (file, database, or global). Setting it to 'file'."
+            )   
+            print(msg)
+        metadata["scope"] = scope
 
     methods = dict()
     for subset, subset_entries in protocol_entries.items():
