@@ -51,6 +51,7 @@ from . import protocol as protocol_module
 from pyannote.database.protocol.protocol import ProtocolFile
 import yaml
 import warnings
+from numbers import Number
 from typing import Text, Dict, Callable, Any, Union
 import functools
 
@@ -112,6 +113,12 @@ def Template(template: Text, database_yml: Path) -> Callable[[ProtocolFile], Any
         loader = Loader(path)
         return loader(current_file)
 
+    return load
+
+
+def NumericValue(value):
+    def load(current_file: ProtocolFile):
+        return value
     return load
 
 
@@ -209,6 +216,10 @@ def gather_loaders(
     for key, value in entries.items():
 
         if key == "uri" or key == "trial":
+            continue
+
+        if isinstance(value, Number):
+            lazy_loader[key] = NumericValue(value)
             continue
 
         # check whether value (path) contains placeholders such as {uri} or {subset}
@@ -442,16 +453,18 @@ def create_protocol(
             metadata["classes"] = protocol_entries.pop("classes")
 
     if issubclass(base_class, SpeakerDiarizationProtocol):
-        if "scope" in protocol_entries:
-            scope = protocol_entries.pop("scope")
-        else:
-            scope = "file"
+        scope = protocol_entries.pop("scope", None)
+
+        if scope is None and database != "X":
             msg = (
                 f"'{database}.{task}.{protocol}' found in {database_yml} does not define "
                 f"the 'scope' of speaker labels (file, database, or global). Setting it to 'file'."
             )   
             print(msg)
-        metadata["scope"] = scope
+            metadata["scope"] = "file"
+
+        else:
+            metadata["scope"] = scope
 
     methods = dict()
     for subset, subset_entries in protocol_entries.items():
