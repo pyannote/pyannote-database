@@ -116,6 +116,12 @@ def Template(template: Text, database_yml: Path) -> Callable[[ProtocolFile], Any
     return load
 
 
+def NumericValue(value):
+    def load(current_file: ProtocolFile):
+        return value
+    return load
+
+
 def resolve_path(path: Path, database_yml: Path) -> Path:
     """Resolve path
 
@@ -213,9 +219,7 @@ def gather_loaders(
             continue
 
         if isinstance(value, Number):
-            def _number(file):
-                return value
-            lazy_loader[key] = _number
+            lazy_loader[key] = NumericValue(value)
             continue
 
         # check whether value (path) contains placeholders such as {uri} or {subset}
