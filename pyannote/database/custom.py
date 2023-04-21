@@ -213,7 +213,9 @@ def gather_loaders(
             continue
 
         if isinstance(value, Number):
-            lazy_loader[key] = lambda _: value
+            def _number(file):
+                return value
+            lazy_loader[key] = _number
             continue
 
         # check whether value (path) contains placeholders such as {uri} or {subset}
