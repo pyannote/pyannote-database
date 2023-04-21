@@ -51,6 +51,7 @@ from . import protocol as protocol_module
 from pyannote.database.protocol.protocol import ProtocolFile
 import yaml
 import warnings
+from numbers import Number
 from typing import Text, Dict, Callable, Any, Union
 import functools
 
@@ -209,6 +210,10 @@ def gather_loaders(
     for key, value in entries.items():
 
         if key == "uri" or key == "trial":
+            continue
+
+        if isinstance(value, Number):
+            lazy_loader[key] = lambda _: value
             continue
 
         # check whether value (path) contains placeholders such as {uri} or {subset}
