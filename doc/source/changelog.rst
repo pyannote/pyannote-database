@@ -2,8 +2,13 @@
 Changelog
 #########
 
+Version 5.0.1 (2023-04-21)
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  - fix: fix support for numeric values in custom protocols (e.g. `channel: 0`)
+
 Version 5.0.0 (2023-03-27)
-~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   - feat(registry): add pyannote.database.registry to load multiple YAML configuration file
   - BREAKING: turn pyannote.database.get_{database|protocol|protocols} function into registry methods
