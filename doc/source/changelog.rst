@@ -6,6 +6,7 @@ Version 5.0.1 (2023-04-21)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   - fix: fix support for numeric values in custom protocols (e.g. `channel: 0`)
+  - improve: do not complain about missing scope for meta protocols
 
 Version 5.0.0 (2023-03-27)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
