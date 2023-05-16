@@ -51,10 +51,13 @@ from . import protocol as protocol_module
 from pyannote.database.protocol.protocol import ProtocolFile
 import yaml
 import warnings
+from numbers import Number
 from typing import Text, Dict, Callable, Any, Union
 import functools
 
-from .protocol.protocol import Subset
+from .protocol.protocol import Subset, Scope
+from .protocol.segmentation import SegmentationProtocol
+from .protocol.speaker_diarization import SpeakerDiarizationProtocol
 
 import pkg_resources
 
@@ -110,6 +113,12 @@ def Template(template: Text, database_yml: Path) -> Callable[[ProtocolFile], Any
         loader = Loader(path)
         return loader(current_file)
 
+    return load
+
+
+def NumericValue(value):
+    def load(current_file: ProtocolFile):
+        return value
     return load
 
 
@@ -209,6 +218,10 @@ def gather_loaders(
         if key == "uri" or key == "trial":
             continue
 
+        if isinstance(value, Number):
+            lazy_loader[key] = NumericValue(value)
+            continue
+
         # check whether value (path) contains placeholders such as {uri} or {subset}
         _, placeholders, _, _ = zip(*string.Formatter().parse(value))
         is_template = len(set(placeholders) - set([None])) > 0
@@ -265,6 +278,7 @@ def subset_iter(
     subset: Subset = None,
     entries: Dict = None,
     database_yml: Path = None,
+    **metadata,
 ):
     """
 
@@ -282,6 +296,9 @@ def subset_iter(
         Subset entries.
     database_yml : `Path`
         Path to the 'database.yml' file
+    metadata : dict
+        Additional metadata to be added to each ProtocolFile (such
+        as "scope" or "classes")
     """
 
     if "uri" in entries:
@@ -305,9 +322,8 @@ def subset_iter(
 
     for uri in uris:
         yield ProtocolFile(
-            {"uri": uri, "database": database, "subset": subset}, lazy=lazy_loader
+            {"uri": uri, "database": database, "subset": subset, **metadata}, lazy=lazy_loader
         )
-
 
 def subset_trial(
     self,
@@ -403,15 +419,18 @@ def create_protocol(
 
     """
 
+    
     try:
         base_class = getattr(
             protocol_module, "Protocol" if task == "Protocol" else f"{task}Protocol"
         )
+
     except AttributeError:
         msg = (
             f"Ignoring '{database}.{task}' protocols found in {database_yml} "
             f"because '{task}' tasks are not supported yet."
         )
+        print(msg)
         return None
 
     # Collections do not define subsets, so we artificially create one (called "files")
@@ -426,6 +445,26 @@ def create_protocol(
     #        uri: /path/to/collection.lst
     if task == "Collection":
         protocol_entries = {"files": protocol_entries}
+
+    metadata = dict()
+
+    if issubclass(base_class, SegmentationProtocol):
+        if "classes" in protocol_entries:
+            metadata["classes"] = protocol_entries.pop("classes")
+
+    if issubclass(base_class, SpeakerDiarizationProtocol):
+        scope = protocol_entries.pop("scope", None)
+
+        if scope is None and database != "X":
+            msg = (
+                f"'{database}.{task}.{protocol}' found in {database_yml} does not define "
+                f"the 'scope' of speaker labels (file, database, or global). Setting it to 'file'."
+            )   
+            print(msg)
+            metadata["scope"] = "file"
+
+        else:
+            metadata["scope"] = scope
 
     methods = dict()
     for subset, subset_entries in protocol_entries.items():
@@ -458,6 +497,7 @@ def create_protocol(
                 database_yml,
             )
         else:
+
             methods[method_name] = functools.partialmethod(
                 subset_iter,
                 database=database,
@@ -466,7 +506,9 @@ def create_protocol(
                 subset=subset,
                 entries=subset_entries,
                 database_yml=database_yml,
+                **metadata,
             )
+
             if "trial" in subset_entries.keys():
                 methods[f"{subset}_trial"] = functools.partialmethod(
                     subset_trial,

@@ -2,15 +2,22 @@
 Changelog
 #########
 
-Version 5.0 (2023-xx-xx)
-~~~~~~~~~~~~~~~~~~~~~~~~
+Version 5.0.1 (2023-04-21)
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  - fix: fix support for numeric values in custom protocols (e.g. `channel: 0`)
+  - improve: do not complain about missing scope for meta protocols
+
+Version 5.0.0 (2023-03-27)
+~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   - feat(registry): add pyannote.database.registry to load multiple YAML configuration file
   - BREAKING: turn pyannote.database.get_{database|protocol|protocols} function into registry methods
   - BREAKING: remove support for database plugins (via "pyannote.database.database" entrypoint)
-  - feat(protocol): make ProtocolFile pickable
-  - feat(loader): add LAB file support
-  - feat(loader): add STM file support
+  - feat(protocol): add generic segmentation protocol with "classes" metadata
+  - feat(protocol): add support for label "scope" in speaker diarization protocols
+  - improve(protocol): make ProtocolFile pickable
+  - feat(loader): add support for LAB and STM files
   - feat(loader): add option to filter RTTM lines by "type"
   - fix(cli): fix corner case when annotation key is missing
 

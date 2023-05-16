@@ -46,6 +46,7 @@ except ImportError:
 
 Subset = Literal["train", "development", "test"]
 LEGACY_SUBSET_MAPPING = {"train": "trn", "development": "dev", "test": "tst"}
+Scope = Literal["file", "database", "global"]
 
 Preprocessor = Callable[["ProtocolFile"], Any]
 Preprocessors = Dict[Text, Preprocessor]
@@ -248,7 +249,7 @@ class Protocol:
     a development subset, and a test subset.
 
     An experimental protocol can be defined programmatically by creating a
-    class that inherits from SpeakerDiarizationProtocol and implements at least
+    class that inherits from Protocol and implements at least
     one of `train_iter`, `development_iter` and `test_iter` methods:
 
         >>> class MyProtocol(Protocol):
