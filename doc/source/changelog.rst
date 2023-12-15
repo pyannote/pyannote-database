@@ -2,6 +2,11 @@
 Changelog
 #########
 
+develop
+~~~~~~~
+
+  - feat(registry): make registry iterable (yields protocol names)
+
 Version 5.0.1 (2023-04-21)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
