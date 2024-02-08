@@ -3,7 +3,7 @@
 
 # The MIT License (MIT)
 
-# Copyright (c) 2016-2020 CNRS
+# Copyright (c) 2016- CNRS
 
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -26,20 +26,10 @@
 # AUTHORS
 # Hervé BREDIN - http://herve.niderb.fr
 
-import yaml
-from pathlib import Path
 import warnings
 import pandas as pd
 from pyannote.core import Segment, Timeline, Annotation
-from .protocol.protocol import ProtocolFile
-
-from typing import Text
-from typing import Union
-from typing import Dict
-from typing import List
-
-DatabaseName = Text
-PathTemplate = Text
+import csv
 
 
 def get_unique_identifier(item):
@@ -174,24 +164,26 @@ def load_rttm(file_rttm, keep_type="SPEAKER"):
         "NA5",
         "NA6",
     ]
-    dtype = {"uri": str, "start": float, "duration": float, "speaker": str}
-    data = pd.read_csv(
-        file_rttm,
-        names=names,
-        dtype=dtype,
-        delim_whitespace=True,
-        keep_default_na=True,
-    )
 
     annotations = dict()
-    for uri, turns in data.groupby("uri"):
-        annotation = Annotation(uri=uri)
-        for i, turn in turns.iterrows():
-            if turn.type != keep_type:
+    _uri = None
+    with open(file_rttm, "r") as f:
+        for r, row in enumerate(csv.DictReader(f, delimiter=" ", fieldnames=names)):
+            if row["type"] != keep_type:
                 continue
-            segment = Segment(turn.start, turn.start + turn.duration)
-            annotation[segment, i] = turn.speaker
-        annotations[uri] = annotation
+
+            uri = row['uri']
+            if uri != _uri:
+                if uri in annotations:
+                    annotation = annotations[uri]
+                else:
+                    annotation = Annotation(uri=uri)
+                    annotations[uri] = annotation
+                _uri = uri
+                    
+            start = float(row["start"])
+            segment = Segment(start, start + float(row["duration"]))
+            annotation[segment, r] = row["speaker"]
 
     return annotations
 
