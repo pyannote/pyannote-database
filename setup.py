@@ -37,7 +37,7 @@ setup(
         "pyannote.core >= 4.1",
         "pyYAML >= 3.12",
         "pandas >= 0.19",
-        "typer[all] >= 0.2.1",
+        "typer >= 0.12.1",
         "typing_extensions >= 3.7.4;python_version < '3.8'",
     ],
     entry_points={
