@@ -37,11 +37,13 @@ setup(
         "pyannote.core >= 4.1",
         "pyYAML >= 3.12",
         "pandas >= 0.19",
-        "typer[all] >= 0.2.1",
+        "typer >= 0.12.1",
         "typing_extensions >= 3.7.4;python_version < '3.8'",
     ],
     entry_points={
-        "console_scripts": ["pyannote-database=pyannote.database.cli:main",],
+        "console_scripts": [
+            "pyannote-database=pyannote.database.cli:main",
+        ],
         "pyannote.database.loader": [
             ".rttm = pyannote.database.loader:RTTMLoader",
             ".uem = pyannote.database.loader:UEMLoader",
@@ -65,10 +67,9 @@ setup(
         "Intended Audience :: Science/Research",
         "License :: OSI Approved :: MIT License",
         "Natural Language :: English",
-        "Programming Language :: Python :: 3",
-        "Programming Language :: Python :: 3.6",
-        "Programming Language :: Python :: 3.7",
-        "Programming Language :: Python :: 3.8",
+        "Programming Language :: Python :: 3.9",
+        "Programming Language :: Python :: 3.10",
+        "Programming Language :: Python :: 3.11",
         "Topic :: Scientific/Engineering",
     ],
     extras_require={
