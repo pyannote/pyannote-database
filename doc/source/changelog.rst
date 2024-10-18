@@ -2,6 +2,11 @@
 Changelog
 #########
 
+develop
+~~~~~~~~
+
+ - chore: remove deprecated use of `delim_whitespace`
+
 Version 5.1.0 (2024-04-05)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
