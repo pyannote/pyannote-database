@@ -49,13 +49,14 @@ import string
 from . import protocol as protocol_module
 
 from pyannote.database.protocol.protocol import ProtocolFile
-import yaml
+
+
 import warnings
 from numbers import Number
 from typing import Text, Dict, Callable, Any, Union
 import functools
 
-from .protocol.protocol import Subset, Scope
+from .protocol.protocol import Subset
 from .protocol.segmentation import SegmentationProtocol
 from .protocol.speaker_diarization import SpeakerDiarizationProtocol
 
