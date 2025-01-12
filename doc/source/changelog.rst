@@ -2,10 +2,18 @@
 Changelog
 #########
 
-develop
-~~~~~~~
+Version 5.1.1 (2025-01-12)
+~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+ - chore: remove deprecated use of `delim_whitespace`
+ - chore: use `importlib.metadata` instead of `pkg_resources`
+
+Version 5.1.0 (2024-04-05)
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  - BREAKING: switch to python 3.9+ (no support for 3.12 yet)
   - feat(registry): make registry iterable (yields protocol names)
+  - fix(setup): fix `typer`` dependency
 
 Version 5.0.1 (2023-04-21)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~

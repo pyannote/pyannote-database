@@ -49,17 +49,18 @@ import string
 from . import protocol as protocol_module
 
 from pyannote.database.protocol.protocol import ProtocolFile
-import yaml
+
+
 import warnings
 from numbers import Number
 from typing import Text, Dict, Callable, Any, Union
 import functools
 
-from .protocol.protocol import Subset, Scope
+from .protocol.protocol import Subset
 from .protocol.segmentation import SegmentationProtocol
 from .protocol.speaker_diarization import SpeakerDiarizationProtocol
 
-import pkg_resources
+from importlib.metadata import entry_points
 
 from .util import get_annotated
 
@@ -68,7 +69,7 @@ from .loader import load_lst, load_trial
 # All "Loader" classes types (eg RTTMLoader, UEMLoader, ...) retrieved from the entry point.
 LOADERS = {
     ep.name: ep
-    for ep in pkg_resources.iter_entry_points(group="pyannote.database.loader")
+    for ep in entry_points(group="pyannote.database.loader")
 }
 
 

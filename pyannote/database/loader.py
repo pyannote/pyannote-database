@@ -90,7 +90,7 @@ def load_trial(file_trial):
     """
 
     trials = pd.read_table(
-        file_trial, delim_whitespace=True, names=["reference", "uri1", "uri2"]
+        file_trial, sep="\s+", names=["reference", "uri1", "uri2"]
     )
 
     for _, reference, uri1, uri2 in trials.itertuples():
@@ -289,7 +289,7 @@ class CTMLoader:
             "confidence": float,
         }
         self.data_ = pd.read_csv(
-            ctm, names=names, dtype=dtype, delim_whitespace=True
+            ctm, names=names, dtype=dtype, sep="\s+"
         ).groupby("uri")
 
     def __call__(self, current_file: ProtocolFile) -> Union["Doc", None]:
@@ -354,7 +354,7 @@ class MAPLoader:
             "uri": str,
         }
         self.data_ = pd.read_csv(
-            mapping, names=names, dtype=dtype, delim_whitespace=True
+            mapping, names=names, dtype=dtype, sep="\s+"
         )
 
         # get colum 'value' dtype, allowing us to acces it during subset
