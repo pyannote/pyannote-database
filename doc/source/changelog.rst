@@ -2,6 +2,12 @@
 Changelog
 #########
 
+Version 5.1.1 (2025-01-12)
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+ - chore: remove deprecated use of `delim_whitespace`
+ - chore: use `importlib.metadata` instead of `pkg_resources`
+
 Version 5.1.0 (2024-04-05)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
