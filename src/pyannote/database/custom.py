@@ -67,18 +67,10 @@ from .util import get_annotated
 from .loader import load_lst, load_trial
 
 # All "Loader" classes types (eg RTTMLoader, UEMLoader, ...) retrieved from the entry point.
-try:
-    # Python >= 3.10 style
-    LOADERS = {
-        ep.name: ep
-        for ep in entry_points(group="pyannote.database.loader")
-    }
-except TypeError:
-    # Python < 3.10 style
-    LOADERS = {
-        ep.name: ep
-        for ep in entry_points().get("pyannote.database.loader", [])
-    }
+LOADERS = {
+    ep.name: ep
+    for ep in entry_points(group="pyannote.database.loader")
+}
 
 
 def Template(template: Text, database_yml: Path) -> Callable[[ProtocolFile], Any]:
