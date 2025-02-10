@@ -47,11 +47,8 @@ from .util import get_annotated
 from .util import get_unique_identifier
 from .util import get_label_identifier
 
-from ._version import get_versions
-
-
-__version__ = get_versions()["version"]
-del get_versions
+import importlib.metadata
+__version__ = importlib.metadata.version("pyannote-database")
 
 
 def get_protocol(name, preprocessors: Optional[Preprocessors] = None) -> Protocol:
