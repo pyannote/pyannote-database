@@ -2,8 +2,8 @@
 Changelog
 #########
 
-Next release
-~~~~~~~~~~~~
+Version 6.0.0rc1 (2025-02-10)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 - BREAKING: drop support to `Python` < 3.10
 - BREAKING: switch to native namespace package 
