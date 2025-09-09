@@ -13,7 +13,7 @@ dynamic = [
 
 dependencies = [
     "pandas>=2.2.3",
-    "pyannote-core>=5.0.0",
+    "pyannote-core>=6.0.0",
     "pyyaml>=6.0.2",
 ]
 
