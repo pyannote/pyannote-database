@@ -23,7 +23,6 @@ pyannote-database = "pyannote.database.cli:main"
 [project.entry-points.'pyannote.database.loader']
 ".rttm" = "pyannote.database.loader:RTTMLoader"
 ".uem" = "pyannote.database.loader:UEMLoader"
-".ctm" = "pyannote.database.loader:CTMLoader"
 ".map" = "pyannote.database.loader:MAPLoader"
 ".lab" = "pyannote.database.loader:LABLoader"
 ".stm" = "pyannote.database.loader:STMLoader"
@@ -38,6 +37,9 @@ test = [
 doc = [
     "sphinx-rtd-theme>=3.0.2",
     "sphinx>=8.1.3",
+]
+transcription = [
+    "meeteval>=0.4.3",
 ]
 
 [build-system]

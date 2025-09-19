@@ -3,7 +3,8 @@
 
 # The MIT License (MIT)
 
-# Copyright (c) 2020- CNRS
+# Copyright (c) 2020-2025 CNRS
+# Copyright (c) 2025- pyannoteAI
 
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -24,32 +25,29 @@
 # SOFTWARE.
 
 # AUTHORS
-# Hervé BREDIN - http://herve.niderb.fr
+# Hervé BREDIN
 # Vincent BRIGNATZ
 
 """Data loaders"""
 
-from typing import Text
-from pathlib import Path
 import string
-from pyannote.database.util import load_rttm, load_uem, load_lab, load_stm
-import pandas as pd
-from pyannote.core import Segment, Timeline, Annotation
-from pyannote.database.protocol.protocol import ProtocolFile
-from typing import Union, Any
 import warnings
+from pathlib import Path
+from typing import Any, Text
 
+import pandas as pd
+from pyannote.core import Annotation, Timeline
+from pyannote.database.protocol.protocol import ProtocolFile
+from pyannote.database.util import load_lab, load_rttm, load_uem
 
 try:
-    from spacy.tokens import Token
-    from spacy.tokens import Doc
+    import meeteval.io
+    from meeteval.io.seglst import SegLST
 
-    Token.set_extension("time_start", default=None)
-    Token.set_extension("time_end", default=None)
-    Token.set_extension("confidence", default=0.0)
+    MEETEVAL_IS_AVAILABLE = True
 
 except ImportError:
-    pass
+    MEETEVAL_IS_AVAILABLE = False
 
 
 def load_lst(file_lst):
@@ -89,9 +87,7 @@ def load_trial(file_trial):
         List of trial
     """
 
-    trials = pd.read_table(
-        file_trial, sep="\s+", names=["reference", "uri1", "uri2"]
-    )
+    trials = pd.read_table(file_trial, sep="\s+", names=["reference", "uri1", "uri2"])
 
     for _, reference, uri1, uri2 in trials.itertuples():
         yield {"reference": reference, "uri1": uri1, "uri2": uri2}
@@ -119,7 +115,6 @@ class RTTMLoader:
         self.loaded_ = dict() if self.placeholders_ else load_rttm(self.path)
 
     def __call__(self, file: ProtocolFile) -> Annotation:
-
         uri = file["uri"]
 
         if uri in self.loaded_:
@@ -145,37 +140,66 @@ class RTTMLoader:
 class STMLoader:
     """STM loader
 
-    Can be used as a preprocessor.
-
     Parameters
     ----------
     path : str
-        Path to STM file with optional ProtocolFile key placeholders
+        Path to STM file with optional AudioFile key placeholders
         (e.g. "/path/to/{database}/{subset}/{uri}.stm")
     """
 
-    def __init__(self, path: Text = None):
+    def __init__(self, path: str | Path | None = None):
         super().__init__()
 
         self.path = str(path)
 
         _, placeholders, _, _ = zip(*string.Formatter().parse(self.path))
         self.placeholders_ = set(placeholders) - set([None])
-        self.loaded_ = dict() if self.placeholders_ else load_stm(self.path)
 
-    def __call__(self, file: ProtocolFile) -> Annotation:
+        if self.placeholders_:
+            self.loaded_: dict[str, "SegLST"] = dict()
+            return
 
+        if MEETEVAL_IS_AVAILABLE:
+            seglst: SegLST = meeteval.io.load(self.path, format="stm").to_seglst()
+            session_ids = set(s["session_id"] for s in seglst)
+            self.loaded_: dict[str, SegLST] = {
+                session_id: SegLST([s for s in seglst if s["session_id"] == session_id])
+                for session_id in session_ids
+            }
+
+            return
+
+        warnings.warn("MeetEval is not available, STM files cannot be loaded.")
+        self.loaded_: dict[str, "SegLST"] = dict()
+
+    def __call__(self, file: ProtocolFile) -> "SegLST":
         uri = file["uri"]
 
         if uri in self.loaded_:
             return self.loaded_[uri]
 
         sub_file = {key: file[key] for key in self.placeholders_}
-        loaded = load_stm(self.path.format(**sub_file))
-        if uri not in loaded:
-            loaded[uri] = Annotation(uri=uri)
 
-        # do not cache annotations when there is one STM file per "uri"
+        if MEETEVAL_IS_AVAILABLE:
+            seglst: SegLST = meeteval.io.load(
+                self.path.format(**sub_file), format="stm"
+            ).to_seglst()
+            session_ids = set(s["session_id"] for s in seglst)
+            loaded: dict[str, SegLST] = {
+                session_id: SegLST([s for s in seglst if s["session_id"] == session_id])
+                for session_id in session_ids
+            }
+        else:
+            warnings.warn("MeetEval is not available, STM files cannot be loaded.")
+            loaded = dict()
+
+        if uri not in loaded:
+            if MEETEVAL_IS_AVAILABLE:
+                loaded[uri] = SegLST([])
+            else:
+                loaded[uri] = None
+
+        # do not cache transcription when there is one STM file per "uri"
         # since loading it should be quite fast
         if "uri" in self.placeholders_:
             return loaded[uri]
@@ -209,7 +233,6 @@ class UEMLoader:
         self.loaded_ = dict() if self.placeholders_ else load_uem(self.path)
 
     def __call__(self, file: ProtocolFile) -> Timeline:
-
         uri = file["uri"]
 
         if uri in self.loaded_:
@@ -261,63 +284,10 @@ class LABLoader:
             raise ValueError("`path` must contain the {uri} placeholder.")
 
     def __call__(self, file: ProtocolFile) -> Annotation:
-
         uri = file["uri"]
 
         sub_file = {key: file[key] for key in self.placeholders_}
         return load_lab(self.path.format(**sub_file), uri=uri)
-
-
-class CTMLoader:
-    """CTM loader
-
-    Parameter
-    ---------
-    ctm : Path
-        Path to CTM file
-    """
-
-    def __init__(self, ctm: Path):
-        self.ctm = ctm
-
-        names = ["uri", "channel", "start", "duration", "word", "confidence"]
-        dtype = {
-            "uri": str,
-            "start": float,
-            "duration": float,
-            "word": str,
-            "confidence": float,
-        }
-        self.data_ = pd.read_csv(
-            ctm, names=names, dtype=dtype, sep="\s+"
-        ).groupby("uri")
-
-    def __call__(self, current_file: ProtocolFile) -> Union["Doc", None]:
-
-        try:
-            from spacy.vocab import Vocab
-            from spacy.tokens import Doc
-        except ImportError:
-            msg = "Cannot load CTM files because spaCy is not available."
-            warnings.warn(msg)
-            return None
-
-        uri = current_file["uri"]
-
-        try:
-            lines = list(self.data_.get_group(uri).iterrows())
-        except KeyError:
-            lines = []
-
-        words = [line.word for _, line in lines]
-        doc = Doc(Vocab(), words=words)
-
-        for token, (_, line) in zip(doc, lines):
-            token._.time_start = line.start
-            token._.time_end = line.start + line.duration
-            token._.confidence = line.confidence
-
-        return doc
 
 
 class MAPLoader:
@@ -353,9 +323,7 @@ class MAPLoader:
         dtype = {
             "uri": str,
         }
-        self.data_ = pd.read_csv(
-            mapping, names=names, dtype=dtype, sep="\s+"
-        )
+        self.data_ = pd.read_csv(mapping, names=names, dtype=dtype, sep="\s+")
 
         # get colum 'value' dtype, allowing us to acces it during subset
         self.dtype = self.data_.dtypes["value"]
