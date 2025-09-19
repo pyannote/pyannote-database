@@ -2,6 +2,11 @@
 Changelog
 #########
 
+Version "next" (xxxx-xx-xx)
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+-  BREAKING: update `STMLoader` to return `meeteval.io.SegLST` instances
+
 Version 6.0.0 (2025-09-09)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
