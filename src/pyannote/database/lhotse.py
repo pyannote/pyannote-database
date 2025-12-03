@@ -250,5 +250,4 @@ class LhotseProtocol(SpeakerDiarizationProtocol):
                 "uri": recording_id,
                 "annotated": supervision_set_to_timeline(supervisions_list),
                 "recording": recording,
-                "supervisions": supervisions_list,
-            }
+                "supervisions": supervisions_list}

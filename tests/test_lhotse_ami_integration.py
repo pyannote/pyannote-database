@@ -91,11 +91,11 @@ def ami_ihm_lhotse_protocol(ami_data_available):
 
 @pytest.fixture
 def ami_mdm_lhotse_protocol(ami_data_available):
-    """Create LhotseProtocol for AMI MDM (Multiple Distant Microphone) with single channel"""
+    """Create LhotseProtocol for AMI MDM (Multiple Distant Microphone) with multi-channel support"""
     try:
         import lhotse
     except ImportError:
-        pytest.skip("lhotse package not installed")
+        raise ImportError("lhotse package not installed")
 
     # Load AMI MDM data using the predefined train/dev/test splits
     # Map from protocol split names to file names
@@ -112,22 +112,8 @@ def ami_mdm_lhotse_protocol(ami_data_available):
             all_recordings.extend(lhotse.load_manifest(str(rec_file)))
             all_supervisions.extend(lhotse.load_manifest(str(sup_file)))
 
-    # Filter supervisions to use only channel 0 (MDM supervisions have channel as a list)
     supervisions = lhotse.SupervisionSet(all_supervisions)
-    supervisions_ch0 = supervisions.filter(lambda s: 0 in s.channel)
-
-    # Also filter recordings to keep only the first channel
-    # Create a filtered recording set with only channel 0
-    recordings_ch0_list = []
-    for recording in all_recordings:
-        # Create a new recording with only channel 0 by reconstructing from dict
-        rec_dict = recording.to_dict()
-        rec_dict["sources"] = [rec_dict["sources"][0]]  # Keep only first source
-        rec_dict["channel_ids"] = [0]
-        new_recording = lhotse.Recording.from_dict(rec_dict)
-        recordings_ch0_list.append(new_recording)
-
-    recordings_ch0 = lhotse.RecordingSet.from_recordings(recordings_ch0_list)
+    recordings = lhotse.RecordingSet.from_recordings(all_recordings)
 
     # Define subset_split using the actual split files
     subset_split = {}
@@ -135,12 +121,11 @@ def ami_mdm_lhotse_protocol(ami_data_available):
         sup_file = ami_data_available / f"ami-mdm_supervisions_{file_split}.jsonl.gz"
         if sup_file.exists():
             sups = lhotse.load_manifest(str(sup_file))
-            sups_ch0 = [s for s in sups if 0 in s.channel]
-            subset_split[protocol_split] = sorted(set(s.recording_id for s in sups_ch0))
+            subset_split[protocol_split] = sorted(set(s.recording_id for s in sups))
 
     protocol = LhotseProtocol(
-        recording_set=recordings_ch0,
-        supervision_set=supervisions_ch0,
+        recording_set=recordings,
+        supervision_set=supervisions,
         subset_split=subset_split,
     )
 
@@ -205,8 +190,8 @@ class TestLhotseAMIIntegration:
                 assert hasattr(sup, "speaker")
                 assert sup.speaker is not None
 
-    def test_ami_mdm_train_iteration_single_channel(self, ami_mdm_lhotse_protocol):
-        """Test iterating over AMI MDM training files (single channel filtered)"""
+    def test_ami_mdm_train_iteration_multi_channel(self, ami_mdm_lhotse_protocol):
+        """Test iterating over AMI MDM training files with multi-channel support"""
         files = list(ami_mdm_lhotse_protocol.train())
 
         assert len(files) > 0, "No training files found"
@@ -223,17 +208,18 @@ class TestLhotseAMIIntegration:
         if file["annotation"] is not None:
             assert isinstance(file["annotation"], Annotation)
 
-    def test_ami_mdm_supervisions_single_channel(self, ami_mdm_lhotse_protocol):
-        """Test that MDM supervisions are filtered to single channel"""
+    def test_ami_mdm_supervisions_multi_channel(self, ami_mdm_lhotse_protocol):
+        """Test that MDM supervisions include multi-channel data"""
         files = list(ami_mdm_lhotse_protocol.train())
 
         if len(files) > 0:
             file = files[0]
             supervisions = file["supervisions"]
-            # All supervisions should include channel 0 (channel is a list in MDM)
+            # All supervisions should have channel information (channel is a list in MDM)
             for sup in supervisions:
                 assert hasattr(sup, "channel")
-                assert 0 in sup.channel
+                assert isinstance(sup.channel, list)
+                assert len(sup.channel) > 0
 
     def test_ami_ihm_annotation_content(self, ami_ihm_lhotse_protocol):
         """Test that annotations contain actual speaker diarization content"""

@@ -139,6 +139,7 @@ def example_with_preprocessors(ami_dir):
         "num_speakers": lambda file: len(set(
             s.speaker for s in file["supervisions"] if s.speaker is not None
         )),
+        "audio": lambda file: file["recording"].sources[0].audio,
     }
 
     protocol = LhotseProtocol(
