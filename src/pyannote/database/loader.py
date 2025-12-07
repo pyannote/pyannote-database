@@ -87,7 +87,7 @@ def load_trial(file_trial):
         List of trial
     """
 
-    trials = pd.read_table(file_trial, sep="\s+", names=["reference", "uri1", "uri2"])
+    trials = pd.read_table(file_trial, sep=r"\s+", names=["reference", "uri1", "uri2"])
 
     for _, reference, uri1, uri2 in trials.itertuples():
         yield {"reference": reference, "uri1": uri1, "uri2": uri2}
@@ -323,7 +323,7 @@ class MAPLoader:
         dtype = {
             "uri": str,
         }
-        self.data_ = pd.read_csv(mapping, names=names, dtype=dtype, sep="\s+")
+        self.data_ = pd.read_csv(mapping, names=names, dtype=dtype, sep=r"\s+")
 
         # get colum 'value' dtype, allowing us to acces it during subset
         self.dtype = self.data_.dtypes["value"]
