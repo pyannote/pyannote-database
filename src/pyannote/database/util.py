@@ -180,7 +180,7 @@ def load_rttm(file_rttm, keep_type="SPEAKER"):
         names=names,
         dtype=dtype,
         sep=r"\s+",
-        keep_default_na=True,
+        keep_default_na=False,
     )
 
     annotations = dict()
