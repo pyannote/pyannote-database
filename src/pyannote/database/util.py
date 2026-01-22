@@ -175,11 +175,13 @@ def load_rttm(file_rttm, keep_type="SPEAKER"):
         "NA6",
     ]
     dtype = {"uri": str, "start": float, "duration": float, "speaker": str}
+    na_values = {n: ["<NA>"] for n in names if dtype.get(n) is not str}
     data = pd.read_csv(
         file_rttm,
         names=names,
         dtype=dtype,
         sep=r"\s+",
+        na_values=na_values,
         keep_default_na=False,
     )
 
