@@ -2,10 +2,15 @@
 Changelog
 #########
 
+Version 6.1.1 (2025-12-07)
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- fix: fix warning about invalid espace sequence
+
 Version 6.1.0 (2025-09-19)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
--  BREAKING: update `STMLoader` to return `meeteval.io.SegLST` instances
+- BREAKING: update `STMLoader` to return `meeteval.io.SegLST` instances
 
 Version 6.0.0 (2025-09-09)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

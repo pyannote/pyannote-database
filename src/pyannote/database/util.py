@@ -179,7 +179,7 @@ def load_rttm(file_rttm, keep_type="SPEAKER"):
         file_rttm,
         names=names,
         dtype=dtype,
-        sep="\s+",
+        sep=r"\s+",
         keep_default_na=True,
     )
 
@@ -213,7 +213,7 @@ def load_stm(file_stm):
     dtype = {"uri": str, "speaker": str, "start": float, "end": float}
     data = pd.read_csv(
         file_stm,
-        sep="\s+",
+        sep=r"\s+",
         usecols=[0, 2, 3, 4],
         dtype=dtype,
         names=list(dtype),
@@ -250,7 +250,7 @@ def load_mdtm(file_mdtm):
         file_mdtm,
         names=names,
         dtype=dtype,
-        sep="\s+",
+        sep=r"\s+",
         keep_default_na=False,
     )
 
@@ -281,7 +281,7 @@ def load_uem(file_uem):
 
     names = ["uri", "NA1", "start", "end"]
     dtype = {"uri": str, "start": float, "end": float}
-    data = pd.read_csv(file_uem, names=names, dtype=dtype, sep="\s+")
+    data = pd.read_csv(file_uem, names=names, dtype=dtype, sep=r"\s+")
 
     timelines = dict()
     for uri, parts in data.groupby("uri"):
@@ -306,7 +306,7 @@ def load_lab(path, uri: str = None) -> Annotation:
 
     names = ["start", "end", "label"]
     dtype = {"start": float, "end": float, "label": str}
-    data = pd.read_csv(path, names=names, dtype=dtype, sep="\s+")
+    data = pd.read_csv(path, names=names, dtype=dtype, sep=r"\s+")
 
     annotation = Annotation(uri=uri)
     for i, turn in data.iterrows():
