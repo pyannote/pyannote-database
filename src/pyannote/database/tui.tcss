@@ -1,0 +1,30 @@
+Screen {
+    layout: vertical;
+}
+
+#top-row {
+    height: 1fr;
+    border-bottom: solid $primary;
+}
+
+#bottom-row {
+    height: 2fr;
+}
+
+#databases {
+    width: 1fr;
+    border-right: solid $primary;
+}
+
+#protocols {
+    width: 1fr;
+}
+
+SubsetPanel {
+    width: 1fr;
+    border: solid $primary;
+}
+
+.subset-content {
+    padding: 1 2;
+}
