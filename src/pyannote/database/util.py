@@ -180,17 +180,20 @@ def load_rttm(file_rttm, keep_type="SPEAKER"):
         names=names,
         dtype=dtype,
         sep=r"\s+",
-        keep_default_na=True,
+        na_values=["<NA>"],
+        keep_default_na=False,
     )
 
     annotations = dict()
     for uri, turns in data.groupby("uri"):
+        if pd.isna(uri):
+            uri = None
         annotation = Annotation(uri=uri)
         for i, turn in turns.iterrows():
             if turn.type != keep_type:
                 continue
             segment = Segment(turn.start, turn.start + turn.duration)
-            annotation[segment, i] = turn.speaker
+            annotation[segment, i] = turn.speaker if not pd.isna(turn.speaker) else None
         annotations[uri] = annotation
 
     return annotations
