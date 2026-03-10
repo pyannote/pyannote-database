@@ -47,6 +47,11 @@ from .util import get_annotated
 from .util import get_unique_identifier
 from .util import get_label_identifier
 
+try:
+    from .lhotse import LhotseProtocol
+except ImportError:
+    LhotseProtocol = None
+
 import importlib.metadata
 __version__ = importlib.metadata.version("pyannote-database")
 
@@ -85,4 +90,5 @@ __all__ = [
     "get_annotated",
     "get_unique_identifier",
     "get_label_identifier",
+    "LhotseProtocol",
 ]
