@@ -29,6 +29,7 @@ pyannote-database = "pyannote.database.cli:main"
 
 [project.optional-dependencies]
 cli = [
+    "textual>=8.0.0",
     "typer>=0.15.1",
 ]
 test = [

@@ -31,7 +31,8 @@
 import typer
 from enum import Enum
 import math
-from typing import Text
+from pathlib import Path
+from typing import Optional, Text
 from pyannote.database import Database
 from pyannote.database import registry
 from pyannote.database.protocol import CollectionProtocol
@@ -175,6 +176,20 @@ def info(protocol: str):
                     f"   {duration_to_str(speech)} of speech ({100 * speech / duration:.0f}%)"
                 )
                 typer.echo(f"   {len(speakers)} speakers")
+
+
+@app.command("tui")
+def tui_command(
+    registry_path: Optional[Path] = typer.Argument(
+        None,
+        metavar="DATABASE_YML",
+        help="Path to database.yml registry file.",
+    ),
+):
+    """Launch interactive TUI to browse the registry"""
+    from pyannote.database.tui import RegistryApp
+
+    RegistryApp(registry_path=registry_path).run()
 
 
 def main():
