@@ -103,12 +103,6 @@ class RTTMLoader:
     path : str
         Path to RTTM file with optional ProtocolFile key placeholders
         (e.g. "/path/to/{database}/{subset}/{uri}.rttm")
-
-    Notes
-    -----
-    When the `ProtocolFile` provides a `channel` key, only the annotation of
-    that (1-based) channel is returned. Otherwise every channel is merged into
-    a single `Annotation` (backward-compatible behavior).
     """
 
     def __init__(self, path: Text = None):
@@ -133,6 +127,8 @@ class RTTMLoader:
         if len(by_channel) == 1:
             return next(iter(by_channel.values()))
 
+        # if there are multiple channels but I don't care about channels, merge them all
+        # into a single Annotation (this is the historical behavior of load_rttm)
         merged = Annotation(uri=uri)
         for channel in sorted(by_channel):
             for segment, track, label in by_channel[channel].itertracks(yield_label=True):

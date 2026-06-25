@@ -167,7 +167,7 @@ def load_rttm(file_rttm, keep_type="SPEAKER", keep_channel=False):
         {uri: pyannote.core.Annotation} dictionary.
         When `keep_channel` is True, a nested
         {uri: {channel: pyannote.core.Annotation}} dictionary, where `channel`
-        is the (1-based) integer channel read from the RTTM file.
+        is the integer channel read from the RTTM file (starting at 1).
     """
 
     names = [
