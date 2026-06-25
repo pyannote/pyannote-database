@@ -103,6 +103,12 @@ class RTTMLoader:
     path : str
         Path to RTTM file with optional ProtocolFile key placeholders
         (e.g. "/path/to/{database}/{subset}/{uri}.rttm")
+
+    Notes
+    -----
+    When the `ProtocolFile` provides a `channel` key, only the annotation of
+    that (1-based) channel is returned. Otherwise every channel is merged into
+    a single `Annotation` (backward-compatible behavior).
     """
 
     def __init__(self, path: Text = None):
@@ -112,29 +118,51 @@ class RTTMLoader:
 
         _, placeholders, _, _ = zip(*string.Formatter().parse(self.path))
         self.placeholders_ = set(placeholders) - set([None])
-        self.loaded_ = dict() if self.placeholders_ else load_rttm(self.path)
+        # {uri: {channel: Annotation}} ; channels are merged on demand (see _select)
+        self.loaded_ = (
+            dict() if self.placeholders_ else load_rttm(self.path, keep_channel=True)
+        )
+
+    @staticmethod
+    def _select(by_channel: dict, uri: Text, channel: int = None) -> Annotation:
+        """Annotation of `channel`, or all channels merged when `channel` is None."""
+        if channel is not None:
+            return by_channel.get(channel, Annotation(uri=uri))
+
+        # channel-agnostic: reproduce the historical single-Annotation behavior
+        if len(by_channel) == 1:
+            return next(iter(by_channel.values()))
+
+        merged = Annotation(uri=uri)
+        for channel in sorted(by_channel):
+            for segment, track, label in by_channel[channel].itertracks(yield_label=True):
+                merged[segment, track] = label
+        return merged
 
     def __call__(self, file: ProtocolFile) -> Annotation:
         uri = file["uri"]
+        channel = file.get("channel", None)
+        if channel is not None:
+            channel = int(channel)
 
         if uri in self.loaded_:
-            return self.loaded_[uri]
+            return self._select(self.loaded_[uri], uri, channel)
 
         sub_file = {key: file[key] for key in self.placeholders_}
-        loaded = load_rttm(self.path.format(**sub_file))
+        loaded = load_rttm(self.path.format(**sub_file), keep_channel=True)
         if uri not in loaded:
-            loaded[uri] = Annotation(uri=uri)
+            loaded[uri] = dict()
 
         # do not cache annotations when there is one RTTM file per "uri"
         # since loading it should be quite fast
         if "uri" in self.placeholders_:
-            return loaded[uri]
+            return self._select(loaded[uri], uri, channel)
 
         # when there is more than one file in loaded RTTM, cache them all
         # so that loading future "uri" will be instantaneous
         self.loaded_.update(loaded)
 
-        return self.loaded_[uri]
+        return self._select(self.loaded_[uri], uri, channel)
 
 
 class STMLoader:

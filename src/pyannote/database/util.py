@@ -145,7 +145,7 @@ def get_label_identifier(label, current_file):
     return database + "|" + label
 
 
-def load_rttm(file_rttm, keep_type="SPEAKER"):
+def load_rttm(file_rttm, keep_type="SPEAKER", keep_channel=False):
     """Load RTTM file
 
     Parameter
@@ -155,17 +155,25 @@ def load_rttm(file_rttm, keep_type="SPEAKER"):
     keep_type : str, optional
         Only keep lines with this type (field #1 in RTTM specs).
         Defaults to "SPEAKER".
+    keep_channel : bool, optional
+        Return one `Annotation` per (uri, channel) instead of merging every
+        channel (field #3 in RTTM specs) into a single `Annotation`.
+        Defaults to False (channels merged, backward-compatible behavior).
 
     Returns
     -------
     annotations : `dict`
-        Speaker diarization as a {uri: pyannote.core.Annotation} dictionary.
+        When `keep_channel` is False (default), speaker diarization as a
+        {uri: pyannote.core.Annotation} dictionary.
+        When `keep_channel` is True, a nested
+        {uri: {channel: pyannote.core.Annotation}} dictionary, where `channel`
+        is the (1-based) integer channel read from the RTTM file.
     """
 
     names = [
         "type",
         "uri",
-        "NA2",
+        "channel",
         "start",
         "duration",
         "NA3",
@@ -183,15 +191,24 @@ def load_rttm(file_rttm, keep_type="SPEAKER"):
         keep_default_na=True,
     )
 
-    annotations = dict()
-    for uri, turns in data.groupby("uri"):
+    def _annotation(uri, turns):
         annotation = Annotation(uri=uri)
         for i, turn in turns.iterrows():
             if turn.type != keep_type:
                 continue
             segment = Segment(turn.start, turn.start + turn.duration)
             annotation[segment, i] = turn.speaker
-        annotations[uri] = annotation
+        return annotation
+
+    if keep_channel:
+        annotations = dict()
+        for (uri, channel), turns in data.groupby(["uri", "channel"]):
+            annotations.setdefault(uri, dict())[int(channel)] = _annotation(uri, turns)
+        return annotations
+
+    annotations = dict()
+    for uri, turns in data.groupby("uri"):
+        annotations[uri] = _annotation(uri, turns)
 
     return annotations
 
