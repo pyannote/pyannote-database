@@ -129,7 +129,7 @@ with the content of `database.yml` as follows:
 
 ## Data loaders
 
-STM transcription loading requires the optional dependencies: `uv pip install "pyannote.database[transcription]"`.
+STM transcription loading requires the optional dependencies: `uv add "pyannote.database[transcription]"`.
 
 The above `MyDatabase.Protocol.MyProtocol` protocol is not very useful as it only allows to iterate over a list of resources with a single `'uri'` key. Metadata can be added to each resource with the following syntax:  
 
