@@ -35,12 +35,7 @@ import itertools
 import threading
 import warnings
 from collections.abc import Callable, Iterator
-from typing import Any, Union
-
-try:
-    from typing import Literal
-except ImportError:
-    from typing import Literal
+from typing import Any, Literal, Union
 
 Subset = Literal["train", "development", "test"]
 LEGACY_SUBSET_MAPPING = {"train": "trn", "development": "dev", "test": "tst"}
