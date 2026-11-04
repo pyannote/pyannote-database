@@ -176,11 +176,11 @@ def load_rttm(file_rttm, keep_type="SPEAKER"):
     annotations = dict()
     for uri, turns in data.groupby("uri"):
         annotation = Annotation(uri=uri)
-        for i, turn in turns.iterrows():
+        for turn in turns.itertuples():
             if turn.type != keep_type:
                 continue
             segment = Segment(turn.start, turn.start + turn.duration)
-            annotation[segment, i] = turn.speaker
+            annotation[segment, turn.Index] = turn.speaker
         annotations[uri] = annotation
 
     return annotations
@@ -212,9 +212,9 @@ def load_stm(file_stm):
     annotations = dict()
     for uri, turns in data.groupby("uri"):
         annotation = Annotation(uri=uri)
-        for i, turn in turns.iterrows():
+        for turn in turns.itertuples():
             segment = Segment(turn.start, turn.end)
-            annotation[segment, i] = turn.speaker
+            annotation[segment, turn.Index] = turn.speaker
         annotations[uri] = annotation
 
     return annotations
@@ -247,9 +247,9 @@ def load_mdtm(file_mdtm):
     annotations = dict()
     for uri, turns in data.groupby("uri"):
         annotation = Annotation(uri=uri)
-        for i, turn in turns.iterrows():
+        for turn in turns.itertuples():
             segment = Segment(turn.start, turn.start + turn.duration)
-            annotation[segment, i] = turn.speaker
+            annotation[segment, turn.Index] = turn.speaker
         annotations[uri] = annotation
 
     return annotations
@@ -275,7 +275,7 @@ def load_uem(file_uem):
 
     timelines = dict()
     for uri, parts in data.groupby("uri"):
-        segments = [Segment(part.start, part.end) for i, part in parts.iterrows()]
+        segments = [Segment(part.start, part.end) for part in parts.itertuples()]
         timelines[uri] = Timeline(segments=segments, uri=uri)
 
     return timelines
@@ -299,9 +299,9 @@ def load_lab(path, uri: str = None) -> Annotation:
     data = pd.read_csv(path, names=names, dtype=dtype, sep=r"\s+")
 
     annotation = Annotation(uri=uri)
-    for i, turn in data.iterrows():
+    for turn in data.itertuples():
         segment = Segment(turn.start, turn.end)
-        annotation[segment, i] = turn.label
+        annotation[segment, turn.Index] = turn.label
 
     return annotation
 
