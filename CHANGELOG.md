@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- perf: speed up RTTM, STM, MDTM, UEM, and LAB loading with more efficient pandas row iteration
+
 ## Version 6.2.0 (2026-11-02)
 
 - BREAKING: require Python 3.11 or newer; Python 3.10 is no longer supported
