@@ -56,4 +56,4 @@ jobs:
           uv venv --python "${{ steps.python.outputs.python-path }}"
           uv pip install "$(echo dist/*.whl)[test,cli,transcription]"
       - name: Run tests against the installed wheel
-        run: uv run --no-project --python .venv/bin/python python -m pytest tests/test_optional_features.py
+        run: uv run --no-project --python .venv/bin/python python -m pytest tests/test_optional_features.py tests/test_tui.py
