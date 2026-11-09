@@ -932,3 +932,72 @@ uvx ruff format --check .
 ```
 
 See the [changelog](https://github.com/pyannote/pyannote-database/blob/main/CHANGELOG.md) for release history.
+
+### Interactive configuration browser
+
+Install the CLI dependencies and open a configuration with:
+
+```shell
+pip install 'pyannote-database[cli]'
+pyannote-database browse path/to/database.yml
+```
+
+The path defaults to `database.yml` in the current directory. The tree lists resolved
+databases, tasks, protocols (including versions), and subsets from the registry,
+following recursive `Requirements`. Protocol labels show their source YAML path
+relative to the entry configuration; the details pane shows the absolute path.
+When definitions override each other, the source is that of the active definition.
+Reloading refreshes all required configurations. Navigate the tree
+with the arrow keys and expand or collapse nodes with Space. The right pane shows
+YAML for the highlighted database, task, protocol, subset, or value. Press `r` to
+reload the file and `q` to quit. Selecting a protocol or subset loads file counts for each set. Speaker diarization
+protocols also show annotated duration, speech, non-speech, and overlapping speech
+with colored duration bars. Overlap is split by the exact number of simultaneous
+distinct speakers (2, 3, 4, and higher), with durations and percentages for each
+count. Multiple tracks for the same speaker count as one speaker. Statistics use one background worker that prioritizes the most recently visited
+subset, including switches within the same protocol. Each subset keeps its own
+resumable job: switching away pauses work between files; returning resumes it. When
+the selected protocol is ready, preloading continues at low priority. Startup
+preloading waits 3 seconds; background work pauses 0.5 seconds between files.
+Selecting a protocol or subset interrupts these waits and takes priority. An annotation
+parse already in progress must finish before the worker can switch protocols. A progress
+bar shows completed subsets, with the active subset and processed-file count above
+it. Initial annotation parsing may take time before the first file is available.
+Completed statistics are cached in memory and on disk under
+`$XDG_CACHE_HOME/pyannote-database/statistics` (default `~/.cache/pyannote-database/statistics`).
+Disk entries expire after 24 hours and are invalidated by YAML changes. Press `r`
+to bypass cached results after changing lists or annotations. Failed statistics
+are not saved to disk. Speech includes overlap; percentages use annotated duration, following
+the protocol’s annotated regions (including inferred bounds). Files with missing
+annotations are reported and excluded from duration statistics. The browser reads
+referenced lists and annotations through the registry, but does not load audio.
+
+Each diarization subset also shows histograms of conversation duration and distinct
+speakers per conversation, counting one protocol file as one conversation. Duration
+uses declared file duration when available, otherwise annotated-region duration;
+the chart reports how many files use each source. Speaker counts use annotations
+within the annotated regions, count each speaker once, and include zero-speaker
+files. Files without usable annotations are excluded from the speaker histogram.
+The conversation histograms use vertical bars: the y-axis counts conversations,
+and the x-axis shows duration or the number of distinct speakers. Duration bins
+adapt to the longest conversation in the subset: 1 second below 10 seconds,
+10 seconds below a minute, 1 minute below 10 minutes, and 5 minutes otherwise.
+Bars include exact conversation counts; short-bar counts appear directly above their bars.
+Wide ranges continue in additional chart sections with the same y-scale.
+
+Only subset rows display file counts, annotated duration, and background bars as
+statistics become available. Database, task, and protocol rows are navigation-only.
+Their background bars scale to the largest value among rows currently in view,
+including expansion, collapse, and scrolling. Press `b` to switch the background
+between annotated duration and file count. Loading subset rows use a lighter solid
+bar and show totals marked “so far”, updated as files are processed. Both loading
+and completed rows share the visible-row scale; this shows relative size, not a
+percentage-complete estimate. Bars switch to the darker color once complete. Failed loads are marked unavailable; `r` retries them.
+The header shows overall preload progress.
+
+The **Provenance** tab displays annotation provenance from `provenance.yaml`,
+preserving comments and showing line numbers. It checks the selected annotation
+version's directory and its ancestors, then `annotations/provenance.yaml` and
+`provenance.yaml` beside the defining `database.yml`. The full path is displayed;
+missing provenance is reported explicitly. The **Configuration** tab continues to
+show the selected protocol configuration.
