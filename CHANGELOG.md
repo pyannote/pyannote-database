@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## Version 6.3.0 (2026-11-16)
 
 - feat: add support for literal `channel: {null | downmix | all | random}` policies
 - perf: speed up RTTM, STM, MDTM, UEM, and LAB loading with more efficient pandas row iteration
