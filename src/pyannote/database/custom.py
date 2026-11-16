@@ -44,7 +44,7 @@ import string
 import warnings
 from collections.abc import Callable
 from importlib.metadata import entry_points
-from numbers import Number
+from numbers import Integral, Number
 from pathlib import Path
 from typing import Any
 
@@ -105,7 +105,9 @@ def Template(template: str, database_yml: Path) -> Callable[[ProtocolFile], Any]
     return load
 
 
-def NumericValue(value):
+def LiteralValue(value):
+    """Return a constant subset value without treating strings as paths."""
+
     def load(current_file: ProtocolFile):
         return value
 
@@ -208,8 +210,29 @@ def gather_loaders(
         if key == "uri" or key == "trial":
             continue
 
+        if key == "channel":
+            if value is None or (
+                isinstance(value, str) and value in {"downmix", "all", "random"}
+            ):
+                lazy_loader[key] = LiteralValue(value)
+                continue
+            if (
+                isinstance(value, Integral)
+                and not isinstance(value, bool)
+                and value >= 0
+            ):
+                lazy_loader[key] = LiteralValue(value)
+                continue
+            if not isinstance(value, str):
+                raise ValueError(
+                    "channel must be null, a non-negative integer, 'downmix', 'all', "
+                    "'random', or a metadata file path/template."
+                )
+            # Other strings still refer to mapping files or templates, e.g.
+            # channel: channels.map. Only the three exact tokens are reserved.
+
         if isinstance(value, Number):
-            lazy_loader[key] = NumericValue(value)
+            lazy_loader[key] = LiteralValue(value)
             continue
 
         # check whether value (path) contains placeholders such as {uri} or {subset}

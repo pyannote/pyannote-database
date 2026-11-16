@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- feat: load literal `channel: null`, `downmix`, `all`, and `random` policies from protocol YAML; preserve fixed non-negative channels and channel mapping files
+
 - perf: speed up RTTM, STM, MDTM, UEM, and LAB loading with more efficient pandas row iteration
 
 ## Version 6.2.0 (2026-11-02)
