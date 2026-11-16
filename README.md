@@ -229,13 +229,13 @@ Protocols:
           channel: /path/to/channel.map
 ```
 
-| `channel`              | `pyannote.audio` loading behavior |
-|------------------------|-----------------------------------|
-| Omitted or YAML `null` | Default loader behavior           |
-| Non-negative integer   | Select that zero-based channel    |
-| `downmix`              | Average all channels              |
-| `random`               | Select one channel at random      |
-| `all`                  | Preserve all channels             |
+| `channel`              | `pyannote.audio` loading behavior   |
+|------------------------|-------------------------------------|
+| Omitted or YAML `null` | Default loader behavior (`downmix`) |
+| Non-negative integer   | Select that zero-based channel      |
+| `downmix`              | Average all channels                |
+| `random`               | Select one channel at random        |
+| `all`                  | Preserve all channels               |
 
 `pyannote.database` only preserves these values as metadata: it neither loads waveforms nor picks a random channel, `pyannote.audio` does.
 
