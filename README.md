@@ -209,6 +209,36 @@ and used to populate `speaker` and `transcription` keys. In pseudo-code:
 
 `pyannote.database` provides built-in data loaders for a limited set of file formats: `RTTMLoader` for `.rttm` files, `UEMLoader` for `.uem` files, and `STMLoader` for `.stm` files. See [Custom data loaders](#custom-data-loaders) section to learn how to add your own.
 
+### Audio channel selection
+
+A subset can attach an audio-loading policy to every yielded file:
+
+```yaml
+Protocols:
+  MyDatabase:
+    SpeakerDiarization:
+      MyProtocol:
+        scope: file
+        train:
+          ...
+          channel: downmix | random | all 
+        development:
+          ...
+          channel: 0
+        test:
+          channel: /path/to/channel.map
+```
+
+| `channel`              | `pyannote.audio` loading behavior   |
+|------------------------|-------------------------------------|
+| Omitted or YAML `null` | Default loader behavior (`downmix`) |
+| Non-negative integer   | Select that zero-based channel      |
+| `downmix`              | Average all channels                |
+| `random`               | Select one channel at random        |
+| `all`                  | Preserve all channels               |
+
+`pyannote.database` only preserves these values as metadata: it neither loads waveforms nor picks a random channel, `pyannote.audio` does.
+
 ## Preprocessors
 
 When iterating over a protocol subset (e.g. using `for resource in protocol.train()`), resources are provided as instances of `pyannote.database.ProtocolFile`, which are basically `dict` instances whose values are computed lazily.
