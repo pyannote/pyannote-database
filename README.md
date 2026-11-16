@@ -220,43 +220,24 @@ Protocols:
       MyProtocol:
         scope: file
         train:
-          uri: train.lst
-          annotation: annotations.rttm
-          channel: random
+          ...
+          channel: downmix | random | all 
         development:
-          uri: development.lst
-          annotation: annotations.rttm
+          ...
           channel: 0
         test:
-          uri: test.lst
-          annotation: annotations.rttm
-          channel: downmix
+          channel: /path/to/channel.map
 ```
 
-| `channel` | Audio-loading behavior |
-|---|---|
-| Omitted or YAML `null` | Default loader behavior (downmix for the standard pyannote model loader) |
-| Non-negative integer | Select that zero-based channel; `0` means the first channel |
-| `downmix` | Average all channels |
-| `all` | Preserve all channels |
-| `random` | Select one channel per load/crop; forbidden during validation |
+| `channel`              | `pyannote.audio` loading behavior |
+|------------------------|-----------------------------------|
+| Omitted or YAML `null` | Default loader behavior           |
+| Non-negative integer   | Select that zero-based channel    |
+| `downmix`              | Average all channels              |
+| `random`               | Select one channel at random      |
+| `all`                  | Preserve all channels             |
 
-`pyannote.database` preserves these values as metadata, including explicit `None`
-for YAML `null`; an omitted key stays absent. It neither loads waveforms nor picks
-a random channel. The audio consumer implements the behavior and validation-time
-restriction (see [pyannote.audio #2102](https://github.com/pyannote/pyannote-audio/pull/2102)).
-Explicit `downmix` overrides a consumer's mono policy, while omission/null leaves
-that default unchanged. Models consuming `all` must support multichannel inputs.
-Use a compatible pyannote.audio version and rebuild task caches when changing
-channel policies.
-
-Only these three exact string tokens are reserved for the `channel` key. Existing
-`channel: channels.map` and per-file templates remain supported. For a mapping
-file literally named `random`, `all`, or `downmix`, disambiguate with `./random`
-(and register a loader for its suffix as usual). Other metadata keys still treat
-strings as paths. Negative integers, booleans, and non-integer scalar channel
-values are rejected.
-
+`pyannote.database` only preserves these values as metadata: it neither loads waveforms nor picks a random channel, `pyannote.audio` does.
 
 ## Preprocessors
 
