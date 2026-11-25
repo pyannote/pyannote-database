@@ -464,6 +464,7 @@ def create_protocol(
     if task == "Collection":
         protocol_entries = {"files": protocol_entries}
 
+    configuration = dict(protocol_entries)
     metadata = dict()
 
     if version is not None:
@@ -556,6 +557,11 @@ def create_protocol(
         database, task, protocol
     )
     CustomProtocolClass = type(custom_protocol_class_name, (base_class,), methods)
+    # Keep provenance on the generated class so overrides and version aliases
+    # retain the source of the actual registered protocol.
+    CustomProtocolClass.database_yml = database_yml
+    CustomProtocolClass.configuration = configuration
+    CustomProtocolClass.annotation_version = version
     globals()[custom_protocol_class_name] = CustomProtocolClass
 
     return CustomProtocolClass

@@ -27,6 +27,7 @@
 
 import math
 from enum import StrEnum
+from pathlib import Path
 
 import typer
 from pyannote.core import Annotation
@@ -35,6 +36,28 @@ from pyannote.database import Database, registry
 from pyannote.database.protocol import CollectionProtocol, SpeakerDiarizationProtocol
 
 app = typer.Typer()
+
+
+@app.command("browse")
+def browse(
+    path: Path = typer.Argument(Path("database.yml")),
+    mouse: bool = typer.Option(
+        True,
+        "--mouse/--no-mouse",
+        help="Enable mouse input. Disable for terminals with incompatible mouse reporting.",
+    ),
+):
+    """Browse a database.yml configuration interactively."""
+    import yaml
+
+    from pyannote.database.tui import DatabaseBrowser
+
+    try:
+        browser = DatabaseBrowser(path)
+    except (OSError, UnicodeError, yaml.YAMLError, ValueError) as error:
+        typer.echo(f"Cannot open {path}: {error}", err=True)
+        raise typer.Exit(code=1) from error
+    browser.run(mouse=mouse)
 
 
 class Task(StrEnum):
