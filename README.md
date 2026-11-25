@@ -972,6 +972,14 @@ pip install 'pyannote-database[cli]'
 pyannote-database browse path/to/database.yml
 ```
 
+If your terminal sends incompatible binary mouse reports, the browser disables
+mouse reporting and continues with keyboard controls instead of crashing with a
+UTF-8 decoding error. You can also start in keyboard-only mode explicitly:
+
+```shell
+pyannote-database browse --no-mouse path/to/database.yml
+```
+
 The path defaults to `database.yml` in the current directory. The tree lists resolved
 databases, tasks, protocols (including versions), and subsets from the registry,
 following recursive `Requirements`. Protocol labels show their source YAML path
@@ -1031,3 +1039,116 @@ version's directory and its ancestors, then `annotations/provenance.yaml` and
 `provenance.yaml` beside the defining `database.yml`. The full path is displayed;
 missing provenance is reported explicitly. The **Configuration** tab continues to
 show the selected protocol configuration.
+
+#### Compose a compound diarization dataset
+
+Press `c` in the browser to create an `X.SpeakerDiarization.<name>` protocol.
+For example, from this repository, browse the sibling metadata catalog with:
+
+```shell
+uv run --extra cli pyannote-database browse ../datasets-metadata/database.yml
+```
+
+Every row has three adjacent checkboxes, in **Train / Dev / Test** order. Click a
+checkbox directly, or highlight a row and press `1`, `2`, or `3` to toggle its
+training, development, or test membership. No destination switching is needed.
+**Space** toggles the last-used column (underlined; initially Train). Expand
+database → protocol → subset → version with the right arrow or Enter; use the left
+arrow to collapse. A branch checkbox toggles all eligible descendants for that
+column. `[x]` means fully selected, `[−]` partially selected, and `[!]` ineligible.
+The three memberships are independent and remain visible together.
+Toggling a checkbox automatically opens the matching Train, Development, or Test
+tab on the right. Each database row lists all available annotation levels without
+requiring expansion, including when a level filter is active.
+
+Use the **Level** dropdown to show all annotation levels, only word-level,
+turn-level, mixed-level, or unknown-level versions. Filtering preserves selections:
+hidden selected sources still contribute to the compound, treemaps, and export.
+The picker reports how many selections are hidden. Branch checkboxes affect only
+the visible versions.
+
+Source `train` and `development` subsets can enter any destination split. Source
+`test` subsets can **only** enter compound test: they are disabled and skipped by
+branch selection in compound training and development. Only concrete diarization
+protocols are offered; existing `X` compounds are excluded so nested references
+cannot conceal test subsets.
+
+Versions are independent checkboxes: multiple versions of the same protocol and
+subset can coexist in a split. Exports use explicit `@version` names and omit the
+duplicate default-version alias. Each version displays its declared **word-level**,
+**turn-level**, or **mixed-level** metadata and **closing value in seconds**. Missing
+metadata is labeled unknown, never inferred from the version name. The focused
+version's full name and metadata also appear below the tree.
+
+The right pane updates immediately after each toggle. Each destination has total
+file counts and annotated duration, plus a **treemap**: each colored rectangle
+represents a source protocol, version, and subset, with area proportional to its
+contribution. Use the bottom Duration / Files toggle (or `m`) to change the area metric;
+percentages use the known total for that destination. Train, Development, and Test
+have separate tabs with larger treemaps, totals, and status notes. Source details
+stay in the left tree rather than being repeated on the right.
+Tiny or zero-value sources remain selected even when their rectangles cannot
+be displayed. Source colors stay consistent across splits and selection changes.
+Rectangle labels use only the database name and percentage; protocol/version/subset
+details appear beneath the source tree when a version is highlighted. Multiple
+versions remain separate contributions. Statistics load in the background,
+prioritizing selected entries, then the highlighted and visible
+versions. Pending, partial, and failed statistics are explicitly marked, and
+incomplete totals are provisional. Totals sum selected entries: multiple versions
+count separately and recordings are not deduplicated. Shared source subsets across
+destination splits, including different versions, are flagged; overlaps between
+different protocols are not detected.
+
+Commercial-use status is read from `licence.commercial_use` (or
+`license.commercial_use`) in `manifest.yaml` / `manifest.yml` beside each protocol's
+defining YAML, including required configurations. An explicit `false` appears as
+**NON-COMMERCIAL**, with red rectangles marked **NC**. Missing, null, malformed, or
+non-boolean declarations appear as **commercial: unknown**, with amber rectangles
+marked **?**. Only an explicit `true` displays **commercial: yes (catalog)**; licence
+names are not used to guess permissions. Split summaries count selected restricted
+and unknown sources; the focused row shows the licence name and manifest path.
+These are catalog declarations. They are displayed without preventing selection.
+
+Press `Ctrl+S` to open the save dialog, set a protocol name and output path,
+review the YAML preview, and click **Save YAML** (or press `Ctrl+S` again).
+The new YAML references the opened catalog through a relative
+`Requirements` path; original configurations stay unchanged. Saving requires a new
+file and, for a new draft, a new compound protocol name. Parent directories must
+already exist.
+Press `Escape` to close a dialog without changing the draft, or to return from
+composing to browsing. Draft selections persist while
+switching modes in the same session; reload refreshes available sources and removes
+selections that no longer exist. To use an exported configuration:
+
+```python
+from pyannote.database import registry
+
+registry.load_database("path/to/compound.yml")
+protocol = registry.get_protocol("X.SpeakerDiarization.MyCompound")
+```
+
+Press `Ctrl+O` to open the load dialog and reopen a saved dataset. Enter its YAML
+path, click **Read file**, choose an `X.SpeakerDiarization` protocol, and click
+**Load**. Its requirements become the browser's source catalog and all three sets
+of checkboxes are restored. Default aliases are pinned to explicit versions;
+nested compounds are expanded to concrete sources. Invalid imports, cycles,
+duplicate references, and test sources feeding training/development leave the
+current draft unchanged. Saving a loaded compound keeps its name and suggests an
+`-edited.yml` copy; the original file is preserved.
+
+Press `Ctrl+E` to open the PDF export dialog, choose a name and output path, and
+click **Export PDF**. The default path is beside the YAML output with a `.pdf`
+extension. It contains exactly
+**three A4 pages**: training, development, and test, including empty splits. Each
+page shows a vector treemap using the currently chosen size metric, totals,
+commercial-use flags, and source details. Hidden selections are included.
+Statistics are captured at export time: pending, partial, or failed measurements
+are clearly marked **PROVISIONAL**. For larger selections, the printed details
+show the eight largest contributions; the complete composition, measurements, and
+errors are attached inside the PDF as `composition.json`, along with `compound.yml`.
+Existing PDFs are never overwritten. PDF export does not require saving the YAML
+first. The dialog closes when the report has been written.
+
+The right panel is reserved for the three split visualizations. A single-line
+**Duration / Files** toggle at the bottom controls treemap area; click either option
+or press `m` to switch. Save, export, and load forms appear only in their dialogs.

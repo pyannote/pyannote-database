@@ -1,7 +1,8 @@
-"""Read-only Textual browser for database configuration files."""
+"""Textual browser and compound protocol composer for database configurations."""
 
 import asyncio
 import os
+import sys
 import time
 from pathlib import Path
 from typing import Any
@@ -24,6 +25,7 @@ from textual.widgets import (
 
 from .registry import Registry
 from .tui_cache import StatisticsCache
+from .tui_compound import CompoundComposer, version_description
 from .tui_tree import StatisticsTree
 
 
@@ -46,6 +48,8 @@ class DatabaseBrowser(App):
         ("r", "reload", "Reload"),
         ("space", "toggle", "Expand/collapse"),
         ("b", "bar_metric", "Bars: duration/files"),
+        ("c", "compose_compound", "Compose dataset"),
+        ("escape", "browse", "Browse"),
     ]
 
     def __init__(self, path: Path | str):
@@ -70,6 +74,7 @@ class DatabaseBrowser(App):
         self.last_statistics_render = 0.0
         self.generation = 0
         self.ignore_disk_cache = False
+        self.composing = False
         self.sub_title = str(self.path)
 
     def read_document(self) -> dict:
@@ -79,6 +84,17 @@ class DatabaseBrowser(App):
             raise ValueError("Expected a YAML mapping at the root.")
         return document
 
+    def get_driver_class(self):
+        driver = super().get_driver_class()
+        if sys.platform != "win32":
+            from textual.drivers.linux_driver import LinuxDriver
+
+            if driver is LinuxDriver:
+                from .tui_driver import CompatibleLinuxDriver
+
+                return CompatibleLinuxDriver
+        return driver
+
     def read_registry(self):
         registry = Registry()
         registry.load_database(self.path)
@@ -86,7 +102,7 @@ class DatabaseBrowser(App):
 
     def compose(self) -> ComposeResult:
         yield Header()
-        with Horizontal():
+        with Horizontal(id="browser-body"):
             with Vertical(id="tree-panel"):
                 yield Static(
                     "Bars: annotated duration · b to switch",
@@ -109,6 +125,7 @@ class DatabaseBrowser(App):
                     yield Static(id="provenance-path", markup=False)
                     with VerticalScroll(id="provenance-scroll"):
                         yield Static(id="provenance-content")
+        yield CompoundComposer(self, id="compound-composer")
         yield Footer()
 
     def on_mount(self) -> None:
@@ -137,6 +154,9 @@ class DatabaseBrowser(App):
                     source = protocol.database_yml
                     relative = os.path.relpath(source, self.path.parent)
                     label = Text(protocol_name)
+                    version = getattr(protocol, "annotation_version", None)
+                    if version:
+                        label.append(f" · {version_description(version)}")
                     label.append(f"  [{relative}]", style="dim")
                     node = task_node.add(label, data=protocol.configuration)
                     self.node_paths[node.id] = (name, source)
@@ -363,6 +383,13 @@ class DatabaseBrowser(App):
     def next_statistics_protocol(self):
         if not self.query(StatisticsTree):
             return None
+        if self.composing:
+            composer = self.query_one(CompoundComposer)
+            for name, subset in composer.statistics_targets():
+                if not self.subset_ready(name, subset):
+                    self.priority_target = (name, subset)
+                    return name
+            return None
         if self.priority_target and not self.subset_ready(*self.priority_target):
             return self.priority_target[0]
         if not self.preload_enabled:
@@ -478,6 +505,8 @@ class DatabaseBrowser(App):
                 await asyncio.sleep(0)  # allow navigation to change priority
         finally:
             self.statistics_running = False
+            if self.composing and self.query(CompoundComposer):
+                self.query_one(CompoundComposer).refresh_statistics()
 
     def update_tree_statistics(self):
         if not self.query(StatisticsTree):
@@ -485,7 +514,11 @@ class DatabaseBrowser(App):
         tree = self.query_one(StatisticsTree)
         eligible = self.expanded_protocols()
         done = sum(name in self.statistics_cache for name in self.default_subsets)
-        self.sub_title = f"{self.path} · {done}/{len(self.default_subsets)} protocols loaded · background preload throttled"
+        self.sub_title = (
+            f"{self.path} · compound composer"
+            if self.composing
+            else f"{self.path} · {done}/{len(self.default_subsets)} protocols loaded · background preload throttled"
+        )
         metrics = {}
         # Dataset and protocol rows remain navigation-only. Only subset rows
         # have meaningful, directly comparable file/duration totals.
@@ -521,6 +554,42 @@ class DatabaseBrowser(App):
                 node = tree.get_node_by_id(node_id)
                 node.set_label(node.label)
         tree.refresh()
+        if self.composing:
+            self.query_one(CompoundComposer).refresh_statistics()
+
+    def action_compose_compound(self) -> None:
+        self.composing = True
+        self.refresh_bindings()
+        self.query_one("#browser-body").display = False
+        composer = self.query_one(CompoundComposer)
+        composer.display = True
+        composer.refresh_statistics()
+        self.sub_title = f"{self.path} · compound composer"
+        composer.query_one(Tree).focus()
+        self.statistics_wakeup.set()
+        self.ensure_statistics_worker()
+
+    def action_browse(self) -> None:
+        self.composing = False
+        self.refresh_bindings()
+        self.query_one(CompoundComposer).display = False
+        self.query_one("#browser-body").display = True
+        self.query_one(StatisticsTree).focus()
+        self.priority_target = (
+            (self.selected_protocol, self.selected_subset)
+            if self.selected_protocol
+            else None
+        )
+        self.statistics_wakeup.set()
+        self.update_tree_statistics()
+        self.ensure_statistics_worker()
+
+    def check_action(self, action: str, parameters: tuple) -> bool:
+        if action in {"bar_metric", "toggle", "reload", "compose_compound"}:
+            return not self.composing
+        if action == "browse":
+            return self.composing
+        return True
 
     def action_bar_metric(self):
         tree = self.query_one(StatisticsTree)
@@ -535,6 +604,9 @@ class DatabaseBrowser(App):
             node.toggle()
 
     def action_reload(self) -> None:
+        if self.composing:
+            self.notify("Return to the browser with Escape before reloading.")
+            return
         try:
             document = self.read_document()
             registry = self.read_registry()
@@ -551,5 +623,6 @@ class DatabaseBrowser(App):
         self.disk_cache = StatisticsCache(registry)
         self.statistics_cache.clear()
         self.populate()
+        self.query_one(CompoundComposer).populate()
         self.ensure_statistics_worker()
         self.notify("Configuration reloaded")

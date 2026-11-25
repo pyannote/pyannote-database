@@ -561,6 +561,7 @@ def create_protocol(
     # retain the source of the actual registered protocol.
     CustomProtocolClass.database_yml = database_yml
     CustomProtocolClass.configuration = configuration
+    CustomProtocolClass.annotation_version = version
     globals()[custom_protocol_class_name] = CustomProtocolClass
 
     return CustomProtocolClass
